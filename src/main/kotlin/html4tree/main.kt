@@ -1,6 +1,7 @@
 package html4tree
 
 import java.io.File
+import java.net.URLEncoder
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -74,6 +75,13 @@ fun process_ignore_file(curr_dir: File): List<String> {
     return files_to_exclude
 }
  
+// Security enhancement: HTML encode to prevent XSS
+fun escapeHtml(s: String): String = s.replace("&", "&amp;").replace("<", "&lt;")
+    .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#x27;")
+
+// Security enhancement: URL encode to prevent attribute injection
+fun urlEncode(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+
 fun process_dir(curr_dir: File){
     
     val exclude: List<String> = process_ignore_file(curr_dir)
@@ -89,11 +97,11 @@ fun process_dir(curr_dir: File){
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${escapeHtml(curr_dir.getName())}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${escapeHtml(curr_dir.getName())}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +113,9 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val nameEsc = escapeHtml(it.getName())
+              val urlEnc = urlEncode(it.getName())
+              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${urlEnc}/" } else { "./${urlEnc}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${nameEsc}</a></li>"""+"\n"
            }
         }
 
