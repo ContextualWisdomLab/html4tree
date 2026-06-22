@@ -18,6 +18,14 @@ class Html4tree : CliktCommand() {
 
 fun main(args: Array<String>)  = Html4tree().main(args)
 
+fun escapeHtml(text: String): String {
+    return text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#x27;")
+}
+
 fun go(topDir: String, maxLevel: Int)  {
     val top_dir = File(topDir)
     require(top_dir.exists() && top_dir.isDirectory())
@@ -89,11 +97,11 @@ fun process_dir(curr_dir: File){
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${escapeHtml(curr_dir.getName())}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${escapeHtml(curr_dir.getName())}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +113,9 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val encName = java.net.URLEncoder.encode(it.getName(), "UTF-8").replace("+", "%20")
+              val escName = escapeHtml(it.getName())
+              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${encName}/" } else { "./${encName}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${escName}</a></li>"""+"\n"
            }
         }
 
