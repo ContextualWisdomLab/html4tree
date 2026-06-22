@@ -57,10 +57,14 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
        ignore_file.forEachLine { ignored_strings.add(it) }
 
+       // ⚡ Bolt: Compile regexes once instead of in a nested loop
+       // to prevent O(N*M) performance degradation where N=files, M=ignore lines
+       val regexes = ignored_strings.map { ("^"+it+"$").toRegex() }
+
        curr_dir.list().sorted().forEach {
            val current = it
-           ignored_strings.forEach { i_string ->
-              if(("^"+i_string+"$").toRegex().matches(current)){
+           regexes.forEach { regex ->
+              if(regex.matches(current)){
                  files_to_exclude.add(current)
               }
          }
@@ -99,17 +103,19 @@ fun process_dir(curr_dir: File){
 """ 
 
     val index_middle = fun():String{ 
-        var l=""
+        // ⚡ Bolt: Use StringBuilder instead of string concatenation in a loop
+        // to prevent O(n^2) performance degradation on directories with many files
+        val l = StringBuilder()
 
         val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              l.append("""          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>""").append("\n")
            }
         }
 
-        return l;
+        return l.toString();
      } 
 
    val index_bottom="""
