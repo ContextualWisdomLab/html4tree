@@ -36,3 +36,14 @@ class LinkedList {
     }
 
 }
+fun escapeHtml(text: String): String {
+    return text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#x27;")
+}
+
+fun urlEncode(text: String): String {
+    return java.net.URLEncoder.encode(text, "UTF-8").replace("+", "%20")
+}
