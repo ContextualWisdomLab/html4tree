@@ -6,6 +6,19 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
+import java.net.URLEncoder
+
+fun String.escapeHtml(): String {
+    return this.replace("&", "&amp;")
+               .replace("<", "&lt;")
+               .replace(">", "&gt;")
+               .replace("\"", "&quot;")
+               .replace("'", "&#x27;")
+}
+
+fun String.urlEncode(): String {
+    return URLEncoder.encode(this, "UTF-8").replace("+", "%20")
+}
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -89,11 +102,11 @@ fun process_dir(curr_dir: File){
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${curr_dir.getName().escapeHtml()}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +118,7 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncode()}/" } else { "./${it.getName().urlEncode()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
