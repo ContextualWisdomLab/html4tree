@@ -1,0 +1,3 @@
+## 2024-05-24 - ARIA Labels in Legacy String Templates
+**Learning:** Adding ARIA labels to dynamically generated HTML via string interpolation (e.g., Kotlin string templates) requires careful handling of conditional logic to ensure correct semantics (e.g., distinguishing between 'File' and 'Directory' dynamically).
+**Action:** When updating legacy systems, evaluate whether to map generic tags (like anchor links with emojis) to explicit, descriptive `aria-label` attributes injected via template variables to maintain backward compatibility while dramatically improving screen reader accessibility.

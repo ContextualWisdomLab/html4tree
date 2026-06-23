@@ -80,22 +80,25 @@ fun process_dir(curr_dir: File){
 
     val css = """
               <style>
-              ul {
-                list-style-type: none;
-              }
+              ul { list-style-type: none; padding-left: 0; }
+              a { text-decoration: none; padding: 4px; border-radius: 4px; }
+              a:hover { background-color: #f0f0f0; }
+              a:focus-visible { outline: 2px solid #005fcc; outline-offset: 2px; }
               </style>
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="en">
      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${curr_dir.getName()}</title>
         ${css}
      </head>
      <body>
        <h1>${curr_dir.getName()}</h1>
        <ul>
-          <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
+          <li><a style="display:block; width:100%" href="./.." aria-label="Go to parent directory">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -105,7 +108,9 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val dir = it.isDirectory()
+              val label = if (dir) "Directory ${it.getName()}" else "File ${it.getName()}"
+              l += """          <li><a style="display:block; width:100%" href=${if (dir) { "./${it.getName()}/" } else { "./${it.getName()}" }} aria-label="$label">${if (dir) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
            }
         }
 
