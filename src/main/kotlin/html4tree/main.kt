@@ -86,14 +86,29 @@ fun process_dir(curr_dir: File){
               </style>
               """
 
+    // Escape HTML characters to prevent XSS
+    val escapeHtml = fun(s: String): String {
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;")
+    }
+
+    // URL encode for href to prevent XSS and path issues
+    val urlEncode = fun(s: String): String {
+        return java.net.URLEncoder.encode(s, "UTF-8")
+                .replace("+", "%20")
+    }
+
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${escapeHtml(curr_dir.getName())}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${escapeHtml(curr_dir.getName())}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +120,7 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${urlEncode(it.getName())}/" } else { "./${urlEncode(it.getName())}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${escapeHtml(it.getName())}</a></li>"""+"\n"
            }
         }
 
