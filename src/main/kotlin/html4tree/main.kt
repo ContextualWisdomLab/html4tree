@@ -1,6 +1,7 @@
 package html4tree
 
 import java.io.File
+import java.net.URLEncoder
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -74,6 +75,18 @@ fun process_ignore_file(curr_dir: File): List<String> {
     return files_to_exclude
 }
  
+fun escapeHtml(text: String): String {
+    return text.replace("&", "&amp;")
+               .replace("<", "&lt;")
+               .replace(">", "&gt;")
+               .replace("\"", "&quot;")
+               .replace("'", "&#39;")
+}
+
+fun encodeUrlPathSegment(text: String): String {
+    return URLEncoder.encode(text, "UTF-8").replace("+", "%20")
+}
+
 fun process_dir(curr_dir: File){
     
     val exclude: List<String> = process_ignore_file(curr_dir)
@@ -86,14 +99,15 @@ fun process_dir(curr_dir: File){
               </style>
               """
 
+    val escapedDirName = escapeHtml(curr_dir.getName())
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${escapedDirName}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${escapedDirName}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +119,9 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val escapedName = escapeHtml(it.getName())
+              val encodedUrl = encodeUrlPathSegment(it.getName())
+              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${encodedUrl}/" } else { "./${encodedUrl}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${escapedName}</a></li>"""+"\n"
            }
         }
 
