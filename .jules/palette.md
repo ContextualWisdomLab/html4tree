@@ -1,0 +1,3 @@
+## 2024-06-23 - [HTML 접근성 및 모바일 반응성 강화]
+**Learning:** `mod_autoindex` 형태의 HTML 디렉토리 트리 생성기에서는 생성된 결과물(`index.html`)이 모바일에서 제대로 보이지 않고 스크린 리더 등에 친숙하지 않은 문제가 있었습니다. `<html>` 태그의 `lang` 속성과 `<meta charset="utf-8">`, `<meta name="viewport" content="width=device-width, initial-scale=1.0">` 태그를 추가해야 모바일에서도 레이아웃이 깨지지 않고 접근성이 크게 향상됨을 확인했습니다. 또한, 키보드 네비게이션 시 `a` 태그에 대한 `focus-visible` 아웃라인이 없으면 탭 이동 시 어디에 포커스가 있는지 알기 어렵다는 점을 배웠습니다.
+**Action:** 앞으로 정적 HTML 생성 로직을 작성할 때에는 반드시 모바일 대응 메타 태그와 함께 기본 접근성 향상을 위한 `:focus-visible` 및 `:hover` 스타일을 기본으로 포함시키도록 합니다.
