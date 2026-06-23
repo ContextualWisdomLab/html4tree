@@ -53,17 +53,17 @@ fun process_ignore_file(curr_dir: File): List<String> {
     val files_to_exclude = mutableListOf<String>()
 
     if(ignore_file.exists()){
-       val ignored_strings = mutableListOf<String>()
+       val ignored_regexes = mutableListOf<Regex>()
 
-       ignore_file.forEachLine { ignored_strings.add(it) }
+       // ⚡ Bolt Optimization: Pre-compile regexes once instead of re-compiling for every file
+       // Impact: Massive reduction in CPU time when parsing directories with many files and multiple ignore patterns
+       ignore_file.forEachLine { ignored_regexes.add(("^"+it+"$").toRegex()) }
 
-       curr_dir.list().sorted().forEach {
-           val current = it
-           ignored_strings.forEach { i_string ->
-              if(("^"+i_string+"$").toRegex().matches(current)){
-                 files_to_exclude.add(current)
-              }
-         }
+       curr_dir.list().sorted().forEach { current ->
+           // Use 'any' for early exit on first match
+           if (ignored_regexes.any { it.matches(current) }) {
+               files_to_exclude.add(current)
+           }
        }
     }
 
