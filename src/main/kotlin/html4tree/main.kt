@@ -57,10 +57,11 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
        ignore_file.forEachLine { ignored_strings.add(it) }
 
-       curr_dir.list().sorted().forEach {
-           val current = it
-           ignored_strings.forEach { i_string ->
-              if(("^"+i_string+"$").toRegex().matches(current)){
+       // Optimize: Compile regexes once outside the loop to avoid redundant compilations
+       val ignored_regexes = ignored_strings.map { ("^"+it+"$").toRegex() }
+       curr_dir.list().sorted().forEach { current ->
+           ignored_regexes.forEach { regex ->
+              if(regex.matches(current)){
                  files_to_exclude.add(current)
               }
          }
