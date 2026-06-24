@@ -15,9 +15,8 @@ class LinkedList {
             last = Entry(lle.file, lle.level, null)
             first = last
         } else {
-            first?.next = Entry(lle.file, lle.level, null)
-            first = first?.next
-            first?.next = null
+            first!!.next = Entry(lle.file, lle.level, null)
+            first = first!!.next
         }
     }
 

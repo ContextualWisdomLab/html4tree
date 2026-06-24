@@ -86,14 +86,22 @@ fun process_dir(curr_dir: File){
               </style>
               """
 
+    fun String.escapeHtml(): String {
+        return this.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#x27;")
+    }
+
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${curr_dir.getName().escapeHtml()}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +113,9 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val nameEscaped = it.getName().escapeHtml()
+              val hrefEscaped = if (it.isDirectory()) { "./${nameEscaped}/" } else { "./${nameEscaped}" }
+              l += """          <li><a style="display:block; width:100%" href="${hrefEscaped}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${nameEscaped}</a></li>"""+"\n"
            }
         }
 
