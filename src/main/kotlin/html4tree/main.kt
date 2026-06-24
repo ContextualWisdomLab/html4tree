@@ -65,14 +65,14 @@ fun process_ignore_file(curr_dir: File): List<String> {
     val files_to_exclude = mutableListOf<String>()
 
     if(ignore_file.exists()){
-       val ignored_strings = mutableListOf<String>()
+       val ignored_regexes = mutableListOf<Regex>()
 
-       ignore_file.forEachLine { ignored_strings.add(it) }
+       ignore_file.forEachLine { ignored_regexes.add(("^"+it+"$").toRegex()) }
 
        curr_dir.list().sorted().forEach {
            val current = it
-           ignored_strings.forEach { i_string ->
-              if(("^"+i_string+"$").toRegex().matches(current)){
+           ignored_regexes.forEach { regex ->
+              if(regex.matches(current)){
                  files_to_exclude.add(current)
               }
          }
