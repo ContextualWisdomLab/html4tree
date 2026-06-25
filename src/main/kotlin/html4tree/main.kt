@@ -22,19 +22,22 @@ fun go(topDir: String, maxLevel: Int)  {
     val top_dir = File(topDir)
     require(top_dir.exists() && top_dir.isDirectory())
 
+    // Security check: Do not crawl if the top directory itself is a symbolic link
+    require(!java.nio.file.Files.isSymbolicLink(top_dir.toPath())) { "Top directory cannot be a symbolic link" }
+
     val ll = LinkedList()
 
     ll.push(LinkedListEntry(top_dir,0))
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory()){
+    while(lle != null && lle.file.isDirectory() && !java.nio.file.Files.isSymbolicLink(lle.file.toPath())){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        lle.file.listFiles().forEach {
-            if(it.isDirectory()){
+        lle.file.listFiles()?.forEach {
+            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
