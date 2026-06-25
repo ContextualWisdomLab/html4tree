@@ -111,17 +111,20 @@ fun process_dir(curr_dir: File){
 """ 
 
     val index_middle = fun():String{ 
-        var l=""
+        // ⚡ Bolt Performance Optimization: Replace String += with StringBuilder
+        // Using += creates a new String object each time, resulting in O(n^2) performance.
+        // StringBuilder modifies the string in place, improving performance to O(n) for generating HTML with large directories.
+        val l = StringBuilder()
 
         val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              l.append("""          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>""").append("\n")
            }
         }
 
-        return l;
+        return l.toString();
      } 
 
    val index_bottom="""
