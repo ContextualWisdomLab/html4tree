@@ -94,18 +94,32 @@ fun process_dir(curr_dir: File){
               <style>
               ul {
                 list-style-type: none;
+                padding-left: 0;
+              }
+              a {
+                text-decoration: none;
+                color: #0366d6;
+              }
+              a:hover {
+                text-decoration: underline;
+                background-color: #f6f8fa;
+              }
+              a:focus-visible {
+                outline: 2px solid #0366d6;
+                outline-offset: 2px;
               }
               </style>
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="en">
      <head>
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
      <body>
        <h1>${curr_dir.getName().escapeHtml()}</h1>
+       <nav aria-label="Directory listing">
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -126,6 +140,7 @@ fun process_dir(curr_dir: File){
 
    val index_bottom="""
        </ul>
+       </nav>
     </body>
 </html>
 """

@@ -7,17 +7,17 @@ data class Entry (val data: File, val level: Int, var next: Entry?)
 data class LinkedListEntry(val file: File, val level: Int)
 
 class LinkedList {
-    var first: Entry? = null
-    var last: Entry? = null
+    private var first: Entry? = null
+    private var last: Entry? = null
 
     fun push(lle: LinkedListEntry) {
         if(last == null){
             last = Entry(lle.file, lle.level, null)
             first = last
         } else {
-            first?.next = Entry(lle.file, lle.level, null)
-            first = first?.next
-            first?.next = null
+            val newEntry = Entry(lle.file, lle.level, null)
+            first!!.next = newEntry
+            first = newEntry
         }
     }
 
