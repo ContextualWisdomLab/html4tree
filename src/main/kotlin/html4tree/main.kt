@@ -35,7 +35,11 @@ fun go(topDir: String, maxLevel: Int)  {
 
         lle.file.listFiles().forEach {
             if(it.isDirectory()){
-                ll.push( LinkedListEntry(it, currentLevel+1))
+                // 🛡️ Sentinel: Prevent path traversal vulnerability by not following symbolic links.
+                // This stops the application from leaving the target directory tree and writing files in arbitrary locations.
+                if(!java.nio.file.Files.isSymbolicLink(it.toPath())) {
+                    ll.push( LinkedListEntry(it, currentLevel+1))
+                }
             }
         }
         lle = ll.pull()
