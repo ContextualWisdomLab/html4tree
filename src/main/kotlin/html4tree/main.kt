@@ -33,8 +33,8 @@ fun go(topDir: String, maxLevel: Int)  {
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        lle.file.listFiles().forEach {
-            if(it.isDirectory()){
+        lle.file.listFiles()?.forEach {
+            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -69,7 +69,7 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
        ignore_file.forEachLine { ignored_regexes.add(("^"+it+"$").toRegex()) }
 
-       curr_dir.list().sorted().forEach {
+       curr_dir.list()?.sorted()?.forEach {
            val current = it
            ignored_regexes.forEach { regex ->
               if(regex.matches(current)){
@@ -113,7 +113,7 @@ fun process_dir(curr_dir: File){
     val index_middle = fun():String{ 
         var l=""
 
-        val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
+        val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
@@ -130,7 +130,11 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   try {
+       File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   } catch (e: Exception) {
+       // Cannot write index.html (e.g. Permission Denied)
+   }
 
 }
 
