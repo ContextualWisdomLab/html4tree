@@ -95,12 +95,19 @@ fun process_dir(curr_dir: File){
               ul {
                 list-style-type: none;
               }
+              a:hover, a:focus {
+                background-color: #f0f0f0;
+                outline: 2px solid #005fcc;
+                outline-offset: 2px;
+              }
               </style>
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="en">
      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
