@@ -1,6 +1,7 @@
 package html4tree
 
 import java.io.File
+import java.nio.file.Files
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -34,7 +35,7 @@ fun go(topDir: String, maxLevel: Int)  {
            process_dir(lle.file)
 
         lle.file.listFiles().forEach {
-            if(it.isDirectory()){
+            if(it.isDirectory() && !Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -130,8 +131,11 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
-
+   val indexFile = File(curr_dir,"index.html")
+   if (Files.isSymbolicLink(indexFile.toPath())) {
+       indexFile.delete()
+   }
+   indexFile.writeText(index_top+index_middle()+index_bottom)
 }
 
 fun help() {
