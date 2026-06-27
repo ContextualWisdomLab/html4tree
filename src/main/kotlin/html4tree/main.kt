@@ -99,15 +99,17 @@ fun process_dir(curr_dir: File){
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="en">
      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
      <body>
        <h1>${curr_dir.getName().escapeHtml()}</h1>
        <ul>
-          <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
+          <li><a style="display:block; width:100%" href="./.." aria-label="Parent directory">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -117,7 +119,9 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              val isDir = it.isDirectory()
+              val label = if (isDir) "Directory: ${it.getName().escapeHtml()}" else "File: ${it.getName().escapeHtml()}"
+              l += """          <li><a style="display:block; width:100%" href="${if (isDir) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}" aria-label="$label">${if (isDir) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
