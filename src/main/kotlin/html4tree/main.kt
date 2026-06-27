@@ -1,6 +1,7 @@
 package html4tree
 
 import java.io.File
+import java.nio.file.Files
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -34,7 +35,8 @@ fun go(topDir: String, maxLevel: Int)  {
            process_dir(lle.file)
 
         lle.file.listFiles().forEach {
-            if(it.isDirectory()){
+            // 보안: 심볼릭 링크 디렉토리 추적을 방지하여 경로 탐색(Path Traversal) 공격 예방
+            if(it.isDirectory() && !Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -130,7 +132,13 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   val indexFile = File(curr_dir,"index.html")
+   // 보안: 심볼릭 링크 파일 덮어쓰기를 방지하여 임의 파일 덮어쓰기 공격(Arbitrary File Overwrite) 예방
+   if (Files.isSymbolicLink(indexFile.toPath())) {
+       System.err.println("Security Warning: Refusing to overwrite symlink at ${indexFile.absolutePath}")
+   } else {
+       indexFile.writeText(index_top+index_middle()+index_bottom)
+   }
 
 }
 
