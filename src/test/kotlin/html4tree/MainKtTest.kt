@@ -67,8 +67,9 @@ class MainKtTest {
         assertTrue(indexFile.exists())
         val content = indexFile.readText()
         assertTrue(content.contains("<!doctype html>"))
-        assertTrue(content.contains("<html lang=\"en\">"))
+        assertTrue(content.contains("<html lang=\"ko\">"))
         assertTrue(content.contains("subdir/"))
+        assertTrue(content.contains("aria-label=\"Directory: subdir\""))
         assertFalse(content.contains("a.txt")) // ignored
     }
 
