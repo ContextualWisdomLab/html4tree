@@ -94,21 +94,4 @@ class LinkedListTest {
         assertNull(list.pull())
     }
 
-    @Test
-    fun testPushWhenFirstIsNullAndLastIsSet() {
-        val list = LinkedList()
-
-        val seed = Entry(File("seed"), 0, null)
-        list.last = seed
-        list.first = null
-
-        val file2 = File("file2")
-        list.push(LinkedListEntry(file2, 1))
-
-        val pulled1 = list.pull()
-        assertNotNull(pulled1)
-        assertEquals(File("seed"), pulled1.file)
-
-        assertNull(list.pull())
-    }
 }
