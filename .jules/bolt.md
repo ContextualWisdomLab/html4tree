@@ -1,3 +1,7 @@
-## 2024-05-19 - 문자열 병합 병목 현상
-**Learning:** `html4tree`에서 파일 수가 많은 디렉토리의 HTML을 생성할 때 문자열 병합에 `+=` 연산자를 사용하면 심각한 성능 저하(문자열 복사로 인한 O(N^2) 시간 복잡도)가 발생합니다.
-**Action:** `index_middle`의 단순 문자열 병합을 `StringBuilder`로 대체하여 10,000개의 파일이 있는 디렉토리 처리 시간을 ~5.2초에서 ~0.46초로 단축시켰습니다.
+## 2024-06-21 - Regex Compilation in Loops
+**Learning:** In Kotlin, compiling regular expressions (`.toRegex()`) inside a loop over files is a significant O(N * M) performance bottleneck when processing ignore files (N files * M rules).
+**Action:** Always map string rules to compiled `Regex` objects outside of the file iteration loop (O(M) compilation) to avoid unnecessary regex re-compilations.
+
+## 2024-05-19 - String Concatenation in HTML Generation
+**Learning:** Repeated `+=` concatenation while rendering directory entries copies growing strings and turns large directory output into O(N^2) work.
+**Action:** Use `StringBuilder` inside the directory-entry loop and append newlines separately.
