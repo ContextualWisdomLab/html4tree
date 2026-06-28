@@ -118,8 +118,7 @@ fun process_dir(curr_dir: File){
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
               // Optimization: Use StringBuilder instead of string concatenation in loop (O(N) instead of O(N^2))
-              l.append("""          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>""")
-              l.append('\n')
+              l.append("""          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n")
            }
         }
 
