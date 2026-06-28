@@ -1,3 +1,3 @@
-## 2024-05-24 - Kotlin 정규표현식 컴파일 최적화
-**Learning:** 코틀린(및 자바)에서 루프 내에서 정규표현식을 매번 재컴파일하는 것은 심각한 성능 저하의 원인이 됩니다. `html4tree` 애플리케이션에서는 디렉터리 내의 *모든* 파일에 대해 `.html4ignore` 파일에서 읽어온 모든 정규표현식을 `("^"+i_string+"$").toRegex().matches(current)`와 같이 매번 새로 컴파일하는 병목 현상이 있었습니다. 이는 무시할 패턴의 개수가 M이고 디렉터리 내의 파일 개수가 N일 때 $O(M \times N)$번의 정규식 컴파일을 유발합니다.
-**Action:** 파일들을 순회하는 루프 바깥에서 정규표현식들을 단 한 번만 미리 컴파일하여 저장해야 합니다. 이를 통해 매 루프 반복마다 발생하는 불필요하고 비용이 큰 정규식 컴파일을 방지할 수 있으며, 특히 파일이 많고 무시할 패턴이 많은 디렉터리의 경우 실행 속도가 크게 향상됩니다.
+## 2024-06-21 - Regex Compilation in Loops
+**Learning:** In Kotlin, compiling regular expressions (`.toRegex()`) inside a loop over files is a significant O(N * M) performance bottleneck when processing ignore files (N files * M rules).
+**Action:** Always map string rules to compiled `Regex` objects outside of the file iteration loop (O(M) compilation) to avoid unnecessary regex re-compilations.
