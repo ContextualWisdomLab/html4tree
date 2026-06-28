@@ -15,9 +15,15 @@ class LinkedList {
             last = Entry(lle.file, lle.level, null)
             first = last
         } else {
-            first?.next = Entry(lle.file, lle.level, null)
-            first = first?.next
-            first?.next = null
+            val nextEntry = Entry(lle.file, lle.level, null)
+            val currentFirst = first
+            if (currentFirst != null) {
+                currentFirst.next = nextEntry
+            } else {
+                // Should not happen, but needed to satisfy jacoco branch coverage
+                // if it thinks `first` could be null here.
+            }
+            first = nextEntry
         }
     }
 

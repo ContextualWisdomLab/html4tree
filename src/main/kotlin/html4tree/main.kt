@@ -34,7 +34,7 @@ fun go(topDir: String, maxLevel: Int)  {
            process_dir(lle.file)
 
         lle.file.listFiles().forEach {
-            if(it.isDirectory()){
+            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -81,7 +81,6 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
-
 
     return files_to_exclude
 }
