@@ -73,6 +73,19 @@ class UtilTest {
         val list = LinkedList()
         list.last = Entry(File("fake"), 0, null)
         list.push(LinkedListEntry(File("f3"), 0))
+        assertEquals(File("fake"), list.pull()?.file)
+        assertEquals(File("f3"), list.pull()?.file)
         assertEquals(File("f3"), list.first?.data)
+    }
+
+    @Test
+    fun testLinkedListPushNullFirstWithExistingChain() {
+        val list = LinkedList()
+        list.last = Entry(File("f1"), 0, Entry(File("f2"), 0, null))
+        list.push(LinkedListEntry(File("f3"), 0))
+
+        assertEquals(File("f1"), list.pull()?.file)
+        assertEquals(File("f2"), list.pull()?.file)
+        assertEquals(File("f3"), list.pull()?.file)
     }
 }

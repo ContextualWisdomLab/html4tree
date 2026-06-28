@@ -1,6 +1,7 @@
 package html4tree
 
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -8,19 +9,22 @@ import java.nio.file.Files
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 
 class MainTest {
 
-    private val tempDir = File("test_temp_dir")
+    private lateinit var tempDir: File
 
     @Before
     fun setup() {
-        tempDir.mkdir()
+        tempDir = Files.createTempDirectory("html4tree-test-").toFile()
     }
 
     @After
     fun teardown() {
-        tempDir.deleteRecursively()
+        if (tempDir.exists()) {
+            tempDir.deleteRecursively()
+        }
     }
 
     @Test
@@ -92,14 +96,17 @@ class MainTest {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
 
-        val targetDir = File("test_target_dir")
-        targetDir.mkdir()
+        val targetDir = Files.createTempDirectory("html4tree-target-").toFile()
         val targetFile = File(targetDir, "secret.txt")
         targetFile.writeText("secret")
 
         try {
             val symlink = File(subdir, "symlink")
-            Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
+            try {
+                Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
+            } catch (e: Exception) {
+                Assume.assumeTrue("Symlink creation not supported in this environment", false)
+            }
 
             go(tempDir.absolutePath, -1)
 
@@ -111,6 +118,7 @@ class MainTest {
 
             val symlinkIndex = File(targetDir, "index.html")
             assertFalse(symlinkIndex.exists(), "Symlink target should not have an index.html generated")
+            assertFalse(subdirIndex.readText().contains("symlink"), "Symlinked directory should not be listed in index.html")
 
         } finally {
             targetDir.deleteRecursively()
@@ -129,6 +137,28 @@ class MainTest {
         assertTrue(File(tempDir, "index.html").exists())
         assertFalse(File(subdir, "index.html").exists())
         assertFalse(File(subsubdir, "index.html").exists())
+    }
+
+    @Test
+    fun testGoWithUnreadableDir() {
+        val unreadableDir = File(tempDir, "unreadable")
+        unreadableDir.mkdir()
+        unreadableDir.setWritable(true)
+        unreadableDir.setExecutable(true)
+
+        try {
+            Assume.assumeTrue(unreadableDir.setReadable(false, false))
+            assertNull(unreadableDir.listFiles())
+
+            go(tempDir.absolutePath, -1)
+
+            assertTrue(File(tempDir, "index.html").exists())
+            assertTrue(File(unreadableDir, "index.html").exists())
+        } finally {
+            unreadableDir.setReadable(true, false)
+            unreadableDir.setWritable(true, false)
+            unreadableDir.setExecutable(true, false)
+        }
     }
 
     @Test
@@ -158,6 +188,7 @@ class MainTest {
     fun testProcessIgnoreFileWithIndexHtml() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index\\.html")
+        File(tempDir, "index.html").writeText("existing")
         val excludeList = process_ignore_file(tempDir)
         assertTrue(excludeList.contains("index.html"))
     }
