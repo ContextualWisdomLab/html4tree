@@ -111,6 +111,8 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("aria-label=\"파일: file1.txt\""))
+        assertTrue(htmlContent.contains("aria-label=\"디렉토리: subdir\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
