@@ -23,7 +23,7 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    testCompile 'junit:junit:4.12'
+    testCompile 'junit:junit:4.11'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
     compile "com.github.ajalt:clikt:2.7.1"
 }
@@ -36,14 +36,27 @@ jar {
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
+jacoco {
+    toolVersion = "0.8.7"
+}
+
 jacocoTestReport {
     reports {
         xml.enabled false
-        csv.enabled true
-        html.enabled true
+        csv.enabled false
+        html.destination file("${buildDir}/jacocoHtml")
     }
 }
 
-test {
-    finalizedBy jacocoTestReport
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 1.00
+            }
+        }
+    }
 }
+
+check.dependsOn jacocoTestCoverageVerification
+jacocoTestCoverageVerification.dependsOn jacocoTestReport
