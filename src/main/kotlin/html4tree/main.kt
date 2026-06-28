@@ -33,12 +33,12 @@ fun go(topDir: String, maxLevel: Int)  {
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        lle.file.listFiles().forEach {
-            if(it.isDirectory()){
+        lle.file.listFiles()?.forEach { file ->
+            if(file.isDirectory()){
                 // 🛡️ Sentinel: Prevent path traversal vulnerability by not following symbolic links.
                 // This stops the application from leaving the target directory tree and writing files in arbitrary locations.
-                if(!java.nio.file.Files.isSymbolicLink(it.toPath())) {
-                    ll.push( LinkedListEntry(it, currentLevel+1))
+                if(!java.nio.file.Files.isSymbolicLink(file.toPath())) {
+                    ll.push( LinkedListEntry(file, currentLevel+1))
                 }
             }
         }
@@ -134,7 +134,11 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   val indexFile = File(curr_dir, "index.html")
+   if (java.nio.file.Files.isSymbolicLink(indexFile.toPath())) {
+       return
+   }
+   indexFile.writeText(index_top+index_middle()+index_bottom)
 
 }
 

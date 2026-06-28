@@ -169,7 +169,7 @@ class Html4treeTest {
         val tmpDir = Files.createTempDirectory("testMain").toFile()
         tmpDir.deleteOnExit()
 
-        html4tree.main(arrayOf(tmpDir.absolutePath))
+        main(arrayOf(tmpDir.absolutePath))
         assertTrue(File(tmpDir, "index.html").exists())
     }
 
