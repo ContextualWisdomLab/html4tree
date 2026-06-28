@@ -1,3 +1,3 @@
 ## 2024-06-25 - HTML Index Generator Accessibility and Responsiveness Improvements
-**Learning:** `html4tree`처럼 정적 HTML을 생성하는 CLI 툴에서 접근성과 반응성을 기본으로 고려하는 것은 사용자 경험에 매우 중요합니다. 모바일 기기에서의 깨짐 방지를 위해 `<meta name="viewport" content="width=device-width, initial-scale=1">` 태그가 필수적이며, 언어 속성 `lang="en"`과 `<meta charset="utf-8">` 추가는 스크린 리더와 브라우저가 콘텐츠를 올바르게 해석하는 데 결정적인 역할을 합니다.
+**Learning:** `html4tree`처럼 정적 HTML을 생성하는 CLI 툴에서 접근성과 반응성을 기본으로 고려하는 것은 사용자 경험에 매우 중요합니다. 모바일 기기에서의 깨짐 방지를 위해 `<meta name="viewport" content="width=device-width, initial-scale=1.0">` 태그가 필수적이며, 언어 속성 `lang="ko"`와 `<meta charset="UTF-8">` 추가는 스크린 리더와 브라우저가 콘텐츠를 올바르게 해석하는 데 결정적인 역할을 합니다.
 **Action:** 향후 HTML 템플릿 기반 UI를 생성할 때에도 단순한 기능 구현을 넘어, 항상 `lang`, `charset`, `viewport`와 같은 기본적인 웹 표준 접근성 메타 태그를 템플릿의 `<html>`과 `<head>` 구조에 포함하도록 구현을 검토합니다.
