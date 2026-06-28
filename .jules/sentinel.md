@@ -1,4 +1,4 @@
-## 2024-06-23 - 파일 이름 처리 시 XSS 취약점
-**Vulnerability:** 파일/디렉토리 이름을 그대로 HTML 결과물에 렌더링하면서 XSS가 발생. 특히 `href` 속성 값은 묶이지(quote) 않았음.
-**Learning:** 파일 기반의 컨텐츠를 생성할 때에도 파일 이름 자체가 공격 벡터가 될 수 있음을 간과하면 안 됨.
-**Prevention:** HTML 내 텍스트나 속성에 사용할 땐 반드시 `escapeHtml()`과 `urlEncode()` 처리를 하고, 속성은 항상 따옴표(`"`)로 묶어야 함.
+## 2024-06-21 - [html4tree] Unsanitized Filenames in Auto-Generated HTML
+**Vulnerability:** XSS via Malicious File/Directory Names
+**Learning:** Tools that auto-generate static HTML pages from local file systems often overlook input sanitization, implicitly trusting local file paths. If these generated pages are hosted or shared, an attacker can create files with names like `<script>alert(1)</script>` to execute arbitrary JavaScript in the context of the user viewing the generated index.
+**Prevention:** Always HTML-encode variable data injected into HTML templates, and URL-encode data used in `href` attributes, regardless of the data's origin (even if it's "just" the local file system). Additionally, ensure HTML attributes like `href` are properly quoted to prevent attribute breakout.
