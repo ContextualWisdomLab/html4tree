@@ -11,19 +11,22 @@ class LinkedList {
     var last: Entry? = null
 
     fun push(lle: LinkedListEntry) {
-        val newEntry = Entry(lle.file, lle.level, null)
         if(last == null){
-            last = newEntry
-            first = newEntry
+            last = Entry(lle.file, lle.level, null)
+            first = last
         } else {
-            val f = first
-            if (f != null) {
-                f.next = newEntry
-                first = newEntry
+            val nextEntry = Entry(lle.file, lle.level, null)
+            val currentFirst = first
+            if (currentFirst == null) {
+                var currentLast = last!!
+                while (currentLast.next != null) {
+                    currentLast = currentLast.next!!
+                }
+                currentLast.next = nextEntry
             } else {
-                last = newEntry
-                first = newEntry
+                currentFirst.next = nextEntry
             }
+            first = nextEntry
         }
     }
 
@@ -36,7 +39,7 @@ class LinkedList {
         if(l == null){
             return null
         } else {
-	        l.next = null
+            l.next = null
             return LinkedListEntry(l.data, l.level)
         }
     }
