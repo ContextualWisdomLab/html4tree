@@ -1,4 +1,4 @@
 ## 2024-06-25 - Prevent Directory Traversal through Symbolic Links
-**Vulnerability:** Path Traversal via symlink parsing.
-**Learning:** During directory traversal in `html4tree/main.kt`, `File.isDirectory()` returns `true` for symbolic links pointing to directories. This could allow the program to traverse outside the intended directory structure and write `index.html` files in arbitrary, potentially sensitive locations.
-**Prevention:** Explicitly check for symlinks using `java.nio.file.Files.isSymbolicLink()` during recursive directory processing to ensure we do not follow them and breach directory confinement.
+**Vulnerability:** Path traversal and arbitrary write via symlink parsing.
+**Learning:** During directory traversal in `html4tree/main.kt`, `File.isDirectory()` returns `true` for symbolic links pointing to directories. A pre-existing `index.html` symlink can also redirect writes outside the intended tree.
+**Prevention:** Skip symlinks during recursive directory processing and write generated HTML through a temporary file followed by an NIO move, so an `index.html` symlink is replaced rather than followed.
