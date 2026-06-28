@@ -64,7 +64,7 @@ class LinkedListTest {
         val lle1 = LinkedListEntry(File("1"), 1)
         val lle2 = LinkedListEntry(File("2"), 2)
         ll.push(lle1)
-        ll.first = null // artifically make first null
+        ll.first = null // artificially make first null
         ll.push(lle2) // will trigger first?.next safe calls returning null
     }
 }

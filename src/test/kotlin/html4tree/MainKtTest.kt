@@ -4,12 +4,10 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import java.io.File
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
-import org.junit.Before
-import org.junit.After
-import java.security.Permission
 
 class MainKtTest {
 
@@ -57,7 +55,7 @@ class MainKtTest {
 
     @Test
     fun testProcessDir() {
-        val dir = tempFolder.newFolder("processdirteset")
+        val dir = tempFolder.newFolder("processdirtest")
         File(dir, "a.txt").createNewFile()
         val subdir = File(dir, "subdir")
         subdir.mkdir()
@@ -118,43 +116,10 @@ class MainKtTest {
         assertTrue(File(root, "index.html").exists())
     }
 
-    // Security manager to catch System.exit() when main(args) is invoked
-    private class NoExitSecurityManager : SecurityManager() {
-        override fun checkPermission(perm: Permission) {
-            // allow everything
-        }
-        override fun checkPermission(perm: Permission, context: Any?) {
-            // allow everything
-        }
-        override fun checkExit(status: Int) {
-            super.checkExit(status)
-            throw ExpectedExitException(status)
-        }
-    }
-
-    private class ExpectedExitException(val status: Int) : SecurityException("System.exit intercepted")
-
-    private var originalSecurityManager: SecurityManager? = null
-
-    @Before
-    fun setUpSecurityManager() {
-        originalSecurityManager = System.getSecurityManager()
-        System.setSecurityManager(NoExitSecurityManager())
-    }
-
-    @After
-    fun tearDownSecurityManager() {
-        System.setSecurityManager(originalSecurityManager)
-    }
-
     @Test
     fun testMainArgs() {
         val root = tempFolder.newFolder("main_args_test")
-        try {
-            html4tree.main(arrayOf(root.absolutePath))
-        } catch (e: ExpectedExitException) {
-            // Clikt terminates program, intercept it.
-        }
+        html4tree.main(arrayOf(root.absolutePath))
         assertTrue(File(root, "index.html").exists())
     }
 
@@ -184,10 +149,13 @@ class MainKtTest {
     }
 
     @Test
-    fun testLinkedListEntryNullFile() {
+    fun testPullReturnsPushedEntry() {
         val root = tempFolder.newFolder("root_for_pull")
         val ll = LinkedList()
         ll.push(LinkedListEntry(root, 0))
         val pulled = ll.pull()
+        assertEquals(root, pulled?.file)
+        assertEquals(0, pulled?.level)
+        assertNull(ll.pull())
     }
 }

@@ -16,7 +16,7 @@ class Html4tree : CliktCommand() {
     }
 }
 
-fun main(args: Array<String>)  = Html4tree().main(args)
+fun main(args: Array<String>)  = Html4tree().parse(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     val top_dir = File(topDir)
