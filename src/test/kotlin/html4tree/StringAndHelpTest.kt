@@ -31,7 +31,7 @@ class StringAndHelpTest {
 
         try {
             help()
-            assertEquals("ERROR: help has not been written yet!\n", outContent.toString())
+            assertEquals("ERROR: help has not been written yet!${System.lineSeparator()}", outContent.toString())
         } finally {
             System.setOut(originalOut)
         }
