@@ -4,6 +4,4 @@
 # Ignore Gradle build output directory
 build
 
-.ideatest_dir/
-benchmark_dir/
-perf_test/
+.idea

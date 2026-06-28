@@ -1,3 +1,7 @@
-## 2024-05-24 - Avoid O(N^2) String Concatenation and Repeated Regex Compilation in Kotlin Loops
-**Learning:** In Kotlin, using `+=` to concatenate strings inside loops creates large numbers of intermediate String objects, significantly degrading performance due to O(N^2) time complexity. Additionally, compiling `Regex` patterns inside nested loops scales poorly with large numbers of files.
-**Action:** Always use `StringBuilder` for loop-based string construction and pre-compile regular expressions outside of iterative structures (e.g., directory traversals).
+## 2024-06-21 - Regex Compilation in Loops
+**Learning:** In Kotlin, compiling regular expressions (`.toRegex()`) inside a loop over files is a significant O(N * M) performance bottleneck when processing ignore files (N files * M rules).
+**Action:** Always map string rules to compiled `Regex` objects outside of the file iteration loop (O(M) compilation) to avoid unnecessary regex re-compilations.
+
+## 2024-05-24 - Loop Allocation Hot Paths
+**Learning:** Rendering directory entries with repeated string concatenation and list-based exclusion lookups creates avoidable allocation and lookup cost in large directories.
+**Action:** Use `StringBuilder` for entry rendering and a `Set` for excluded file names.
