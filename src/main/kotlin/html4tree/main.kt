@@ -54,7 +54,7 @@ fun String.urlEncodePath(): String {
     return java.net.URLEncoder.encode(this, "UTF-8").replace("+", "%20")
 }
 
-fun process_ignore_file(curr_dir: File): List<String> {
+fun process_ignore_file(curr_dir: File): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -62,14 +62,15 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
     val ignore_file = File(ignore_file_path)
 
-    val files_to_exclude = mutableListOf<String>()
+    // BOLT OPTIMIZATION: Use mutableSetOf instead of mutableListOf for O(1) containment checks below
+    val files_to_exclude = mutableSetOf<String>()
 
     if(ignore_file.exists()){
        val ignored_regexes = mutableListOf<Regex>()
 
        ignore_file.forEachLine { ignored_regexes.add(("^"+it+"$").toRegex()) }
 
-       curr_dir.list().sorted().forEach {
+       curr_dir.list().forEach {
            val current = it
            ignored_regexes.forEach { regex ->
               if(regex.matches(current)){
@@ -79,16 +80,14 @@ fun process_ignore_file(curr_dir: File): List<String> {
        }
     }
 
-    if ("index.html" !in files_to_exclude)
-       files_to_exclude.add("index.html")
-
+    files_to_exclude.add("index.html")
 
     return files_to_exclude
 }
  
 fun process_dir(curr_dir: File){
     
-    val exclude: List<String> = process_ignore_file(curr_dir)
+    val exclude: Set<String> = process_ignore_file(curr_dir)
 
     val css = """
               <style>
@@ -111,17 +110,19 @@ fun process_dir(curr_dir: File){
 """ 
 
     val index_middle = fun():String{ 
-        var l=""
+        // BOLT OPTIMIZATION: Use StringBuilder instead of string concatenation (+=) to avoid O(n^2) allocations
+        val l = StringBuilder()
 
         val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              l.append("""          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>""")
+               .append("\n")
            }
         }
 
-        return l;
+        return l.toString()
      } 
 
    val index_bottom="""
