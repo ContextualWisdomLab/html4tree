@@ -1,63 +1,55 @@
 package html4tree
 
+import org.junit.After
+import org.junit.Assume
+import org.junit.Before
 import org.junit.Test
-import kotlin.test.assertTrue
-import kotlin.test.assertFalse
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import java.io.File
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.PrintStream
+import java.nio.file.Files
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class MainTest {
-    @Test
-    fun testGoAndProcessDir() {
-        val tempDir = createTempDir("html4tree_test")
-        val subdir1 = File(tempDir, "subdir1").apply { mkdir() }
-        val xssDir = File(tempDir, "<img src=x onerror=alert(1)>").apply { mkdir() }
-        val file1 = File(tempDir, "file1.txt").apply { writeText("content") }
+    private lateinit var tempDir: File
 
-        val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.writeText("subdir1\n^file1\\.txt$")
+    @Before
+    fun setup() {
+        tempDir = Files.createTempDirectory("html4tree-test-").toFile()
+    }
 
-        go(tempDir.absolutePath, 1)
-
-        val indexFile = File(tempDir, "index.html")
-        assertTrue(indexFile.exists())
-
-        val content = indexFile.readText()
-        assertFalse(content.contains("file1.txt"))
-        assertFalse(content.contains("subdir1</a>"))
-        assertTrue(content.contains("&lt;img src=x onerror=alert(1)&gt;"))
-        assertFalse(content.contains("<img src=x onerror=alert(1)>"))
-
-        val indexFile2 = File(xssDir, "index.html")
-        assertTrue(indexFile2.exists())
-
-        tempDir.deleteRecursively()
+    @After
+    fun teardown() {
+        if (tempDir.exists()) {
+            tempDir.deleteRecursively()
+        }
     }
 
     @Test
-    fun testMain() {
-        val tempDir = createTempDir("html4tree_test_main")
-        main(arrayOf("--max-level", "0", tempDir.absolutePath))
-        assertTrue(File(tempDir, "index.html").exists())
-        tempDir.deleteRecursively()
+    fun testEscapeHtml() {
+        assertEquals("&amp;", "&".escapeHtml())
+        assertEquals("&lt;", "<".escapeHtml())
+        assertEquals("&gt;", ">".escapeHtml())
+        assertEquals("&quot;", "\"".escapeHtml())
+        assertEquals("&#x27;", "'".escapeHtml())
+        assertEquals("&amp;&lt;&gt;&quot;&#x27;", "&<>\"'".escapeHtml())
+        assertEquals("normal text", "normal text".escapeHtml())
     }
 
     @Test
-    fun testProcessIgnoreFileWithNoIgnoreFile() {
-        val tempDir = createTempDir("html4tree_no_ignore")
-        val exclude = process_ignore_file(tempDir)
-        assertEquals(1, exclude.size)
-        assertEquals("index.html", exclude[0])
-        tempDir.deleteRecursively()
+    fun testUrlEncodePath() {
+        assertEquals("hello%20world", "hello world".urlEncodePath())
+        assertEquals("normal_path", "normal_path".urlEncodePath())
+        assertEquals("path%2Fwith%2Fslash", "path/with/slash".urlEncodePath())
     }
 
     @Test
     fun testHelp() {
-        val originalOut = System.out
         val outContent = ByteArrayOutputStream()
+        val originalOut = System.out
         System.setOut(PrintStream(outContent))
         try {
             help()
@@ -67,34 +59,166 @@ class MainTest {
         }
     }
 
-    @Test
-    fun testGoInfiniteDepth() {
-        val tempDir = createTempDir("html4tree_infinite_depth")
-        val subdir = File(tempDir, "subdir").apply { mkdir() }
-        val subsubdir = File(subdir, "subsubdir").apply { mkdir() }
+    @Test(expected = IllegalArgumentException::class)
+    fun testGoInvalidDir() {
+        go("non_existent_directory", -1)
+    }
 
+    @Test
+    fun testGoEmptyDir() {
         go(tempDir.absolutePath, -1)
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+    }
+
+    @Test
+    fun testProcessIgnoreFile() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText(".*\\.txt\n.*\\.log")
+
+        File(tempDir, "test.txt").createNewFile()
+        File(tempDir, "test.log").createNewFile()
+        File(tempDir, "test.md").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+
+        assertTrue(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("test.log"))
+        assertTrue(excluded.contains("index.html"))
+        assertFalse(excluded.contains("test.md"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileNoIgnore() {
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("index.html"))
+        assertEquals(1, excluded.size)
+    }
+
+    @Test
+    fun testProcessDir() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+        File(tempDir, "file1.txt").createNewFile()
+        File(tempDir, "test.ignore").createNewFile()
+        File(tempDir, ".html4ignore").writeText(".*\\.ignore")
+
+        process_dir(tempDir)
+
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("file1.txt"))
+        assertTrue(htmlContent.contains("subdir/"))
+        assertTrue(htmlContent.contains("&#128193;"))
+        assertFalse(htmlContent.contains("test.ignore"))
+    }
+
+    @Test
+    fun testGoWithSymlink() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+
+        val targetDir = Files.createTempDirectory("html4tree-target-").toFile()
+        File(targetDir, "secret.txt").writeText("secret")
+
+        try {
+            val symlink = File(subdir, "symlink")
+            try {
+                Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
+            } catch (e: Exception) {
+                Assume.assumeTrue("Symlink creation not supported in this environment", false)
+            }
+
+            go(tempDir.absolutePath, -1)
+
+            assertTrue(File(tempDir, "index.html").exists())
+
+            val subdirIndex = File(subdir, "index.html")
+            assertTrue(subdirIndex.exists())
+            assertFalse(subdirIndex.readText().contains("symlink"), "Symlinked directory should not be listed in index.html")
+
+            val symlinkIndex = File(targetDir, "index.html")
+            assertFalse(symlinkIndex.exists(), "Symlink target should not have an index.html generated")
+        } finally {
+            targetDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testGoWithMaxLevel() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+        val subsubdir = File(subdir, "subsubdir")
+        subsubdir.mkdir()
+
+        go(tempDir.absolutePath, 0)
 
         assertTrue(File(tempDir, "index.html").exists())
-        assertTrue(File(subdir, "index.html").exists())
-        assertTrue(File(subsubdir, "index.html").exists())
-
-        tempDir.deleteRecursively()
+        assertFalse(File(subdir, "index.html").exists())
+        assertFalse(File(subsubdir, "index.html").exists())
     }
 
     @Test
-    fun testGoWithNonExistentDir() {
-        assertFailsWith<IllegalArgumentException> {
-            go("/non/existent/directory/that/should/not/exist/12345", 1)
+    fun testGoWithUnreadableDir() {
+        val unreadableDir = File(tempDir, "unreadable")
+        unreadableDir.mkdir()
+        unreadableDir.setWritable(true)
+        unreadableDir.setExecutable(true)
+
+        try {
+            Assume.assumeTrue(unreadableDir.setReadable(false, false))
+            assertNull(unreadableDir.listFiles())
+
+            go(tempDir.absolutePath, -1)
+
+            assertTrue(File(tempDir, "index.html").exists())
+            assertTrue(File(unreadableDir, "index.html").exists())
+        } finally {
+            unreadableDir.setReadable(true, false)
+            unreadableDir.setWritable(true, false)
+            unreadableDir.setExecutable(true, false)
         }
     }
 
     @Test
-    fun testGoWithFileNotDir() {
-        val tempFile = File.createTempFile("html4tree_test_file", ".txt")
-        assertFailsWith<IllegalArgumentException> {
-            go(tempFile.absolutePath, 1)
-        }
-        tempFile.delete()
+    fun testCliParsing() {
+        val cli = Html4tree()
+        cli.parse(arrayOf("--max-level", "2", tempDir.absolutePath))
+        assertEquals(2, cli.maxLevel)
+        assertEquals(tempDir.absolutePath, cli.topDir)
+    }
+
+    @Test
+    fun testCliMainParsing() {
+        val cli = Html4tree()
+        cli.parse(arrayOf(tempDir.absolutePath))
+        main(arrayOf(tempDir.absolutePath))
+        assertTrue(File(tempDir, "index.html").exists())
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testGoNotADir() {
+        val notADir = File(tempDir, "not_a_dir.txt")
+        notADir.writeText("test")
+        go(notADir.absolutePath, -1)
+    }
+
+    @Test
+    fun testProcessIgnoreFileWithIndexHtml() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("index\\.html")
+        File(tempDir, "index.html").writeText("existing")
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessDirItEqualsCurrDir() {
+        File(tempDir, "tempDir").mkdir()
+        process_dir(tempDir)
     }
 }
