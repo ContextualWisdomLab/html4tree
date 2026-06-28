@@ -44,7 +44,7 @@ jacocoTestReport {
     reports {
         xml.enabled false
         csv.enabled false
-        html.enabled true
+        html.destination file("${buildDir}/jacocoHtml")
     }
 }
 
@@ -52,7 +52,7 @@ jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                minimum = 1.0
+                minimum = 1.00
             }
         }
     }

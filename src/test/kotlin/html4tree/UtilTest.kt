@@ -14,18 +14,23 @@ class UtilTest {
 
         val file1 = File("file1")
         val file2 = File("file2")
+        val file3 = File("file3")
 
         list.push(LinkedListEntry(file1, 0))
         list.push(LinkedListEntry(file2, 1))
+        list.push(LinkedListEntry(file3, 2))
 
-        val entry1 = list.pull()
-        assertEquals(file1, entry1?.file)
-        assertEquals(0, entry1?.level)
+        var pulled = list.pull()
+        assertEquals(file1, pulled?.file)
+        assertEquals(0, pulled?.level)
 
-        val entry2 = list.pull()
-        assertEquals(file2, entry2?.file)
-        assertEquals(1, entry2?.level)
+        pulled = list.pull()
+        assertEquals(file2, pulled?.file)
+        assertEquals(1, pulled?.level)
 
+        pulled = list.pull()
+        assertEquals(file3, pulled?.file)
+        assertEquals(2, pulled?.level)
         assertNull(list.pull())
     }
 
@@ -53,7 +58,7 @@ class UtilTest {
     fun testLinkedListPushExisting() {
         val list = LinkedList()
         list.push(LinkedListEntry(File("f1"), 0))
-        list.push(LinkedListEntry(File("f2"), 0)) // triggers the 'else' branch in push
+        list.push(LinkedListEntry(File("f2"), 0))
         val entry1 = list.pull()
         val entry2 = list.pull()
         assertEquals(File("f1"), entry1?.file)
@@ -68,11 +73,26 @@ class UtilTest {
         assertEquals(File("test"), list.first?.data)
         assertEquals(File("test"), list.last?.data)
     }
+
     @Test
     fun testLinkedListPushNullFirst() {
         val list = LinkedList()
         list.last = Entry(File("fake"), 0, null)
         list.push(LinkedListEntry(File("f3"), 0))
+        assertEquals(File("fake"), list.pull()?.file)
+        assertEquals(File("f3"), list.pull()?.file)
         assertEquals(File("f3"), list.first?.data)
+    }
+
+    @Test
+    fun testLinkedListPushNullFirstWithExistingChain() {
+        val list = LinkedList()
+        list.last = Entry(File("f1"), 0, Entry(File("f2"), 0, null))
+        list.push(LinkedListEntry(File("f3"), 0))
+
+        assertEquals(File("f1"), list.pull()?.file)
+        assertEquals(File("f2"), list.pull()?.file)
+        assertEquals(File("f3"), list.pull()?.file)
+        assertNull(list.pull())
     }
 }
