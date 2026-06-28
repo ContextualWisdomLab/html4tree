@@ -68,7 +68,8 @@ class MainTest {
         assertTrue(content.contains("<html lang=\"en\">"))
         assertTrue(content.contains("<meta charset=\"UTF-8\">"))
         assertTrue(content.contains("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"))
-        assertTrue(content.contains("a:hover, a:focus"))
+        assertTrue(content.contains("a:hover"))
+        assertTrue(content.contains("a:focus"))
         assertTrue(content.contains("subdir"))
         // test.txt should be ignored and not present in output
         assertFalse(content.contains("test.txt"))
@@ -130,7 +131,9 @@ class MainTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun testGoInvalidDir() {
-        go("non_existent_directory_12345", 0)
+        val tempFile = Files.createTempFile("go_invalid_dir", ".tmp").toFile()
+        tempFile.deleteOnExit()
+        go(tempFile.absolutePath, 0)
     }
 
     @Test

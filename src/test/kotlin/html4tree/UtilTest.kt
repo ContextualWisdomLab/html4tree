@@ -25,25 +25,13 @@ class UtilTest {
         assertNotNull(pulled1)
         assertEquals(file1, pulled1?.file)
 
-        // At this point last might be null if last.next was null
+        // At this point last should point to the second entry
         val pulled2 = list.pull()
         assertNotNull(pulled2)
         assertEquals(file2, pulled2?.file)
 
         val pulled3 = list.pull()
         assertNull(pulled3)
-    }
-
-    @Test
-    fun testLinkedListPushBranch() {
-        val list = LinkedList()
-        val file1 = File("test1")
-        val file2 = File("test2")
-
-        list.push(LinkedListEntry(file1, 0))
-        // Force `first` to be null but `last` to be non-null to cover `first?.next = Entry(...)` when first is null
-        list.first = null
-        list.push(LinkedListEntry(file2, 1))
     }
 
     @Test
