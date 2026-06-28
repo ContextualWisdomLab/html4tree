@@ -3,9 +3,9 @@ package html4tree
 import org.junit.Test
 import org.junit.Assert.*
 import java.io.File
-import com.github.ajalt.clikt.core.PrintHelpMessage
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
+import java.nio.file.Files
 
 class MainTest {
 
@@ -21,9 +21,7 @@ class MainTest {
 
     @Test
     fun testProcessIgnoreFile() {
-        val dir = File.createTempFile("testdir", "")
-        dir.delete()
-        dir.mkdir()
+        val dir = Files.createTempDirectory("testdir").toFile()
         dir.deleteOnExit()
 
         val ignoreFile = File(dir, ".html4ignore")
@@ -46,9 +44,7 @@ class MainTest {
 
     @Test
     fun testProcessIgnoreFileNoFile() {
-        val dir = File.createTempFile("testdir", "")
-        dir.delete()
-        dir.mkdir()
+        val dir = Files.createTempDirectory("testdir").toFile()
         dir.deleteOnExit()
 
         val file2 = File(dir, "test2.png")
@@ -63,9 +59,7 @@ class MainTest {
 
     @Test
     fun testProcessDir() {
-        val dir = File.createTempFile("testdir", "")
-        dir.delete()
-        dir.mkdir()
+        val dir = Files.createTempDirectory("testdir").toFile()
         dir.deleteOnExit()
 
         val subdir = File(dir, "subdir")
@@ -87,9 +81,7 @@ class MainTest {
 
     @Test
     fun testGo() {
-        val dir = File.createTempFile("testdir", "")
-        dir.delete()
-        dir.mkdir()
+        val dir = Files.createTempDirectory("testdir").toFile()
         dir.deleteOnExit()
 
         val subdir = File(dir, "subdir")
@@ -115,22 +107,14 @@ class MainTest {
 
     @Test
     fun testHelp() {
-        val originalOut = System.out
         val baos = ByteArrayOutputStream()
-        System.setOut(PrintStream(baos))
-        try {
-            help()
-            assertEquals("ERROR: help has not been written yet!\n", baos.toString())
-        } finally {
-            System.setOut(originalOut)
-        }
+        help(PrintStream(baos))
+        assertEquals("ERROR: help has not been written yet!\n", baos.toString())
     }
 
     @Test
     fun testMain() {
-        val dir = File.createTempFile("testdir", "")
-        dir.delete()
-        dir.mkdir()
+        val dir = Files.createTempDirectory("testdir").toFile()
         dir.deleteOnExit()
 
         main(arrayOf(dir.absolutePath, "--max-level", "0"))

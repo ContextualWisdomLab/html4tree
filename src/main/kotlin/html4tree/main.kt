@@ -1,6 +1,7 @@
 package html4tree
 
 import java.io.File
+import java.io.PrintStream
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -137,6 +138,6 @@ fun process_dir(curr_dir: File){
 
 }
 
-fun help() {
-    println("ERROR: help has not been written yet!")
+fun help(out: PrintStream = System.out) {
+    out.println("ERROR: help has not been written yet!")
 }

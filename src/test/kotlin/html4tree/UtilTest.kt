@@ -44,19 +44,25 @@ class UtilTest {
         list.push(LinkedListEntry(file3, 2))
         assertEquals(file3, list.first?.data)
 
-        // Test first being null explicitly (for branch coverage)
-        list.first = null
-        list.push(LinkedListEntry(file1, 0))
-
-        list.last = null
-        list.push(LinkedListEntry(file1, 0))
-
         val pulled1 = list.pull()
         assertNotNull(pulled1)
         assertEquals(file1, pulled1?.file)
         assertEquals(0, pulled1?.level)
 
         val pulled2 = list.pull()
-        assertNull(pulled2)
+        assertEquals(file2, pulled2?.file)
+        assertEquals(1, pulled2?.level)
+
+        val pulled3 = list.pull()
+        assertEquals(file3, pulled3?.file)
+        assertEquals(2, pulled3?.level)
+
+        assertNull(list.pull())
+
+        list.push(LinkedListEntry(file1, 0))
+        val pulledAfterReuse = list.pull()
+        assertEquals(file1, pulledAfterReuse?.file)
+        assertEquals(0, pulledAfterReuse?.level)
+        assertNull(list.pull())
     }
 }
