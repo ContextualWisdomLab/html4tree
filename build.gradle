@@ -43,3 +43,21 @@ jar {
 
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination file("${buildDir}/jacocoHtml")
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 1.00
+            }
+        }
+    }
+}

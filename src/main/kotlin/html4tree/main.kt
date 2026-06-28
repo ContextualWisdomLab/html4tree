@@ -94,14 +94,26 @@ fun process_dir(curr_dir: File){
               <style>
               ul {
                 list-style-type: none;
+                padding-left: 0;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0366d6;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0366d6;
+                outline-offset: -2px;
               }
               </style>
               """
 
     val index_top = """<!doctype html>
-<html lang="en">
+<html lang="ko">
      <head>
-        <meta charset="utf-8">
+        <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
@@ -109,7 +121,7 @@ fun process_dir(curr_dir: File){
      <body>
        <h1>${curr_dir.getName().escapeHtml()}</h1>
        <ul>
-          <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
+          <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
