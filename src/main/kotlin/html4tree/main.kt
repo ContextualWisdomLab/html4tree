@@ -28,13 +28,13 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory()){
+    while(lle != null){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        lle.file.listFiles().forEach {
-            if(it.isDirectory()){
+        lle.file.listFiles()?.forEach {
+            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -82,7 +82,6 @@ fun process_ignore_file(curr_dir: File): List<String> {
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
 
-
     return files_to_exclude
 }
  
@@ -127,11 +126,12 @@ fun process_dir(curr_dir: File){
     val index_middle = fun():String{ 
         var l=""
 
-        val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
+        val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+           val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
+           if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
+              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
