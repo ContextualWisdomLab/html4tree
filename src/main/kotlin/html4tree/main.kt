@@ -124,18 +124,20 @@ fun process_dir(curr_dir: File){
 """ 
 
     val index_middle = fun():String{ 
-        var l=""
+        // 성능 향상: 반복문 내 문자열 연결(concatenation)을 StringBuilder로 변경하여 메모리 할당 및 복사 오버헤드 감소 (O(N^2) -> O(N))
+        val sb = StringBuilder()
 
-        val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
+        val files = curr_dir.listFiles()
+        val dir_files: MutableList<File> = if (files != null) files.toMutableList() else mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
            if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
-              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              sb.append("""          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>""").append("\n")
            }
         }
 
-        return l;
+        return sb.toString()
      } 
 
    val index_bottom="""
