@@ -56,8 +56,8 @@ class CoreLogicTest {
 
             // check contents of generated file for maxLevel 0
             val indexContent = File(tempDir, "index.html").readText()
-            assertTrue(indexContent.contains("<html lang=\"en\">"))
-            assertTrue(indexContent.contains("<meta charset=\"utf-8\">"))
+            assertTrue(indexContent.contains("<html lang=\"ko\">"))
+            assertTrue(indexContent.contains("<meta charset=\"UTF-8\">"))
             assertTrue(indexContent.contains("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"))
             assertTrue(indexContent.contains("file1.txt"))
             assertTrue(indexContent.contains("subDir1"))
