@@ -1,13 +1,12 @@
 package html4tree
 
 import java.io.File
+import java.io.IOException
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
-import java.io.IOException
-import java.nio.file.Files
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -30,13 +29,13 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory()){
+    while(lle != null){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
         lle.file.listFiles()?.forEach {
-            if(it.isDirectory() && !Files.isSymbolicLink(it.toPath())){
+            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -84,7 +83,6 @@ fun process_ignore_file(curr_dir: File): List<String> {
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
 
-
     return files_to_exclude
 }
  
@@ -96,20 +94,34 @@ fun process_dir(curr_dir: File){
               <style>
               ul {
                 list-style-type: none;
+                padding-left: 0;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0366d6;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0366d6;
+                outline-offset: -2px;
               }
               </style>
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="ko">
      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
      <body>
        <h1>${curr_dir.getName().escapeHtml()}</h1>
        <ul>
-          <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
+          <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -118,9 +130,9 @@ fun process_dir(curr_dir: File){
         val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           if((it.getName() !in exclude) && (it != curr_dir)) {
-              val isDirectoryEntry = it.isDirectory() && !Files.isSymbolicLink(it.toPath())
-              l += """          <li><a style="display:block; width:100%" href="${if (isDirectoryEntry) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isDirectoryEntry) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+           val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
+           if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
+              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
@@ -133,10 +145,11 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
+   val indexFile = File(curr_dir,"index.html")
    try {
-       File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+       indexFile.writeText(index_top+index_middle()+index_bottom)
    } catch (e: IOException) {
-       System.err.println("Failed to write ${File(curr_dir, "index.html").absolutePath}: ${e.message}")
+       System.err.println("Failed to write ${indexFile.absolutePath}: ${e.message}")
    }
 
 }
