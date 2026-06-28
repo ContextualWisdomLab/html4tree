@@ -1,3 +1,3 @@
-## 2024-05-30 - 정규식 컴파일 최적화 (Regex Pre-compilation)
-**Learning:** 파일 크롤링/파싱 로직과 같이 반복적인 처리(예: 이중 루프 내부) 과정에서 정규표현식(`toRegex()`)을 지속적으로 컴파일하는 것은 성능에 치명적인 병목(Bottleneck)이 될 수 있습니다. 이는 루프 횟수에 비례하여 비용이 발생합니다.
-**Action:** 루프 내부에서 정규표현식을 사용할 때는 항상 루프 외부에서 미리 컴파일(Pre-compile)하여 캐싱하고 재사용하는 패턴을 적용합니다.
+## 2024-06-21 - Regex Compilation in Loops
+**Learning:** In Kotlin, compiling regular expressions (`.toRegex()`) inside a loop over files is a significant O(N * M) performance bottleneck when processing ignore files (N files * M rules).
+**Action:** Always map string rules to compiled `Regex` objects outside of the file iteration loop (O(M) compilation) to avoid unnecessary regex re-compilations.
