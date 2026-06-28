@@ -3,13 +3,12 @@ package html4tree
 import org.junit.Test
 import kotlin.test.assertEquals
 import java.io.File
+import java.nio.file.Files
 
 class MainTest {
     @Test
     fun testProcessIgnoreFile() {
-        val tempDir = File.createTempFile("html4tree_test", "")
-        tempDir.delete()
-        tempDir.mkdir()
+        val tempDir = Files.createTempDirectory("html4tree_test").toFile()
 
         File(tempDir, "file1.txt").writeText("test")
         File(tempDir, "file2.txt").writeText("test")
@@ -171,6 +170,7 @@ class MainTest {
     @Test(expected = IllegalArgumentException::class)
     fun testGoNotADir() {
         val tempFile = File.createTempFile("go_not_dir", ".txt")
+        tempFile.deleteOnExit()
         go(tempFile.absolutePath, -1)
     }
 
@@ -212,6 +212,7 @@ class MainTest {
         subdir.mkdir()
 
         val content = process_ignore_file(tempDir)
+        assertEquals(true, content.contains("index.html"))
         tempDir.deleteRecursively()
     }
 
@@ -292,9 +293,12 @@ class MainTest {
         tempDir.delete()
         tempDir.mkdir()
 
-        // The condition `it != curr_dir` in `process_dir` -> `index_middle` is impossible to be false
-        // using normal file APIs because `curr_dir.listFiles()` returns children.
-        // But jacoco sees the bytecode. We can't realistically make `it == curr_dir`.
-        // However, we can mock it if we could, but here we can't. Let's look at line 108 carefully.
+        try {
+            File(tempDir, "file.txt").writeText("test")
+            process_dir(tempDir)
+            assertEquals(true, File(tempDir, "index.html").exists())
+        } finally {
+            tempDir.deleteRecursively()
+        }
     }
 }
