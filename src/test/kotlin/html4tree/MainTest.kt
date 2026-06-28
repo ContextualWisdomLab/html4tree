@@ -145,10 +145,11 @@ class MainTest {
         val originalOut = System.out
         val baos = ByteArrayOutputStream()
         System.setOut(PrintStream(baos))
-
-        help()
-
-        System.setOut(originalOut)
+        try {
+            help()
+        } finally {
+            System.setOut(originalOut)
+        }
         assertEquals("ERROR: help has not been written yet!\n", baos.toString())
     }
 

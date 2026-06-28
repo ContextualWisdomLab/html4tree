@@ -113,7 +113,7 @@ fun process_dir(curr_dir: File){
         // BOLT OPTIMIZATION: Use StringBuilder instead of string concatenation (+=) to avoid O(n^2) allocations
         val l = StringBuilder()
 
-        val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
+        val dir_files: MutableList<File> = (curr_dir.listFiles() ?: emptyArray()).toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {

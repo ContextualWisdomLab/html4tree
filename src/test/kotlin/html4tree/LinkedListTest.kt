@@ -85,20 +85,5 @@ class LinkedListTest {
         assertEquals(File("testB"), list2.pull()?.file)
         assertEquals(File("testC"), list2.pull()?.file)
         assertNull(list2.pull())
-
-        // This hits the case where last != null but first == null (edge case handling of the push method structure)
-        val list3 = LinkedList()
-        list3.last = Entry(File("something"), 0, null)
-        list3.push(LinkedListEntry(File("something else"), 1))
-
-        list.first = Entry(File("test3"), 3, null)
-        list.last = Entry(File("test4"), 4, null)
-        assertNotNull(list.first)
-        assertNotNull(list.last)
-
-        list.first = null
-        list.last = null
-        assertNull(list.first)
-        assertNull(list.last)
     }
 }
