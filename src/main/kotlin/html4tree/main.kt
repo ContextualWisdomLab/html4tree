@@ -6,6 +6,8 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
+import java.nio.file.Files
+import java.nio.file.LinkOption
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -20,10 +22,7 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     val top_dir = File(topDir)
-    require(top_dir.exists() && top_dir.isDirectory())
-
-    // Security check: Do not crawl if the top directory itself is a symbolic link
-    require(!java.nio.file.Files.isSymbolicLink(top_dir.toPath())) { "Top directory cannot be a symbolic link" }
+    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
 
@@ -31,13 +30,13 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory() && !java.nio.file.Files.isSymbolicLink(lle.file.toPath())){
+    while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
         lle.file.listFiles()?.forEach {
-            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
+            if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -119,8 +118,9 @@ fun process_dir(curr_dir: File){
         val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+           if((it.getName() !in exclude) && (it != curr_dir) && !Files.isSymbolicLink(it.toPath())) {
+              val isDirectory = Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)
+              l += """          <li><a style="display:block; width:100%" href="${if (isDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
