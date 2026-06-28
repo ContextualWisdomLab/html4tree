@@ -27,7 +27,7 @@ class MainTest {
 
         val content = indexFile.readText()
         assertFalse(content.contains("file1.txt"))
-        assertFalse(content.contains(">subdir1<"))
+        assertFalse(content.contains("subdir1</a>"))
         assertTrue(content.contains("&lt;img src=x onerror=alert(1)&gt;"))
         assertFalse(content.contains("<img src=x onerror=alert(1)>"))
 
@@ -59,9 +59,12 @@ class MainTest {
         val originalOut = System.out
         val outContent = ByteArrayOutputStream()
         System.setOut(PrintStream(outContent))
-        help()
-        assertEquals("ERROR: help has not been written yet!\n", outContent.toString())
-        System.setOut(originalOut)
+        try {
+            help()
+            assertEquals("ERROR: help has not been written yet!\n", outContent.toString())
+        } finally {
+            System.setOut(originalOut)
+        }
     }
 
     @Test

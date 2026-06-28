@@ -15,8 +15,9 @@ class LinkedList {
             last = Entry(lle.file, lle.level, null)
             first = last
         } else {
-            first!!.next = Entry(lle.file, lle.level, null)
-            first = first!!.next
+            val tail = first ?: last!!
+            tail.next = Entry(lle.file, lle.level, null)
+            first = tail.next
         }
     }
 

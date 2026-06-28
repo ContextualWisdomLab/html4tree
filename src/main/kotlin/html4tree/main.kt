@@ -94,6 +94,9 @@ fun process_dir(curr_dir: File){
                    .replace("'", "&#x27;")
     }
 
+    fun String.encodeUrlPathSegment(): String =
+        java.net.URLEncoder.encode(this, "UTF-8").replace("+", "%20")
+
     val index_top = """<!doctype html>
 <html>
      <head>
@@ -114,8 +117,9 @@ fun process_dir(curr_dir: File){
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
               val nameEscaped = it.getName().escapeHtml()
-              val hrefEscaped = if (it.isDirectory()) { "./${nameEscaped}/" } else { "./${nameEscaped}" }
-              l += """          <li><a style="display:block; width:100%" href="${hrefEscaped}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${nameEscaped}</a></li>"""+"\n"
+              val hrefEncoded = it.getName().encodeUrlPathSegment()
+              val href = if (it.isDirectory()) { "./${hrefEncoded}/" } else { "./${hrefEncoded}" }
+              l += """          <li><a style="display:block; width:100%" href="${href}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${nameEscaped}</a></li>"""+"\n"
            }
         }
 
