@@ -1,3 +1,3 @@
-## 2024-03-02 - Kotlin Auto-Generated Property Methods Coverage
-**Learning:** In Kotlin, using `var` to declare properties automatically generates hidden getter and setter methods. When using JaCoCo with a strict 100% line or method coverage requirement, these implicit methods can cause coverage failures even if the explicitly written code is fully tested.
-**Action:** When enforcing 100% test coverage in Kotlin codebases using JaCoCo, ensure you explicitly test property reassignment and access (even if trivial) to cover the auto-generated getters and setters.
+## 2024-06-21 - Regex Compilation in Loops
+**Learning:** In Kotlin, compiling regular expressions (`.toRegex()`) inside a loop over files is a significant O(N * M) performance bottleneck when processing ignore files (N files * M rules).
+**Action:** Always map string rules to compiled `Regex` objects outside of the file iteration loop (O(M) compilation) to avoid unnecessary regex re-compilations.
