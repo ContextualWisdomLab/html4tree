@@ -6,6 +6,8 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
+import java.io.IOException
+import java.nio.file.Files
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -34,7 +36,7 @@ fun go(topDir: String, maxLevel: Int)  {
            process_dir(lle.file)
 
         lle.file.listFiles()?.forEach {
-            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
+            if(it.isDirectory() && !Files.isSymbolicLink(it.toPath())){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -117,7 +119,8 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              val isDirectoryEntry = it.isDirectory() && !Files.isSymbolicLink(it.toPath())
+              l += """          <li><a style="display:block; width:100%" href="${if (isDirectoryEntry) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isDirectoryEntry) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
@@ -132,8 +135,8 @@ fun process_dir(curr_dir: File){
 
    try {
        File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
-   } catch (e: Exception) {
-       // Cannot write index.html (e.g. Permission Denied)
+   } catch (e: IOException) {
+       System.err.println("Failed to write ${File(curr_dir, "index.html").absolutePath}: ${e.message}")
    }
 
 }
