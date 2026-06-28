@@ -7,6 +7,7 @@ import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import kotlin.test.assertEquals
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 
 class MainTest {
@@ -29,7 +30,13 @@ class MainTest {
         targetDir.mkdirs()
 
         val symlinkDir = File(testDir, "symlink_dir")
-        Files.createSymbolicLink(symlinkDir.toPath(), targetDir.absoluteFile.toPath())
+        try {
+            Files.createSymbolicLink(symlinkDir.toPath(), targetDir.absoluteFile.toPath())
+        } catch (e: Exception) {
+            targetDir.deleteRecursively()
+            Assume.assumeTrue("Symlinks not supported on this platform, skipping", false)
+            return
+        }
 
         go(testDir.absolutePath, -1)
 
@@ -45,7 +52,13 @@ class MainTest {
         targetFile.writeText("Original Content")
 
         val symlinkFile = File(testDir, "index.html")
-        Files.createSymbolicLink(symlinkFile.toPath(), targetFile.absoluteFile.toPath())
+        try {
+            Files.createSymbolicLink(symlinkFile.toPath(), targetFile.absoluteFile.toPath())
+        } catch (e: Exception) {
+            targetFile.delete()
+            Assume.assumeTrue("Symlinks not supported on this platform, skipping", false)
+            return
+        }
 
         go(testDir.absolutePath, -1)
 
