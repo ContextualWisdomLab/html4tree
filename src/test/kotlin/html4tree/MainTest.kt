@@ -2,13 +2,13 @@ package html4tree
 
 import org.junit.Test
 import java.io.File
+import java.nio.file.Files
 import kotlin.test.assertTrue
 
 class MainTest {
     @Test
     fun testProcessDir() {
-        val tempDir = File("temp_test_dir")
-        tempDir.mkdir()
+        val tempDir = Files.createTempDirectory("html4tree-test-").toFile()
         try {
             process_dir(tempDir)
             val indexFile = File(tempDir, "index.html")
@@ -21,8 +21,7 @@ class MainTest {
             assertTrue(content.contains("<main>"))
             assertTrue(content.contains("aria-label=\"Go to parent directory\""))
         } finally {
-            File(tempDir, "index.html").delete()
-            tempDir.delete()
+            tempDir.deleteRecursively()
         }
     }
 }

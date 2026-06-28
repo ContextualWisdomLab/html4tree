@@ -97,17 +97,19 @@ fun process_dir(curr_dir: File){
               </style>
               """
 
+    val escapedDirName = escape_html(curr_dir.getName())
+
     val index_top = """<!doctype html>
 <html lang="en">
      <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${curr_dir.getName()}</title>
+        <title>${escapedDirName}</title>
         ${css}
      </head>
      <body>
        <main>
-         <h1>${curr_dir.getName()}</h1>
+         <h1>${escapedDirName}</h1>
          <ul>
             <li><a style="display:block; width:100%" href="./.." aria-label="Go to parent directory">&#x21B0; ..</a></li>
 """ 
@@ -120,8 +122,11 @@ fun process_dir(curr_dir: File){
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
               val isDir = it.isDirectory()
-              val ariaLabel = if (isDir) "${it.getName()} directory" else "${it.getName()} file"
-              l += """          <li><a style="display:block; width:100%" href="${if (isDir) { "./${it.getName()}/" } else { "./${it.getName()}" }}" aria-label="${ariaLabel}">${if (isDir) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val fileName = it.getName()
+              val href = escape_html(if (isDir) { "./${fileName}/" } else { "./${fileName}" })
+              val ariaLabel = escape_html(if (isDir) "${fileName} directory" else "${fileName} file")
+              val fileNameDisplay = escape_html(fileName)
+              l += """          <li><a style="display:block; width:100%" href="${href}" aria-label="${ariaLabel}">${if (isDir) { "&#128193;" } else { "&rtrif;" }} ${fileNameDisplay}</a></li>"""+"\n"
            }
         }
 
@@ -137,6 +142,15 @@ fun process_dir(curr_dir: File){
 
    File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
 
+}
+
+fun escape_html(input: String): String {
+    return input
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#39;")
 }
 
 fun help() {
