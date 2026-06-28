@@ -83,7 +83,8 @@ class Html4treeTest {
     fun testMainAndCli() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
-        File(subdir, "file.txt").writeText("test")
+        val file = File(subdir, "file.txt")
+        file.writeText("test")
 
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("sub.*")
@@ -136,7 +137,8 @@ class Html4treeTest {
     fun testGoWithMaxLevel() {
         val subdir1 = File(tempDir, "subdir1")
         subdir1.mkdir()
-        File(subdir1, "subdir2").mkdir()
+        val subdir2 = File(subdir1, "subdir2")
+        subdir2.mkdir()
 
         go(tempDir.absolutePath, 0)
 
@@ -155,14 +157,15 @@ class Html4treeTest {
     fun testGoMaxLevelNoLimit() {
         val subdir1 = File(tempDir, "subdir1")
         subdir1.mkdir()
-        File(subdir1, "subdir2").mkdir()
+        val subdir2 = File(subdir1, "subdir2")
+        subdir2.mkdir()
 
         // test for maxLevel == -1
         go(tempDir.absolutePath, -1)
 
         assertTrue(File(tempDir, "index.html").exists())
         assertTrue(File(subdir1, "index.html").exists())
-        assertTrue(File(subdir1, "subdir2/index.html").exists())
+        assertTrue(File(subdir2, "index.html").exists())
     }
 
     @Test
