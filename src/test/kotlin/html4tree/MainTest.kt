@@ -48,10 +48,15 @@ class MainTest {
     fun testHelp() {
         val oldOut = System.out
         val baos = ByteArrayOutputStream()
-        System.setOut(PrintStream(baos))
-        help()
-        System.setOut(oldOut)
-        assertTrue(baos.toString().contains("ERROR: help has not been written yet!"))
+        val ps = PrintStream(baos, false, "UTF-8")
+        System.setOut(ps)
+        try {
+            help()
+        } finally {
+            System.setOut(oldOut)
+            ps.close()
+        }
+        assertTrue(baos.toString("UTF-8").contains("ERROR: help has not been written yet!"))
     }
 
     @Test
