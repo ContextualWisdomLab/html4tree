@@ -1,4 +1,4 @@
-## 2024-06-22 - XSS and Path Injection in HTML Generation
-**Vulnerability:** Unescaped file and directory names are directly interpolated into the generated index.html content (title, h1, and href attributes without quotes), allowing Cross-Site Scripting (XSS).
-**Learning:** Building HTML structures through manual string concatenation without escaping leads to missing proper encoding for user-controlled input, in this case, the file system entries.
-**Prevention:** Always use proper HTML encoding for text content and URL encoding for link attributes. Surround attributes with quotes.
+## 2024-06-21 - [html4tree] Unsanitized Filenames in Auto-Generated HTML
+**Vulnerability:** XSS via Malicious File/Directory Names
+**Learning:** Tools that auto-generate static HTML pages from local file systems often overlook input sanitization, implicitly trusting local file paths. If these generated pages are hosted or shared, an attacker can create files with names like `<script>alert(1)</script>` to execute arbitrary JavaScript in the context of the user viewing the generated index.
+**Prevention:** Always HTML-encode variable data injected into HTML templates, and URL-encode data used in `href` attributes, regardless of the data's origin (even if it's "just" the local file system). Additionally, ensure HTML attributes like `href` are properly quoted to prevent attribute breakout.
