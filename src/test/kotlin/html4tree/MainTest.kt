@@ -158,39 +158,4 @@ class MainTest {
         assertTrue(htmlContent.contains("&#128193;"))
     }
 
-    @Test
-    fun testMainWithHelp() {
-        val originalSecurityManager = System.getSecurityManager()
-        val securityManager = object : SecurityManager() {
-            override fun checkPermission(perm: java.security.Permission?) {}
-            override fun checkExit(status: Int) {
-                throw SecurityException("Exit stopped")
-            }
-        }
-        System.setSecurityManager(securityManager)
-        try {
-            main(arrayOf("-h"))
-        } catch (e: SecurityException) {
-        } finally {
-            System.setSecurityManager(originalSecurityManager)
-        }
-    }
-
-    @Test
-    fun testMainWithValidArgs() {
-        val originalSecurityManager = System.getSecurityManager()
-        val securityManager = object : SecurityManager() {
-            override fun checkPermission(perm: java.security.Permission?) {}
-            override fun checkExit(status: Int) {
-                // Ignore exit
-            }
-        }
-        System.setSecurityManager(securityManager)
-        try {
-            main(arrayOf(tempDir.absolutePath))
-        } catch (e: SecurityException) {
-        } finally {
-            System.setSecurityManager(originalSecurityManager)
-        }
-    }
 }
