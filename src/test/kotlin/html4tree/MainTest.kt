@@ -10,11 +10,11 @@ import org.junit.Before
 
 class MainTest {
 
-    val tempDir = File("temp_test_dir")
+    lateinit var tempDir: File
 
     @Before
     fun setup() {
-        tempDir.mkdir()
+        tempDir = createTempDir(prefix = "html4tree-main-test-")
     }
 
     @After

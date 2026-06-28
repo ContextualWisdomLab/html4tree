@@ -78,13 +78,37 @@ class LinkedListTest {
         val file1 = File("file1")
         list.push(LinkedListEntry(file1, 0))
 
-        // This will test the condition where last != null and first != null
         val file2 = File("file2")
         list.push(LinkedListEntry(file2, 1))
 
-        // But let's manipulate the list manually to ensure all branches are hit
-        val file3 = File("file3")
+        val pulled1 = list.pull()
+        assertNotNull(pulled1)
+        assertEquals(file1, pulled1.file)
+        assertEquals(0, pulled1.level)
+
+        val pulled2 = list.pull()
+        assertNotNull(pulled2)
+        assertEquals(file2, pulled2.file)
+        assertEquals(1, pulled2.level)
+
+        assertNull(list.pull())
+    }
+
+    @Test
+    fun testPushWhenFirstIsNullAndLastIsSet() {
+        val list = LinkedList()
+
+        val seed = Entry(File("seed"), 0, null)
+        list.last = seed
         list.first = null
-        list.push(LinkedListEntry(file3, 2))
+
+        val file2 = File("file2")
+        list.push(LinkedListEntry(file2, 1))
+
+        val pulled1 = list.pull()
+        assertNotNull(pulled1)
+        assertEquals(File("seed"), pulled1.file)
+
+        assertNull(list.pull())
     }
 }
