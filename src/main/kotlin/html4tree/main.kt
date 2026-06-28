@@ -20,7 +20,7 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     val top_dir = File(topDir)
-    require(top_dir.exists() && top_dir.isDirectory())
+    require(top_dir.exists() && top_dir.isDirectory() && !java.nio.file.Files.isSymbolicLink(top_dir.toPath()))
 
     val ll = LinkedList()
 
@@ -28,15 +28,13 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory()){
+    while(lle != null){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        val files = lle.file.listFiles()
-        if (files != null) {
-            files.forEach {
-                // SECURITY: Prevent symlink traversal (path traversal via directory links)
+        if(maxLevel == -1 || currentLevel < maxLevel) {
+            lle.file.listFiles()?.forEach {
                 if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
                     ll.push( LinkedListEntry(it, currentLevel+1))
                 }
@@ -73,22 +71,18 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
        ignore_file.forEachLine { ignored_regexes.add(("^"+it+"$").toRegex()) }
 
-       val filesList = curr_dir.list()
-       if (filesList != null) {
-           filesList.sorted().forEach {
-               val current = it
-               ignored_regexes.forEach { regex ->
-                  if(regex.matches(current)){
-                     files_to_exclude.add(current)
-                  }
-             }
-           }
+       curr_dir.list()?.sorted()?.forEach {
+           val current = it
+           ignored_regexes.forEach { regex ->
+              if(regex.matches(current)){
+                 files_to_exclude.add(current)
+              }
+         }
        }
     }
 
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
-
 
     return files_to_exclude
 }
@@ -101,20 +95,34 @@ fun process_dir(curr_dir: File){
               <style>
               ul {
                 list-style-type: none;
+                padding-left: 0;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0366d6;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0366d6;
+                outline-offset: -2px;
               }
               </style>
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="ko">
      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
      <body>
        <h1>${curr_dir.getName().escapeHtml()}</h1>
        <ul>
-          <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
+          <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -123,8 +131,9 @@ fun process_dir(curr_dir: File){
         val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+           val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
+           if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
+              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
@@ -137,12 +146,7 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   try {
-       File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
-   } catch (e: Exception) {
-       // SECURITY: Fail securely, log instead of crashing/leaking info to users
-       println("Error writing index.html in ${curr_dir.absolutePath}: ${e.message}")
-   }
+   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
 
 }
 
