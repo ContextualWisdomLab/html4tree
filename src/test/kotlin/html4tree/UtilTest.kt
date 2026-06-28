@@ -1,77 +1,98 @@
 package html4tree
 
 import org.junit.Test
-import org.junit.Assert.*
 import java.io.File
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class UtilTest {
+
     @Test
     fun testLinkedList() {
-        val ll = LinkedList()
-        assertNull(ll.pull())
+        val list = LinkedList()
+        assertNull(list.pull())
 
-        val f1 = File("f1")
-        val f2 = File("f2")
-        val f3 = File("f3")
+        val file1 = File("file1")
+        val file2 = File("file2")
+        val file3 = File("file3")
 
-        ll.push(LinkedListEntry(f1, 0))
-        assertEquals(f1, ll.first?.data)
-        assertEquals(f1, ll.last?.data)
+        list.push(LinkedListEntry(file1, 0))
+        list.push(LinkedListEntry(file2, 1))
+        list.push(LinkedListEntry(file3, 2))
 
-        // This will hit the else branch
-        ll.push(LinkedListEntry(f2, 1))
+        var pulled = list.pull()
+        assertEquals(file1, pulled?.file)
+        assertEquals(0, pulled?.level)
 
-        // Let's create a situation where first?.next gets hit if we manipulate it
-        // actually `first` is non-null when we reach else because of the if block
+        pulled = list.pull()
+        assertEquals(file2, pulled?.file)
+        assertEquals(1, pulled?.level)
 
-        val e1 = ll.pull()
-        assertNotNull(e1)
-        assertEquals(f1, e1?.file)
-        assertEquals(0, e1?.level)
-
-        ll.push(LinkedListEntry(f3, 2))
-
-        val e2 = ll.pull()
-        assertNotNull(e2)
-        assertEquals(f2, e2?.file)
-        assertEquals(1, e2?.level)
-
-        val e3 = ll.pull()
-        assertNotNull(e3)
-        assertEquals(f3, e3?.file)
-        assertEquals(2, e3?.level)
-
-        assertNull(ll.pull())
-
-        ll.first = Entry(f1, 0, null)
-        ll.last = Entry(f1, 0, null)
-        assertEquals(f1, ll.first?.data)
-        assertEquals(f1, ll.last?.data)
-    }
-
-    @Test
-    fun testLinkedListPushNullFirst() {
-        val ll = LinkedList()
-        ll.last = Entry(File("f"), 0, null)
-        ll.first = null
-        ll.push(LinkedListEntry(File("f2"), 1))
+        pulled = list.pull()
+        assertEquals(file3, pulled?.file)
+        assertEquals(2, pulled?.level)
+        assertNull(list.pull())
     }
 
     @Test
     fun testEntryDataClass() {
-        val e1 = Entry(File("f1"), 1, null)
-        val e2 = Entry(File("f1"), 1, null)
-        assertEquals(e1, e2)
-        assertEquals(e1.hashCode(), e2.hashCode())
-        assertTrue(e1.toString().contains("Entry"))
+        val file1 = File("file1")
+        val entry1 = Entry(file1, 0, null)
+        val entry2 = Entry(file1, 0, null)
+
+        assertEquals(entry1, entry2)
+        assertEquals("Entry(data=file1, level=0, next=null)", entry1.toString())
     }
 
     @Test
     fun testLinkedListEntryDataClass() {
-        val e1 = LinkedListEntry(File("f1"), 1)
-        val e2 = LinkedListEntry(File("f1"), 1)
-        assertEquals(e1, e2)
-        assertEquals(e1.hashCode(), e2.hashCode())
-        assertTrue(e1.toString().contains("LinkedListEntry"))
+        val file1 = File("file1")
+        val entry1 = LinkedListEntry(file1, 0)
+        val entry2 = LinkedListEntry(file1, 0)
+
+        assertEquals(entry1, entry2)
+        assertEquals("LinkedListEntry(file=file1, level=0)", entry1.toString())
+    }
+
+    @Test
+    fun testLinkedListPushExisting() {
+        val list = LinkedList()
+        list.push(LinkedListEntry(File("f1"), 0))
+        list.push(LinkedListEntry(File("f2"), 0))
+        val entry1 = list.pull()
+        val entry2 = list.pull()
+        assertEquals(File("f1"), entry1?.file)
+        assertEquals(File("f2"), entry2?.file)
+    }
+
+    @Test
+    fun testLinkedListAccessors() {
+        val list = LinkedList()
+        list.first = Entry(File("test"), 0, null)
+        list.last = Entry(File("test"), 0, null)
+        assertEquals(File("test"), list.first?.data)
+        assertEquals(File("test"), list.last?.data)
+    }
+
+    @Test
+    fun testLinkedListPushNullFirst() {
+        val list = LinkedList()
+        list.last = Entry(File("fake"), 0, null)
+        list.push(LinkedListEntry(File("f3"), 0))
+        assertEquals(File("fake"), list.pull()?.file)
+        assertEquals(File("f3"), list.pull()?.file)
+        assertEquals(File("f3"), list.first?.data)
+    }
+
+    @Test
+    fun testLinkedListPushNullFirstWithExistingChain() {
+        val list = LinkedList()
+        list.last = Entry(File("f1"), 0, Entry(File("f2"), 0, null))
+        list.push(LinkedListEntry(File("f3"), 0))
+
+        assertEquals(File("f1"), list.pull()?.file)
+        assertEquals(File("f2"), list.pull()?.file)
+        assertEquals(File("f3"), list.pull()?.file)
+        assertNull(list.pull())
     }
 }
