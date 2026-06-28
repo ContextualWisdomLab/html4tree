@@ -42,7 +42,7 @@ fun go(topDir: String, maxLevel: Int)  {
     }
 }
 
-fun process_ignore_file(curr_dir: File): List<String> {
+fun process_ignore_file(curr_dir: File): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -50,7 +50,7 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
     val ignore_file = File(ignore_file_path)
 
-    val files_to_exclude = mutableListOf<String>()
+    val files_to_exclude = mutableSetOf<String>()
 
     if(ignore_file.exists()){
        val ignored_patterns = mutableListOf<Regex>()
@@ -77,7 +77,7 @@ fun process_ignore_file(curr_dir: File): List<String> {
  
 fun process_dir(curr_dir: File){
     
-    val exclude: List<String> = process_ignore_file(curr_dir)
+    val exclude: Set<String> = process_ignore_file(curr_dir)
 
     val css = """
               <style>
@@ -107,7 +107,7 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l.append("""          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n")
+              l.append("""          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>""").append('\n')
            }
         }
 
