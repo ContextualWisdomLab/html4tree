@@ -124,18 +124,22 @@ fun process_dir(curr_dir: File){
 """ 
 
     val index_middle = fun():String{ 
-        var l=""
-
         val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
+
+        // ⚡ Bolt: 문자열 결합 성능 최적화 (O(N^2) -> O(N))
+        // StringBuilder를 사용하여 리스트 항목들을 하나로 합칩니다.
+        // dir_files의 크기를 기반으로 초기 용량을 설정하여 재할당 오버헤드를 방지합니다.
+        val l = StringBuilder(dir_files.size * 250)
+
         dir_files.forEach {
            val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
            if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
-              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              l.append("""          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n")
            }
         }
 
-        return l;
+        return l.toString()
      } 
 
    val index_bottom="""
