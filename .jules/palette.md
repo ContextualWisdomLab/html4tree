@@ -1,0 +1,3 @@
+## 2024-06-25 - Hide decorative Unicode icons from screen readers in directory listings
+**Learning:** Screen readers will unnecessarily announce Unicode characters like right-pointing triangles or folders if they are not explicitly hidden. In long directory listings, this creates massive auditory noise that slows down navigation.
+**Action:** Always wrap decorative or duplicate-meaning Unicode symbols with `<span aria-hidden="true">...</span>` when used alongside text that already conveys the meaning, and use proper semantic landmarks like `<main>` to group primary content.

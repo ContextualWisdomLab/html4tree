@@ -118,9 +118,10 @@ fun process_dir(curr_dir: File){
         ${css}
      </head>
      <body>
+       <main>
        <h1>${curr_dir.getName().escapeHtml()}</h1>
        <ul>
-          <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동">&#x21B0; ..</a></li>
+          <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -131,7 +132,7 @@ fun process_dir(curr_dir: File){
         dir_files.forEach {
            val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
            if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
-              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}"><span aria-hidden="true">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }}</span> ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
@@ -140,6 +141,7 @@ fun process_dir(curr_dir: File){
 
    val index_bottom="""
        </ul>
+       </main>
     </body>
 </html>
 """
