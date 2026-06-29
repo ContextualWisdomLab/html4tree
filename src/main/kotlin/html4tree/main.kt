@@ -28,14 +28,17 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory()){
+    while(lle != null){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        lle.file.listFiles().forEach {
-            if(it.isDirectory()){
-                ll.push( LinkedListEntry(it, currentLevel+1))
+        val files = lle.file.listFiles()
+        if (files != null) {
+            files.forEach {
+                if(it.isDirectory()){
+                    ll.push( LinkedListEntry(it, currentLevel+1))
+                }
             }
         }
         lle = ll.pull()
@@ -87,15 +90,19 @@ fun process_dir(curr_dir: File){
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="en">
      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>${curr_dir.getName()}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
-       <ul>
-          <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
+       <main>
+         <h1>${curr_dir.getName()}</h1>
+         <nav aria-label="Directory navigation">
+           <ul>
+              <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -105,7 +112,7 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              l += """              <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
            }
         }
 
@@ -113,7 +120,9 @@ fun process_dir(curr_dir: File){
      } 
 
    val index_bottom="""
-       </ul>
+           </ul>
+         </nav>
+       </main>
     </body>
 </html>
 """
