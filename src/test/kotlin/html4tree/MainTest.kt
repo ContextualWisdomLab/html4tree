@@ -70,6 +70,7 @@ class MainTest {
         val indexFile = File(tempDir, "index.html")
         assertTrue(indexFile.exists())
         assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+        assertTrue(indexFile.readText().contains("<main>"))
     }
 
     @Test
@@ -110,10 +111,13 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<main>"))
+        assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
+        assertTrue(htmlContent.contains("<span aria-hidden=\"true\">"))
         assertFalse(htmlContent.contains("test.ignore"))
     }
 
