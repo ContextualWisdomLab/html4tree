@@ -15,18 +15,8 @@ class LinkedList {
             last = Entry(lle.file, lle.level, null)
             first = last
         } else {
-            val nextEntry = Entry(lle.file, lle.level, null)
-            val currentFirst = first
-            if (currentFirst == null) {
-                var currentLast = last!!
-                while (currentLast.next != null) {
-                    currentLast = currentLast.next!!
-                }
-                currentLast.next = nextEntry
-            } else {
-                currentFirst.next = nextEntry
-            }
-            first = nextEntry
+            first!!.next = Entry(lle.file, lle.level, null)
+            first = first!!.next
         }
     }
 
@@ -39,7 +29,7 @@ class LinkedList {
         if(l == null){
             return null
         } else {
-            l.next = null
+	        l.next = null
             return LinkedListEntry(l.data, l.level)
         }
     }
