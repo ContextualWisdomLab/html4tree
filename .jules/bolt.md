@@ -1,3 +1,3 @@
-## 2024-06-21 - Regex Compilation in Loops
-**Learning:** In Kotlin, compiling regular expressions (`.toRegex()`) inside a loop over files is a significant O(N * M) performance bottleneck when processing ignore files (N files * M rules).
-**Action:** Always map string rules to compiled `Regex` objects outside of the file iteration loop (O(M) compilation) to avoid unnecessary regex re-compilations.
+## 2024-06-25 - ⚡ Bolt: Used StringBuilder instead of String concatenation (+) in a loop
+**Learning:** String concatenation inside a loop leads to quadratic time complexity O(n^2) because strings are immutable in Kotlin/Java. When the string gets bigger, creating new copies takes a lot of time. The method `process_dir` in `src/main/kotlin/html4tree/main.kt` had a loop doing string concatenation on directories with many files.
+**Action:** Use `java.lang.StringBuilder` or Kotlin's `buildString` inside loops instead of `+` to maintain O(n) performance.
