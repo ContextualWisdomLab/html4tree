@@ -221,4 +221,30 @@ class MainTest {
         File(tempDir, "tempDir").mkdir()
         process_dir(tempDir)
     }
+
+    @Test
+    fun testGoWithIndexHtmlSymlink() {
+        val targetFile = File(tempDir, "target.txt")
+        targetFile.writeText("original content")
+
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+
+        val symlink = File(subdir, "index.html")
+        try {
+            Files.createSymbolicLink(symlink.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        go(tempDir.absolutePath, -1)
+
+        val generatedIndexFile = File(subdir, "index.html")
+        assertTrue(generatedIndexFile.exists())
+        assertFalse(Files.isSymbolicLink(generatedIndexFile.toPath()), "The index.html should not be a symbolic link anymore")
+        assertTrue(generatedIndexFile.readText().contains("<html lang=\"ko\">"))
+
+        assertTrue(targetFile.exists())
+        assertEquals("original content", targetFile.readText(), "Target file should not be modified by arbitrary file write")
+    }
 }
