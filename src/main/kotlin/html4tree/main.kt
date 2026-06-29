@@ -144,7 +144,9 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   val indexFile = File(curr_dir,"index.html")
+   java.nio.file.Files.deleteIfExists(indexFile.toPath())
+   indexFile.writeText(index_top+index_middle()+index_bottom)
 
 }
 
