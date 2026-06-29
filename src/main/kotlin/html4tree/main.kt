@@ -74,6 +74,18 @@ fun process_ignore_file(curr_dir: File): List<String> {
     return files_to_exclude
 }
  
+fun String.escapeHtml(): String {
+    return this.replace("&", "&amp;")
+               .replace("<", "&lt;")
+               .replace(">", "&gt;")
+               .replace("\"", "&quot;")
+               .replace("'", "&#x27;")
+}
+
+fun String.encodeUrlPath(): String {
+    return java.net.URLEncoder.encode(this, "UTF-8").replace("+", "%20")
+}
+
 fun process_dir(curr_dir: File){
     
     val exclude: List<String> = process_ignore_file(curr_dir)
@@ -86,14 +98,15 @@ fun process_dir(curr_dir: File){
               </style>
               """
 
+    val escapedDirName = curr_dir.getName().escapeHtml()
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${escapedDirName}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${escapedDirName}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +118,12 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val name = it.getName()
+              val escapedName = name.escapeHtml()
+              val encodedUrl = name.encodeUrlPath()
+              val href = if (it.isDirectory()) "./${encodedUrl}/" else "./${encodedUrl}"
+              val icon = if (it.isDirectory()) "&#128193;" else "&rtrif;"
+              l += """          <li><a style="display:block; width:100%" href="${href}">${icon} ${escapedName}</a></li>"""+"\n"
            }
         }
 
