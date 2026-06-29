@@ -33,9 +33,12 @@ fun go(topDir: String, maxLevel: Int)  {
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        lle.file.listFiles().forEach {
-            if(it.isDirectory()){
-                ll.push( LinkedListEntry(it, currentLevel+1))
+        val files = lle.file.listFiles()
+        if (files != null) {
+            files.forEach {
+                if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
+                    ll.push( LinkedListEntry(it, currentLevel+1))
+                }
             }
         }
         lle = ll.pull()
@@ -112,13 +115,15 @@ fun process_dir(curr_dir: File){
 
     val index_middle = fun():String{ 
         var l=""
-
-        val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
-        dir_files.sortWith(compareBy ({it.name}) )
-        dir_files.forEach {
-           if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
-           }
+        val raw_files = curr_dir.listFiles()
+        if (raw_files != null) {
+            val dir_files: MutableList<File> = raw_files.toMutableList()
+            dir_files.sortWith(compareBy ({it.name}) )
+            dir_files.forEach {
+               if((it.getName() !in exclude) && (it != curr_dir) && !java.nio.file.Files.isSymbolicLink(it.toPath())) {
+                  l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+               }
+            }
         }
 
         return l;
@@ -130,7 +135,11 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   try {
+       File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   } catch (e: Exception) {
+       // Ignore error for non-writable directories
+   }
 
 }
 
