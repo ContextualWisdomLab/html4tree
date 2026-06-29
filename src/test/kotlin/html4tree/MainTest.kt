@@ -69,7 +69,11 @@ class MainTest {
         go(tempDir.absolutePath, -1)
         val indexFile = File(tempDir, "index.html")
         assertTrue(indexFile.exists())
-        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<main>"))
+        assertTrue(htmlContent.contains("<nav aria-label=\"파일 탐색\">"))
+        assertTrue(htmlContent.contains("<span aria-hidden=\"true\">&#x21B0;</span>"))
     }
 
     @Test
@@ -113,7 +117,10 @@ class MainTest {
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
-        assertTrue(htmlContent.contains("&#128193;"))
+        assertTrue(htmlContent.contains("<span aria-hidden=\"true\">&#128193;</span>"))
+        assertTrue(htmlContent.contains("<span aria-hidden=\"true\">&rtrif;</span>"))
+        assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
+        assertTrue(htmlContent.contains("aria-label=\"file1.txt 파일\""))
         assertFalse(htmlContent.contains("test.ignore"))
     }
 
