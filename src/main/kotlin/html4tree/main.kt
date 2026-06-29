@@ -74,6 +74,14 @@ fun process_ignore_file(curr_dir: File): List<String> {
     return files_to_exclude
 }
  
+fun String.escapeHtml(): String {
+    return this.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#x27;")
+}
+
 fun process_dir(curr_dir: File){
     
     val exclude: List<String> = process_ignore_file(curr_dir)
@@ -86,14 +94,17 @@ fun process_dir(curr_dir: File){
               </style>
               """
 
+    // 보안 강화: XSS 취약점 방지를 위해 디렉토리 및 파일 이름의 HTML 엔티티를 이스케이프 처리합니다.
+    val safeDirName = curr_dir.getName().escapeHtml()
+
     val index_top = """<!doctype html>
 <html>
      <head>
-        <title>${curr_dir.getName()}</title>
+        <title>${safeDirName}</title>
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName()}</h1>
+       <h1>${safeDirName}</h1>
        <ul>
           <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
 """ 
@@ -105,7 +116,10 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
+              val safeName = it.getName().escapeHtml()
+              val href = if (it.isDirectory()) { "./${safeName}/" } else { "./${safeName}" }
+              // 보안 강화: href 속성 값을 따옴표로 감싸서 속성 탈출(attribute breakout)을 방지합니다.
+              l += """          <li><a style="display:block; width:100%" href="${href}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${safeName}</a></li>"""+"\n"
            }
         }
 
