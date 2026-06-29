@@ -28,7 +28,8 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory()){
+    while(lle != null){
+        if (lle.file.isDirectory()) {
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
@@ -37,6 +38,7 @@ fun go(topDir: String, maxLevel: Int)  {
             if(it.isDirectory()){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
+        }
         }
         lle = ll.pull()
     }
@@ -94,20 +96,37 @@ fun process_dir(curr_dir: File){
               <style>
               ul {
                 list-style-type: none;
+                padding-left: 0;
+              }
+              a {
+                display: block;
+                width: 100%;
+                padding: 4px;
+                text-decoration: none;
+                color: #000;
+              }
+              a:hover, a:focus {
+                background-color: #f0f0f0;
+                outline: 2px solid #005fcc;
+                border-radius: 4px;
               }
               </style>
               """
 
     val index_top = """<!doctype html>
-<html>
+<html lang="en">
      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
      <body>
+       <main>
        <h1>${curr_dir.getName().escapeHtml()}</h1>
+       <nav aria-label="Directory structure">
        <ul>
-          <li><a style="display:block; width:100%" href="./..">&#x21B0; ..</a></li>
+          <li><a href="./..">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -116,8 +135,8 @@ fun process_dir(curr_dir: File){
         val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           if((it.getName() !in exclude) && (it != curr_dir)) {
-              l += """          <li><a style="display:block; width:100%" href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+           if((it.getName() !in exclude)) {
+              l += """          <li><a href="${if (it.isDirectory()) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
            }
         }
 
@@ -126,6 +145,8 @@ fun process_dir(curr_dir: File){
 
    val index_bottom="""
        </ul>
+       </nav>
+       </main>
     </body>
 </html>
 """
