@@ -101,6 +101,8 @@ fun process_dir(curr_dir: File){
     val index_top = """<!doctype html>
 <html>
      <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
