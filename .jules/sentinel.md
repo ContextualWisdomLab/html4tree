@@ -1,4 +1,4 @@
-## 2024-06-21 - [html4tree] Unsanitized Filenames in Auto-Generated HTML
-**Vulnerability:** XSS via Malicious File/Directory Names
-**Learning:** Tools that auto-generate static HTML pages from local file systems often overlook input sanitization, implicitly trusting local file paths. If these generated pages are hosted or shared, an attacker can create files with names like `<script>alert(1)</script>` to execute arbitrary JavaScript in the context of the user viewing the generated index.
-**Prevention:** Always HTML-encode variable data injected into HTML templates, and URL-encode data used in `href` attributes, regardless of the data's origin (even if it's "just" the local file system). Additionally, ensure HTML attributes like `href` are properly quoted to prevent attribute breakout.
+## 2024-05-23 - XSS in Static HTML Generation
+**Vulnerability:** The application generates `index.html` files by directly concatenating directory and file names without any escaping or sanitization.
+**Learning:** File systems allow characters like `<` and `>` in file names, which can lead to Stored XSS when these names are rendered in generated HTML directory listings. Furthermore, `href` attributes were unquoted and unencoded, leading to broken links and potential injection.
+**Prevention:** Always HTML-escape file/directory names before rendering them in HTML text content, and URL-encode them and wrap them in quotes when used in `href` attributes.
