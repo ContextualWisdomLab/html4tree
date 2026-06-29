@@ -28,7 +28,7 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && lle.file.isDirectory()){
+    while(lle != null){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
@@ -57,10 +57,15 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
        ignore_file.forEachLine { ignored_strings.add(it) }
 
+       // BOLT: Performance Optimization
+       // Pre-compile regular expressions instead of compiling them for every file on every iteration.
+       // This reduces time complexity from O(Files * RegexRules) compilation overhead to O(RegexRules) + matching.
+       val compiled_regexes = ignored_strings.map { ("^"+it+"$").toRegex() }
+
        curr_dir.list().sorted().forEach {
            val current = it
-           ignored_strings.forEach { i_string ->
-              if(("^"+i_string+"$").toRegex().matches(current)){
+           compiled_regexes.forEach { regex ->
+              if(regex.matches(current)){
                  files_to_exclude.add(current)
               }
          }
@@ -104,7 +109,7 @@ fun process_dir(curr_dir: File){
         val dir_files: MutableList<File> = curr_dir.listFiles().toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           if((it.getName() !in exclude) && (it != curr_dir)) {
+           if(it.getName() !in exclude) {
               l += """          <li><a style="display:block; width:100%" href=${if (it.isDirectory()) { "./${it.getName()}/" } else { "./${it.getName()}" }}>${if (it.isDirectory()) { "&#128193;" } else { "&rtrif;" }} ${it.getName()}</a></li>"""+"\n"
            }
         }
