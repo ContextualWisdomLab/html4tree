@@ -240,4 +240,61 @@ class MainTest {
         File(tempDir, "tempDir").mkdir()
         process_dir(tempDir)
     }
+
+    @Test
+    fun testSymlinkOverwrite() {
+        val targetFile = File(tempDir, "target.txt")
+        targetFile.writeText("original content")
+
+        val symlink = File(tempDir, "index.html")
+        try {
+            Files.createSymbolicLink(symlink.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        process_dir(tempDir)
+
+        assertTrue(targetFile.readText().contains("original content"), "Target file should not be overwritten!")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testGoBlankDir() {
+        go("  ", -1)
+    }
+
+    @Test
+    fun testUrlEncodeUnreserved() {
+        assertEquals("A-Za-z0-9._~", "A-Za-z0-9._~".urlEncodePath())
+    }
+
+    @Test
+    fun testIgnoreFileEmptyLine() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("\n")
+        process_ignore_file(tempDir)
+    }
+
+    @Test
+    fun testProcessDirNoList() {
+        val unreadableDir = File(tempDir, "unreadable2")
+        unreadableDir.mkdir()
+        unreadableDir.setReadable(false, false)
+        try {
+            process_dir(unreadableDir)
+        } finally {
+            unreadableDir.setReadable(true, false)
+        }
+    }
+
+    @Test
+    fun testGoCoverage() {
+        val subdir = File(tempDir, "subdir2")
+        subdir.mkdir()
+        val f = File(subdir, "file.txt")
+        f.createNewFile()
+        // Just standard crawling to ensure coverage
+        go(tempDir.absolutePath, 1)
+    }
+
 }
