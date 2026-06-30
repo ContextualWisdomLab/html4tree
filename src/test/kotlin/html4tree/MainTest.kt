@@ -228,6 +228,28 @@ class MainTest {
     }
 
     @Test
+    fun testGoMaxLevelLimitsCrawl() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+
+        go(tempDir.absolutePath, -2)
+        assertFalse(File(tempDir, "index.html").exists())
+    }
+
+    @Test
+    fun testProcessIgnoreFileWithListNull() {
+        val unreadableDir = File(tempDir, "unreadable2")
+        unreadableDir.mkdir()
+        File(unreadableDir, ".html4ignore").writeText(".*\\.txt")
+        Assume.assumeTrue(unreadableDir.setReadable(false, false))
+        try {
+            process_ignore_file(unreadableDir)
+        } finally {
+            unreadableDir.setReadable(true, false)
+        }
+    }
+
+    @Test
     fun testGoWithUnreadableDir() {
         val unreadableDir = File(tempDir, "unreadable")
         unreadableDir.mkdir()
