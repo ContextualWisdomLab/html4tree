@@ -138,6 +138,26 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
+        val targetFile = File(tempDir, "target.txt")
+        targetFile.writeText("original content")
+
+        val indexFile = File(tempDir, "index.html")
+        try {
+            Files.createSymbolicLink(indexFile.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        process_dir(tempDir)
+
+        assertEquals("original content", targetFile.readText())
+        assertTrue(indexFile.exists())
+        assertFalse(Files.isSymbolicLink(indexFile.toPath()))
+        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+    }
+
+    @Test
     fun testGoWithSymlink() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()

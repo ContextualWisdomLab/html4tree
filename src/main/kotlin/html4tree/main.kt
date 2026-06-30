@@ -1,6 +1,8 @@
 package html4tree
 
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -111,6 +113,17 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
     return files_to_exclude
 }
+
+fun write_index_file(curr_dir: File, content: String) {
+    val indexPath = curr_dir.toPath().resolve("index.html")
+    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    try {
+        Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
+        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+    } finally {
+        Files.deleteIfExists(tempPath)
+    }
+}
  
 fun process_dir(curr_dir: File){
     
@@ -180,7 +193,7 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   File(curr_dir,"index.html").writeText(index_top+index_middle()+index_bottom)
+   write_index_file(curr_dir, index_top+index_middle()+index_bottom)
 
 }
 
