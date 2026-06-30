@@ -158,6 +158,8 @@ fun process_dir(curr_dir: File){
      <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
