@@ -90,7 +90,9 @@ class MainTest {
         go(tempDir.absolutePath, -1)
         val indexFile = File(tempDir, "index.html")
         assertTrue(indexFile.exists())
-        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
     }
 
     @Test
@@ -284,4 +286,27 @@ class MainTest {
         File(tempDir, "tempDir").mkdir()
         process_dir(tempDir)
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testGoBlankDir() {
+        go("   ", -1)
+    }
+
+    @Test
+    fun testUrlEncodePathUnreserved() {
+        assertEquals("-._~", "-._~".urlEncodePath())
+        assertEquals("A1z", "A1z".urlEncodePath())
+    }
+
+    @Test
+    fun testProcessIgnoreFileEmptyLine() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("\n.*\\.txt\n\n.*\\.log\n")
+
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("test.txt"))
+    }
+
 }
