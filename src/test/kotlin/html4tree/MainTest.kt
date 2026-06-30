@@ -149,6 +149,7 @@ class MainTest {
         assertTrue(htmlContent.contains("<main>"))
         assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("aria-hidden=\"true\""))
         assertTrue(htmlContent.contains("aria-label=\"file1.txt 파일\""))
         assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
