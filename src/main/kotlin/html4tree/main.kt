@@ -99,6 +99,7 @@ fun process_dir(curr_dir: File){
                 padding: 0.5rem;
                 text-decoration: none;
                 color: #0366d6;
+                border-radius: 4px;
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
@@ -118,9 +119,10 @@ fun process_dir(curr_dir: File){
         ${css}
      </head>
      <body>
-       <h1>${curr_dir.getName().escapeHtml()}</h1>
-       <ul>
-          <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동">&#x21B0; ..</a></li>
+       <main>
+         <h1>${curr_dir.getName().escapeHtml()}</h1>
+         <ul>
+            <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동">&#x21B0; ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -131,7 +133,10 @@ fun process_dir(curr_dir: File){
         dir_files.forEach {
            val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
            if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
-              l += """          <li><a style="display:block; width:100%" href="${if (isLinkedDirectory) { "./${it.getName().urlEncodePath()}/" } else { "./${it.getName().urlEncodePath()}" }}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${it.getName().escapeHtml()}</a></li>"""+"\n"
+              val fileName = it.getName()
+              val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
+              val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
+              l += """          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${fileName.escapeHtml()}</a></li>"""+"\n"
            }
         }
 
@@ -139,7 +144,8 @@ fun process_dir(curr_dir: File){
      } 
 
    val index_bottom="""
-       </ul>
+         </ul>
+       </main>
     </body>
 </html>
 """
