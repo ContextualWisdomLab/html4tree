@@ -37,9 +37,11 @@ fun go(topDir: String, maxLevel: Int)  {
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
-        lle.file.listFiles()?.forEach {
-            if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
-                ll.push( LinkedListEntry(it, currentLevel+1))
+        if(maxLevel == -1 || currentLevel < maxLevel) {
+            lle.file.listFiles()?.forEach {
+                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
+                    ll.push( LinkedListEntry(it, currentLevel+1))
+                }
             }
         }
         lle = ll.pull()
@@ -99,7 +101,7 @@ fun process_ignore_file(curr_dir: File): Set<String> {
            }
        }
 
-       curr_dir.list().sorted().forEach {
+       curr_dir.list()?.sorted()?.forEach {
            val current = it
            ignored_regexes.forEach { regex ->
               if(regex.matches(current)){

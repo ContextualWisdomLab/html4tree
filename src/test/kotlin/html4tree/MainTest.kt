@@ -9,6 +9,7 @@ import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -63,6 +64,25 @@ class MainTest {
     @Test(expected = IllegalArgumentException::class)
     fun testGoInvalidDir() {
         go("non_existent_directory", -1)
+    }
+
+    @Test
+    fun testGoRejectsSymlinkTopDir() {
+        val targetDir = Files.createTempDirectory("html4tree-target-").toFile()
+        val symlink = File(tempDir, "linked-top")
+        try {
+            try {
+                Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
+            } catch (e: Exception) {
+                Assume.assumeTrue("Symlink creation not supported in this environment", false)
+            }
+
+            assertFailsWith<IllegalArgumentException> {
+                go(symlink.absolutePath, -1)
+            }
+        } finally {
+            targetDir.deleteRecursively()
+        }
     }
 
     @Test
