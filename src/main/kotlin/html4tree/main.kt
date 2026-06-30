@@ -168,6 +168,11 @@ fun process_dir(curr_dir: File){
            }
         }
 
+        if(l.isEmpty()){
+            l.append("""          <li><div style="padding: 0.5rem; color: #666; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append('\n')
+        }
+
         return l.toString();
      } 
 
