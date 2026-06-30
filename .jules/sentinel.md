@@ -2,8 +2,3 @@
 **Vulnerability:** XSS via Malicious File/Directory Names
 **Learning:** Tools that auto-generate static HTML pages from local file systems often overlook input sanitization, implicitly trusting local file paths. If these generated pages are hosted or shared, an attacker can create files with names like `<script>alert(1)</script>` to execute arbitrary JavaScript in the context of the user viewing the generated index.
 **Prevention:** Always HTML-encode variable data injected into HTML templates, and URL-encode data used in `href` attributes, regardless of the data's origin (even if it's "just" the local file system). Additionally, ensure HTML attributes like `href` are properly quoted to prevent attribute breakout.
-
-## 2024-06-27 - [Path Traversal / Symlink Following Vulnerability]
-**Vulnerability:** The directory crawler (`go` and `process_dir` in `html4tree/main.kt`) follows symbolic links and does not check for them. This can lead to arbitrary file access/exposure outside the intended directory or infinite loops causing Denial of Service.
-**Learning:** File processing tools in Kotlin using `java.io.File` (`isDirectory()`, `listFiles()`) will implicitly follow symbolic links. Unless `java.nio.file.Files.isSymbolicLink(file.toPath())` is used, the crawler cannot differentiate between actual directories and symlinks to restricted parts of the filesystem (like `/etc/passwd`). Additionally, unhandled `listFiles()` on directories without read permissions return `null`, causing application crashes.
-**Prevention:** Always use `java.nio.file.Files.isSymbolicLink` before descending into directories during recursive traversals. Handle potential `null` returns from `listFiles()` by skipping unreadable directories to prevent DoS via crash.
