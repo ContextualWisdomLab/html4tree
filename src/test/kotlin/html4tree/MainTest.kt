@@ -35,7 +35,8 @@ class MainTest {
         assertEquals("&gt;", ">".escapeHtml())
         assertEquals("&quot;", "\"".escapeHtml())
         assertEquals("&#x27;", "'".escapeHtml())
-        assertEquals("&amp;&lt;&gt;&quot;&#x27;", "&<>\"'".escapeHtml())
+        assertEquals("&#x60;", "`".escapeHtml())
+        assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
     }
 
@@ -53,7 +54,7 @@ class MainTest {
         System.setOut(PrintStream(outContent))
         try {
             help()
-            assertEquals("ERROR: help has not been written yet!\n", outContent.toString())
+            assertEquals("ERROR: help has not been written yet!\n", outContent.toString().replace("\r\n", "\n"))
         } finally {
             System.setOut(originalOut)
         }
@@ -97,6 +98,20 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileInvalidRegex() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("[\n.*\\.log")
+
+        File(tempDir, "test.log").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+
+        assertTrue(excluded.contains("test.log"))
+        assertFalse(excluded.contains("test.txt"))
+    }
+
+    @Test
     fun testProcessDir() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
@@ -111,7 +126,11 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("<nav aria-label=\"Directory listing\">"))
+        assertTrue(htmlContent.contains("<main>"))
+        assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("aria-label=\"file1.txt 파일\""))
+        assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
