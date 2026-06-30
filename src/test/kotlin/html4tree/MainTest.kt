@@ -53,7 +53,7 @@ class MainTest {
         System.setOut(PrintStream(outContent))
         try {
             help()
-            assertEquals("ERROR: help has not been written yet!\n", outContent.toString())
+            assertEquals("ERROR: help has not been written yet!\n", outContent.toString().replace("\r\n", "\n"))
         } finally {
             System.setOut(originalOut)
         }
@@ -110,7 +110,11 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<main>"))
+        assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("aria-label=\"file1.txt 파일\""))
+        assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
