@@ -148,6 +148,7 @@ fun process_dir(curr_dir: File){
      <body>
        <main>
          <h1>${curr_dir.getName().escapeHtml()}</h1>
+         <nav aria-label="Directory listing">
          <ul>
             <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동">&#x21B0; ..</a></li>
 """ 
@@ -173,6 +174,7 @@ fun process_dir(curr_dir: File){
 
    val index_bottom="""
          </ul>
+         </nav>
        </main>
     </body>
 </html>
