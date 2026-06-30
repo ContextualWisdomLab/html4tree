@@ -48,13 +48,32 @@ fun go(topDir: String, maxLevel: Int)  {
     }
 }
 
+// ⚡ Bolt: Optimize escapeHtml by replacing sequential .replace() calls with a single pass StringBuilder
+// Reduces unnecessary string allocation and GC pressure, providing O(1) string creation for fast HTML rendering.
 fun String.escapeHtml(): String {
-    return this.replace("&", "&amp;")
-               .replace("<", "&lt;")
-               .replace(">", "&gt;")
-               .replace("\"", "&quot;")
-               .replace("'", "&#x27;")
-               .replace("`", "&#x60;")
+    var sb: StringBuilder? = null
+    for (i in indices) {
+        val c = this[i]
+        val replacement = when (c) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
+        if (replacement != null) {
+            if (sb == null) {
+                sb = java.lang.StringBuilder(length + 16)
+                sb.append(this, 0, i)
+            }
+            sb.append(replacement)
+        } else {
+            sb?.append(c)
+        }
+    }
+    return sb?.toString() ?: this
 }
 
 fun String.urlEncodePath(): String {
