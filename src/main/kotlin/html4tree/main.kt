@@ -19,7 +19,8 @@ class Html4tree : CliktCommand() {
 fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
-    val top_dir = File(topDir)
+    require(topDir.isNotBlank())
+    val top_dir = File(topDir).canonicalFile
     require(top_dir.exists() && top_dir.isDirectory())
 
     val ll = LinkedList()
@@ -48,13 +49,31 @@ fun String.escapeHtml(): String {
                .replace(">", "&gt;")
                .replace("\"", "&quot;")
                .replace("'", "&#x27;")
+               .replace("`", "&#x60;")
 }
 
 fun String.urlEncodePath(): String {
-    return java.net.URLEncoder.encode(this, "UTF-8").replace("+", "%20")
+    val encoded = StringBuilder()
+    this.toByteArray(Charsets.UTF_8).forEach {
+        val byte = it.toInt() and 0xff
+        val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
+                           (byte in 'a'.toInt()..'z'.toInt()) ||
+                           (byte in '0'.toInt()..'9'.toInt()) ||
+                           byte == '-'.toInt() ||
+                           byte == '.'.toInt() ||
+                           byte == '_'.toInt() ||
+                           byte == '~'.toInt()
+        if (isUnreserved) {
+            encoded.append(byte.toChar())
+        } else {
+            encoded.append('%')
+            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+        }
+    }
+    return encoded.toString()
 }
 
-fun process_ignore_file(curr_dir: File): List<String> {
+fun process_ignore_file(curr_dir: File): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -62,12 +81,20 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
     val ignore_file = File(ignore_file_path)
 
-    val files_to_exclude = mutableListOf<String>()
+    val files_to_exclude = mutableSetOf<String>()
 
     if(ignore_file.exists()){
        val ignored_regexes = mutableListOf<Regex>()
 
-       ignore_file.forEachLine { ignored_regexes.add(("^"+it+"$").toRegex()) }
+       ignore_file.forEachLine {
+           val pattern = it.trim()
+           if (pattern.isNotEmpty()) {
+               try {
+                   ignored_regexes.add(("^"+pattern+"$").toRegex())
+               } catch (_: IllegalArgumentException) {
+               }
+           }
+       }
 
        curr_dir.list().sorted().forEach {
            val current = it
@@ -87,7 +114,7 @@ fun process_ignore_file(curr_dir: File): List<String> {
  
 fun process_dir(curr_dir: File){
     
-    val exclude: List<String> = process_ignore_file(curr_dir)
+    val exclude: Set<String> = process_ignore_file(curr_dir)
 
     val css = """
               <style>
@@ -126,7 +153,7 @@ fun process_dir(curr_dir: File){
 """ 
 
     val index_middle = fun():String{ 
-        var l=""
+        val l = StringBuilder()
 
         val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
@@ -136,11 +163,12 @@ fun process_dir(curr_dir: File){
               val fileName = it.getName()
               val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
               val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-              l += """          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${fileName.escapeHtml()}</a></li>"""+"\n"
+              l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${fileName.escapeHtml()}</a></li>""")
+              l.append('\n')
            }
         }
 
-        return l;
+        return l.toString();
      } 
 
    val index_bottom="""

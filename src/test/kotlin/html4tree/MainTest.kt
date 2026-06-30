@@ -35,7 +35,8 @@ class MainTest {
         assertEquals("&gt;", ">".escapeHtml())
         assertEquals("&quot;", "\"".escapeHtml())
         assertEquals("&#x27;", "'".escapeHtml())
-        assertEquals("&amp;&lt;&gt;&quot;&#x27;", "&<>\"'".escapeHtml())
+        assertEquals("&#x60;", "`".escapeHtml())
+        assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
     }
 
@@ -53,7 +54,7 @@ class MainTest {
         System.setOut(PrintStream(outContent))
         try {
             help()
-            assertEquals("ERROR: help has not been written yet!\n", outContent.toString())
+            assertEquals("ERROR: help has not been written yet!\n", outContent.toString().replace("\r\n", "\n"))
         } finally {
             System.setOut(originalOut)
         }
@@ -94,6 +95,20 @@ class MainTest {
         val excluded = process_ignore_file(tempDir)
         assertTrue(excluded.contains("index.html"))
         assertEquals(1, excluded.size)
+    }
+
+    @Test
+    fun testProcessIgnoreFileInvalidRegex() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("[\n.*\\.log")
+
+        File(tempDir, "test.log").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+
+        assertTrue(excluded.contains("test.log"))
+        assertFalse(excluded.contains("test.txt"))
     }
 
     @Test
