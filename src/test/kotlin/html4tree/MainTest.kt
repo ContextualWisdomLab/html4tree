@@ -9,6 +9,7 @@ import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -66,11 +67,32 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsSymlinkTopDir() {
+        val targetDir = Files.createTempDirectory("html4tree-target-").toFile()
+        val symlink = File(tempDir, "linked-top")
+        try {
+            try {
+                Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
+            } catch (e: Exception) {
+                Assume.assumeTrue("Symlink creation not supported in this environment", false)
+            }
+
+            assertFailsWith<IllegalArgumentException> {
+                go(symlink.absolutePath, -1)
+            }
+        } finally {
+            targetDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun testGoEmptyDir() {
         go(tempDir.absolutePath, -1)
         val indexFile = File(tempDir, "index.html")
         assertTrue(indexFile.exists())
-        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
     }
 
     @Test
@@ -125,15 +147,39 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<nav aria-label=\"Directory listing\">"))
         assertTrue(htmlContent.contains("<main>"))
         assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("aria-hidden=\"true\""))
         assertTrue(htmlContent.contains("aria-label=\"file1.txt 파일\""))
         assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
+        assertTrue(htmlContent.contains("Content-Security-Policy"))
+        assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+    }
+
+    @Test
+    fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
+        val targetFile = File(tempDir, "target.txt")
+        targetFile.writeText("original content")
+
+        val indexFile = File(tempDir, "index.html")
+        try {
+            Files.createSymbolicLink(indexFile.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        process_dir(tempDir)
+
+        assertEquals("original content", targetFile.readText())
+        assertTrue(indexFile.exists())
+        assertFalse(Files.isSymbolicLink(indexFile.toPath()))
+        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
     }
 
     @Test
@@ -263,20 +309,4 @@ class MainTest {
         assertTrue(excluded.contains("test.txt"))
     }
 
-    @Test
-    fun testProcessDirWithFile() {
-        val regularFile = File(tempDir, "regular_file.txt")
-        regularFile.createNewFile()
-        try {
-            process_dir(regularFile)
-        } catch (e: Exception) {
-            // curr_dir.list() inside process_ignore_file might throw NullPointerException or
-            // File(curr_dir, "index.html").writeText() might throw FileNotFoundException
-            // when curr_dir is a file. We just need to catch it so test passes.
-            // The goal is just to hit listFiles()?.toMutableList() ?: mutableListOf() branch
-            // if we can get that far, but since process_ignore_file runs first and might fail,
-            // wait, listFiles is in index_middle. Let's just catch any exception.
-            assertTrue(e is java.io.FileNotFoundException || e is java.lang.NullPointerException || e is java.lang.IllegalStateException)
-        }
-    }
 }
