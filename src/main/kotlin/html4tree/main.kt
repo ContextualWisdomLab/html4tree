@@ -54,7 +54,7 @@ fun String.urlEncodePath(): String {
     return java.net.URLEncoder.encode(this, "UTF-8").replace("+", "%20")
 }
 
-fun process_ignore_file(curr_dir: File): List<String> {
+fun process_ignore_file(curr_dir: File): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -62,11 +62,12 @@ fun process_ignore_file(curr_dir: File): List<String> {
 
     val ignore_file = File(ignore_file_path)
 
-    val files_to_exclude = mutableListOf<String>()
+    val files_to_exclude = mutableSetOf<String>()
 
     if(ignore_file.exists()){
        val ignored_regexes = mutableListOf<Regex>()
 
+       // O(M) regex compilation outside of N files loop
        ignore_file.forEachLine { ignored_regexes.add(("^"+it+"$").toRegex()) }
 
        curr_dir.list().sorted().forEach {
@@ -79,15 +80,14 @@ fun process_ignore_file(curr_dir: File): List<String> {
        }
     }
 
-    if ("index.html" !in files_to_exclude)
-       files_to_exclude.add("index.html")
+    files_to_exclude.add("index.html") // Sets handle duplicates automatically, but no harm ensuring it's there
 
     return files_to_exclude
 }
  
 fun process_dir(curr_dir: File){
     
-    val exclude: List<String> = process_ignore_file(curr_dir)
+    val exclude: Set<String> = process_ignore_file(curr_dir)
 
     val css = """
               <style>
@@ -126,7 +126,7 @@ fun process_dir(curr_dir: File){
 """ 
 
     val index_middle = fun():String{ 
-        var l=""
+        val l = java.lang.StringBuilder()
 
         val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
@@ -136,11 +136,11 @@ fun process_dir(curr_dir: File){
               val fileName = it.getName()
               val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
               val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-              l += """          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${fileName.escapeHtml()}</a></li>"""+"\n"
+              l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}">${if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }} ${fileName.escapeHtml()}</a></li>"""+"\n")
            }
         }
 
-        return l;
+        return l.toString();
      } 
 
    val index_bottom="""
