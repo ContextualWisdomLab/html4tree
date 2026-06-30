@@ -22,3 +22,8 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+
+## 2024-06-30 - canonicalFile을 통한 경로 탐색 및 심볼릭 링크 우회 취약점
+**Vulnerability:** `topDir` 검사에서 심볼릭 링크 여부를 확인(`Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)`)하기 전에 `File(topDir).canonicalFile`을 사용했습니다.
+**Learning:** `canonicalFile`은 심볼릭 링크를 실제 경로로 미리 확인합니다. 따라서 사용자가 심볼릭 링크를 입력하면 `canonicalFile`은 실제 타겟으로 경로를 조용히 평가하여 의도한 심볼릭 링크 제한 검사를 우회하게 됩니다. 이는 Java/Kotlin에서 흔히 발생하는 경로 탐색 및 심볼릭 링크 제한 우회 결함입니다.
+**Prevention:** `canonicalFile` 대신 `File(topDir).toPath().toAbsolutePath().normalize().toFile()`을 사용합니다. 이는 파일 시스템과 상호 작용하여 심볼릭 링크를 해석하지 않고 경로 문자열을 정규화하므로 후속 심볼릭 링크 검사가 대상이 아닌 실제 심볼릭 링크 경로에서 올바르게 작동할 수 있습니다.

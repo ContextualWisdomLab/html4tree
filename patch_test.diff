@@ -1,0 +1,39 @@
+<<<<<<< SEARCH
+    @Test
+    fun testGoWithMaxLevel() {
+=======
+    @Test
+    fun testGoWithMaxLevel() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+        val subsubdir = File(subdir, "subsubdir")
+        subsubdir.mkdir()
+
+        go(tempDir.absolutePath, 0)
+
+        assertTrue(File(tempDir, "index.html").exists())
+        assertFalse(File(subdir, "index.html").exists())
+        assertFalse(File(subsubdir, "index.html").exists())
+    }
+
+    @Test
+    fun testGoMaxLevelLimitsCrawl() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+
+        go(tempDir.absolutePath, -2) // Should not process any dirs theoretically, testing the currentLevel <= maxLevel boundary
+    }
+
+    @Test
+    fun testProcessIgnoreFileWithListNull() {
+        val unreadableDir = File(tempDir, "unreadable2")
+        unreadableDir.mkdir()
+        File(unreadableDir, ".html4ignore").writeText(".*\\.txt")
+        unreadableDir.setReadable(false, false)
+        try {
+            process_ignore_file(unreadableDir)
+        } finally {
+            unreadableDir.setReadable(true, false)
+        }
+    }
+>>>>>>> REPLACE
