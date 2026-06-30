@@ -9,6 +9,7 @@ import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -35,7 +36,8 @@ class MainTest {
         assertEquals("&gt;", ">".escapeHtml())
         assertEquals("&quot;", "\"".escapeHtml())
         assertEquals("&#x27;", "'".escapeHtml())
-        assertEquals("&amp;&lt;&gt;&quot;&#x27;", "&<>\"'".escapeHtml())
+        assertEquals("&#x60;", "`".escapeHtml())
+        assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
     }
 
@@ -53,7 +55,7 @@ class MainTest {
         System.setOut(PrintStream(outContent))
         try {
             help()
-            assertEquals("ERROR: help has not been written yet!\n", outContent.toString())
+            assertEquals("ERROR: help has not been written yet!\n", outContent.toString().replace("\r\n", "\n"))
         } finally {
             System.setOut(originalOut)
         }
@@ -62,6 +64,25 @@ class MainTest {
     @Test(expected = IllegalArgumentException::class)
     fun testGoInvalidDir() {
         go("non_existent_directory", -1)
+    }
+
+    @Test
+    fun testGoRejectsSymlinkTopDir() {
+        val targetDir = Files.createTempDirectory("html4tree-target-").toFile()
+        val symlink = File(tempDir, "linked-top")
+        try {
+            try {
+                Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
+            } catch (e: Exception) {
+                Assume.assumeTrue("Symlink creation not supported in this environment", false)
+            }
+
+            assertFailsWith<IllegalArgumentException> {
+                go(symlink.absolutePath, -1)
+            }
+        } finally {
+            targetDir.deleteRecursively()
+        }
     }
 
     @Test
@@ -97,6 +118,20 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileInvalidRegex() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("[\n.*\\.log")
+
+        File(tempDir, "test.log").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+
+        assertTrue(excluded.contains("test.log"))
+        assertFalse(excluded.contains("test.txt"))
+    }
+
+    @Test
     fun testProcessDir() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
@@ -110,13 +145,39 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<nav aria-label=\"Directory listing\">"))
+        assertTrue(htmlContent.contains("<main>"))
+        assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("aria-hidden=\"true\""))
+        assertTrue(htmlContent.contains("aria-label=\"file1.txt 파일\""))
+        assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
         assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+    }
+
+    @Test
+    fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
+        val targetFile = File(tempDir, "target.txt")
+        targetFile.writeText("original content")
+
+        val indexFile = File(tempDir, "index.html")
+        try {
+            Files.createSymbolicLink(indexFile.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        process_dir(tempDir)
+
+        assertEquals("original content", targetFile.readText())
+        assertTrue(indexFile.exists())
+        assertFalse(Files.isSymbolicLink(indexFile.toPath()))
+        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
     }
 
     @Test

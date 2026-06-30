@@ -39,7 +39,7 @@ class LinkedList {
         if(l == null){
             return null
         } else {
-        	l.next = null
+            l.next = null
             return LinkedListEntry(l.data, l.level)
         }
     }
