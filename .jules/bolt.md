@@ -1,3 +1,3 @@
-## 2024-05-24 - [Kotlin 문자열 결합 최적화]
-**Learning:** Kotlin에서 파일 디렉터리를 순회하며 큰 문자열을 생성할 때 루프 내에서 += 연산자를 사용해 문자열을 결합하면 O(n²) 성능 문제를 유발합니다. 이번 프로젝트의 경우 파일 목록이 많아질수록 성능 저하가 뚜렷했습니다.
-**Action:** 큰 텍스트를 루프 내에서 누적하여 생성해야 할 경우, 항상 `StringBuilder` (Java의 `java.lang.StringBuilder`)를 활용하여 O(n) 성능으로 결합하도록 작성해야 합니다.
+## 2024-06-21 - Regex Compilation in Loops
+**Learning:** In Kotlin, compiling regular expressions (`.toRegex()`) inside a loop over files is a significant O(N * M) performance bottleneck when processing ignore files (N files * M rules).
+**Action:** Always map string rules to compiled `Regex` objects outside of the file iteration loop (O(M) compilation) to avoid unnecessary regex re-compilations.
