@@ -2,6 +2,7 @@ package html4tree
 
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
@@ -23,7 +24,7 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
     val top_dir = File(topDir).canonicalFile
-    require(top_dir.exists() && top_dir.isDirectory())
+    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
 
@@ -31,13 +32,13 @@ fun go(topDir: String, maxLevel: Int)  {
 
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null){
+    while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
 
         lle.file.listFiles()?.forEach {
-            if(it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())){
+            if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
                 ll.push( LinkedListEntry(it, currentLevel+1))
             }
         }
@@ -172,8 +173,8 @@ fun process_dir(curr_dir: File){
         val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           val isLinkedDirectory = it.isDirectory() && !java.nio.file.Files.isSymbolicLink(it.toPath())
-           if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory())) {
+           val isLinkedDirectory = Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)
+           if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(it.toPath())) {
               val fileName = it.getName()
               val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
               val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
