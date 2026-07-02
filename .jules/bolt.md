@@ -5,3 +5,7 @@
 ## 2024-05-24 - Loop Allocation Hot Paths
 **Learning:** Rendering directory entries with repeated string concatenation and list-based exclusion lookups creates avoidable allocation and lookup cost in large directories.
 **Action:** Use `StringBuilder` for entry rendering and a `Set` for excluded file names.
+
+## 2024-07-02 - Chained String Replaces
+**Learning:** Using multiple chained `.replace()` calls on a Kotlin String (e.g., for HTML escaping) allocates new intermediate strings and arrays for every replacement pass, causing significant GC pressure and CPU overhead when called frequently on long lists.
+**Action:** Replace chained `.replace()` calls with a single-pass loop over the string characters. Use a lazily-initialized `StringBuilder` to append escaped values and original characters, avoiding allocations completely on the fast path (when no escaping is needed).
