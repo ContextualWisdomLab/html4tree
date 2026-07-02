@@ -49,12 +49,30 @@ fun go(topDir: String, maxLevel: Int)  {
 }
 
 fun String.escapeHtml(): String {
-    return this.replace("&", "&amp;")
-               .replace("<", "&lt;")
-               .replace(">", "&gt;")
-               .replace("\"", "&quot;")
-               .replace("'", "&#x27;")
-               .replace("`", "&#x60;")
+    var hasEscapable = false
+    for (i in 0 until this.length) {
+        val c = this[i]
+        if (c == '&' || c == '<' || c == '>' || c == '"' || c == '\'' || c == '`') {
+            hasEscapable = true
+            break
+        }
+    }
+    if (!hasEscapable) return this
+
+    val sb = java.lang.StringBuilder(this.length + 16)
+    for (i in 0 until this.length) {
+        val c = this[i]
+        when (c) {
+            '&' -> sb.append("&amp;")
+            '<' -> sb.append("&lt;")
+            '>' -> sb.append("&gt;")
+            '"' -> sb.append("&quot;")
+            '\'' -> sb.append("&#x27;")
+            '`' -> sb.append("&#x60;")
+            else -> sb.append(c)
+        }
+    }
+    return sb.toString()
 }
 
 fun String.urlEncodePath(): String {

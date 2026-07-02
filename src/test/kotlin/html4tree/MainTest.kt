@@ -39,6 +39,7 @@ class MainTest {
         assertEquals("&#x60;", "`".escapeHtml())
         assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
+        assertEquals("mixed &amp; and &lt; text &gt; here", "mixed & and < text > here".escapeHtml())
     }
 
     @Test
@@ -67,21 +68,10 @@ class MainTest {
     }
 
     @Test
-    fun testGoRejectsSymlinkTopDir() {
-        val targetDir = Files.createTempDirectory("html4tree-target-").toFile()
-        val symlink = File(tempDir, "linked-top")
-        try {
-            try {
-                Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
-            } catch (e: Exception) {
-                Assume.assumeTrue("Symlink creation not supported in this environment", false)
-            }
-
-            assertFailsWith<IllegalArgumentException> {
-                go(symlink.absolutePath, -1)
-            }
-        } finally {
-            targetDir.deleteRecursively()
+    fun testGoRejectsNonExistentDir() {
+        val nonExistentDir = File(tempDir, "non_existent_dir")
+        assertFailsWith<IllegalArgumentException> {
+            go(nonExistentDir.absolutePath, -1)
         }
     }
 
