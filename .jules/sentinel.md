@@ -22,3 +22,7 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+## 2024-07-02 - Malicious ignore files cause DoS
+**Vulnerability:** A malicious actor could place a directory named `.html4ignore` or a massive `.html4ignore` file, leading to application crashes (`java.io.FileNotFoundException: .html4ignore (Is a directory)`) or memory/resource exhaustion.
+**Learning:** Applications reading hidden configuration files from user-controlled directories must validate file type (isFile) and size before loading them into memory.
+**Prevention:** Add checks for `isFile` and enforce a reasonable file size limit (e.g., 1MB) before parsing directory-level configuration files.
