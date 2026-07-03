@@ -13,3 +13,7 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+
+## 2024-07-03 - Smooth Micro-Interactions in Generated HTML
+**Learning:** Adding CSS transitions to interactive elements (like anchor tags) in raw generated HTML enhances the perceived quality and smoothness of the interface. However, using `transition: all` is inefficient, and not accommodating users who prefer reduced motion is an accessibility violation.
+**Action:** When adding transitions, specify the exact properties (e.g., `background-color`, `outline-color`) and always include a `@media (prefers-reduced-motion: reduce)` block to disable transitions (`transition: none`) for users who have requested it at the OS level.
