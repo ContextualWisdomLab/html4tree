@@ -49,7 +49,7 @@ fun go(topDir: String, maxLevel: Int)  {
 }
 
 fun String.escapeHtml(): String {
-    var encoded: java.lang.StringBuilder? = null
+    var encoded: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
         val replacement = when (c) {
@@ -63,7 +63,7 @@ fun String.escapeHtml(): String {
         }
         if (replacement != null) {
             if (encoded == null) {
-                encoded = java.lang.StringBuilder(this.length + 16)
+                encoded = StringBuilder(this.length + 16)
                 encoded.append(this, 0, i)
             }
             encoded.append(replacement)
