@@ -23,12 +23,13 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
+    val top_dir = File(topDir)
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
+    val canonical_top_dir = top_dir.canonicalFile
 
     val ll = LinkedList()
 
-    ll.push(LinkedListEntry(top_dir,0))
+    ll.push(LinkedListEntry(canonical_top_dir,0))
 
     var lle: LinkedListEntry? = ll.pull()
 
@@ -49,12 +50,30 @@ fun go(topDir: String, maxLevel: Int)  {
 }
 
 fun String.escapeHtml(): String {
-    return this.replace("&", "&amp;")
-               .replace("<", "&lt;")
-               .replace(">", "&gt;")
-               .replace("\"", "&quot;")
-               .replace("'", "&#x27;")
-               .replace("`", "&#x60;")
+    var hasSpecial = false
+    for (i in 0 until length) {
+        val c = this[i]
+        if (c == '&' || c == '<' || c == '>' || c == '"' || c == '\'' || c == '`') {
+            hasSpecial = true
+            break
+        }
+    }
+    if (!hasSpecial) return this
+
+    val sb = StringBuilder(length + 16)
+    for (i in 0 until length) {
+        val c = this[i]
+        when (c) {
+            '&' -> sb.append("&amp;")
+            '<' -> sb.append("&lt;")
+            '>' -> sb.append("&gt;")
+            '"' -> sb.append("&quot;")
+            '\'' -> sb.append("&#x27;")
+            '`' -> sb.append("&#x60;")
+            else -> sb.append(c)
+        }
+    }
+    return sb.toString()
 }
 
 fun String.urlEncodePath(): String {
