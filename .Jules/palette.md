@@ -1,3 +1,3 @@
 ## 2024-07-02 - [CSS Hover Transitions for Accessibility]
-**Learning:** In simple auto-generated directory listings, applying a smooth `transition: all 0.2s ease-in-out;` on anchor states dramatically softens the visual jump during keyboard focus changes, aiding users with cognitive or tracking challenges.
-**Action:** Always include simple CSS transitions on interactive elements like links and buttons when building dynamic HTML generation utilities.
+**Learning:** For hover/focus states, transition only specific properties like `background-color` and `outline-color` rather than using `transition: all` to prevent unintended animations and performance issues. Always include `@media (prefers-reduced-motion: reduce)` override to respect user accessibility preferences.
+**Action:** Always include simple CSS transitions on specific properties for interactive elements like links and buttons when building dynamic HTML generation utilities, and always provide a reduced-motion fallback.
