@@ -68,8 +68,28 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsSymlinkTopDir() {
+        val targetDir = Files.createTempDirectory("html4tree-target-").toFile()
+        val symlink = File(tempDir, "linked-top")
+        try {
+            try {
+                Files.createSymbolicLink(symlink.toPath(), targetDir.absoluteFile.toPath())
+            } catch (e: Exception) {
+                Assume.assumeTrue("Symlink creation not supported in this environment", false)
+            }
+
+            assertFailsWith<IllegalArgumentException> {
+                go(symlink.absolutePath, -1)
+            }
+        } finally {
+            targetDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun testGoRejectsNonExistentDir() {
-        val nonExistentDir = File(tempDir, "non_existent_dir")
+        val nonExistentDir = File(tempDir, "non_existent_dir_${System.currentTimeMillis()}")
+        assertFalse(nonExistentDir.exists(), "Test directory should not exist initially")
         assertFailsWith<IllegalArgumentException> {
             go(nonExistentDir.absolutePath, -1)
         }

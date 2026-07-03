@@ -23,8 +23,9 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
-    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
+    val original_dir = File(topDir).absoluteFile
+    require(Files.isDirectory(original_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
+    val top_dir = original_dir.canonicalFile
 
     val ll = LinkedList()
 
@@ -49,30 +50,30 @@ fun go(topDir: String, maxLevel: Int)  {
 }
 
 fun String.escapeHtml(): String {
-    var hasEscapable = false
+    var sb: java.lang.StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        if (c == '&' || c == '<' || c == '>' || c == '"' || c == '\'' || c == '`') {
-            hasEscapable = true
-            break
+        val escaped = when (c) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
         }
-    }
-    if (!hasEscapable) return this
 
-    val sb = java.lang.StringBuilder(this.length + 16)
-    for (i in 0 until this.length) {
-        val c = this[i]
-        when (c) {
-            '&' -> sb.append("&amp;")
-            '<' -> sb.append("&lt;")
-            '>' -> sb.append("&gt;")
-            '"' -> sb.append("&quot;")
-            '\'' -> sb.append("&#x27;")
-            '`' -> sb.append("&#x60;")
-            else -> sb.append(c)
+        if (escaped != null) {
+            if (sb == null) {
+                sb = java.lang.StringBuilder(this.length + 16)
+                sb.append(this, 0, i)
+            }
+            sb.append(escaped)
+        } else {
+            sb?.append(c)
         }
     }
-    return sb.toString()
+    return sb?.toString() ?: this
 }
 
 fun String.urlEncodePath(): String {
