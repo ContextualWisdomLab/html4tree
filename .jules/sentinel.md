@@ -26,4 +26,4 @@
 ## 2026-07-02 - [Fix Path Traversal/Symlink Bypass in File Checking]
 **Vulnerability:** 심볼릭 링크 디렉토리인지 검증하는 과정에서 `File.canonicalFile`을 사용하면, JVM/OS가 심볼릭 링크를 대상 경로(실제 디렉토리)로 미리 해석(resolve)해 버립니다. 그 결과 `Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)`가 심볼릭 링크 자체가 아닌 실제 디렉토리를 검사하게 되어 심볼릭 링크 검증을 우회하는 보안 취약점이 발생했습니다.
 **Learning:** `canonicalFile`은 모든 심볼릭 링크를 해석하고 정규화된 절대 경로를 반환합니다. 심볼릭 링크 자체의 속성을 검사해야 할 때(예: 심볼릭 링크를 허용하지 않거나, 경로 탐색을 방지해야 하는 경우) `canonicalFile`을 사용하면 검증 로직이 무효화될 수 있습니다.
-**Prevention:** 심볼릭 링크 검증 시에는 경로의 상대성만 해결하고 심볼릭 링크를 해석하지 않는 `absoluteFile`을 사용해야 합니다. 그 후 `LinkOption.NOFOLLOW_LINKS`와 같은 옵션을 사용하여 안전하게 파일 시스템 속성을 검사해야 합니다.
+**Prevention:** 심볼릭 링크 검증 시에는 경로의 상대성만 해결하고 심볼릭 링크를 해석하지 않는 `Path.toAbsolutePath().normalize()`을 사용해야 합니다. 그 후 `LinkOption.NOFOLLOW_LINKS`와 같은 옵션을 사용하여 안전하게 파일 시스템 속성을 검사해야 합니다.
