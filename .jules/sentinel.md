@@ -22,3 +22,8 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+
+## 2024-11-20 - [html4tree] Symlink Path Traversal Bypass via canonicalFile
+**Vulnerability:** Symlink paths bypassed directory symlink checks causing path traversal vulnerabilities at the root directory level.
+**Learning:** `File.canonicalFile` resolves symbolic links immediately. When used *before* security checks like `Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)`, the check evaluates the resolved target rather than the symlink itself, defeating the entire purpose of `NOFOLLOW_LINKS`.
+**Prevention:** Use `File.absoluteFile` instead of `File.canonicalFile` when handling paths that require subsequent non-following symlink checks (e.g., using `LinkOption.NOFOLLOW_LINKS`), ensuring the symlink itself is checked before any resolution occurs.

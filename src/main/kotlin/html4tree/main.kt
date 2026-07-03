@@ -23,12 +23,12 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
-    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
+    val topDirFile = File(topDir).absoluteFile
+    require(Files.isDirectory(topDirFile.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
 
-    ll.push(LinkedListEntry(top_dir,0))
+    ll.push(LinkedListEntry(topDirFile,0))
 
     var lle: LinkedListEntry? = ll.pull()
 
