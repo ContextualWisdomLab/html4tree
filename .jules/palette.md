@@ -13,3 +13,6 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+## 2024-07-03 - VoiceOver list bug with list-style-type: none
+**Learning:** When using `list-style-type: none` on a `<ul>`, Safari removes the list semantics, which causes VoiceOver not to announce it as a list. Explicitly adding `role="list"` fixes this issue.
+**Action:** Add `role="list"` to `<ul>` elements when stripping default list styles via CSS.
