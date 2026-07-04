@@ -23,8 +23,8 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
+    require(Files.isDirectory(File(topDir).toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
     val top_dir = File(topDir).canonicalFile
-    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
 
@@ -134,6 +134,15 @@ fun process_dir(curr_dir: File){
 
     val css = """
               <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                line-height: 1.6;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 2rem 1rem;
+                color: #24292e;
+                background-color: #ffffff;
+              }
               ul {
                 list-style-type: none;
                 padding-left: 0;
@@ -149,6 +158,19 @@ fun process_dir(curr_dir: File){
                 text-decoration: underline;
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  color: #c9d1d9;
+                  background-color: #0d1117;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline: 2px solid #58a6ff;
+                }
               }
               </style>
               """
