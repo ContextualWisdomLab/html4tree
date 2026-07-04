@@ -22,3 +22,7 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+## 2026-07-04 - XSS in HTML Escaping Function
+**Vulnerability:** The custom `escapeHtml` function did not escape forward slashes (`/`) and backslashes (`\`), allowing potential Cross-Site Scripting (XSS) if malicious payload relies on those unescaped characters.
+**Learning:** Custom sanitization functions are prone to miss edge cases. When rolling a manual HTML escaper, it is critical to encode all sensitive structural characters including slashes, or preferably use a well-tested library.
+**Prevention:** Always test custom escaping functions extensively and consider a security review. When modifying output sanitization logic, make sure the unit tests exhaustively cover special characters (e.g., `&<>\"'\`/\`).

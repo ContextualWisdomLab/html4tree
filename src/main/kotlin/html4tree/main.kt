@@ -55,6 +55,8 @@ fun String.escapeHtml(): String {
                .replace("\"", "&quot;")
                .replace("'", "&#x27;")
                .replace("`", "&#x60;")
+               .replace("/", "&#x2F;")
+               .replace("\\", "&#x5C;")
 }
 
 fun String.urlEncodePath(): String {

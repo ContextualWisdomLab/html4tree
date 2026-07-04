@@ -37,7 +37,9 @@ class MainTest {
         assertEquals("&quot;", "\"".escapeHtml())
         assertEquals("&#x27;", "'".escapeHtml())
         assertEquals("&#x60;", "`".escapeHtml())
-        assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
+        assertEquals("&#x2F;", "/".escapeHtml())
+        assertEquals("&#x5C;", "\\".escapeHtml())
+        assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;&#x2F;&#x5C;", "&<>\"'`/\\".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
     }
 
