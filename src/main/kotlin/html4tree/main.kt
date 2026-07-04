@@ -23,7 +23,7 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
+    val top_dir = File(topDir).absoluteFile
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
@@ -101,13 +101,14 @@ fun process_ignore_file(curr_dir: File): Set<String> {
            }
        }
 
-       curr_dir.list()?.sorted()?.forEach {
-           val current = it
-           ignored_regexes.forEach { regex ->
+       // ⚡ Bolt: 성능 최적화 - 불필요한 O(N log N) 정렬 제거 및 조기 반환(break)을 통한 중복 정규식 검사 방지
+       curr_dir.list()?.forEach { current ->
+           for (regex in ignored_regexes) {
               if(regex.matches(current)){
                  files_to_exclude.add(current)
+                 break
               }
-         }
+           }
        }
     }
 
