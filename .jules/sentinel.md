@@ -22,3 +22,7 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+## 2024-07-04 - [Symbolic Link Validation Bypass]
+**Vulnerability:** 파일 경로를 검증할 때 `canonicalFile`을 사용하면 해당 경로가 심볼릭 링크인지 확인하기도 전에 실제 물리적 경로로 분석(resolving)되어버려, 이후 `LinkOption.NOFOLLOW_LINKS`를 이용한 심볼릭 링크 제한 로직이 우회되는 논리적 보안 취약점이 있었습니다.
+**Learning:** `canonicalFile`은 운영 체제의 파일 시스템을 참고하여 모든 심볼릭 링크를 원본 경로로 치환합니다. 따라서 심볼릭 링크 여부를 검사하거나 링크 자체의 경로를 검증해야 할 때는 이를 사용하면 안 되며, 파일 시스템 조회 없이 경로 문자열만 정규화하는 `absoluteFile.toPath().normalize().toFile()` 방식을 사용해야 합니다.
+**Prevention:** 심볼릭 링크에 대한 제약 조건(예: 디렉토리 탐색 금지)을 강제할 때는 경로를 해석(resolve)하는 함수(예: canonicalFile, realPath) 대신 단순 정규화 함수(normalize)를 사용하여 원본 경로 형태를 유지한 채 검증을 수행해야 합니다.

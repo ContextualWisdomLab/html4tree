@@ -23,7 +23,9 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
+    // 보안 향상: canonicalFile은 심볼릭 링크를 미리 해석하여 검증을 무력화하므로,
+    // absoluteFile과 normalize()를 사용하여 심볼릭 링크 검증 우회를 방지합니다.
+    val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
