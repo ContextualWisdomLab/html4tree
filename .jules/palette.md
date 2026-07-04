@@ -13,3 +13,6 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+## 2024-07-04 - ARIA Localization and Tooltips
+**Learning:** Hard-coding ARIA labels in a single language (e.g., `aria-label="Directory listing"`) creates a confusing experience when the document itself specifies a different language (e.g., `lang="ko"`). Screen readers may try to read English text with a Korean voice, or the user may simply not understand English. Additionally, technical jargon or shorthand (like `..` for parent directory) can be confusing for sighted users who aren't familiar with command-line conventions.
+**Action:** Always translate ARIA labels to match the document's primary language (`lang` attribute). When using symbols or shorthand (like `..`), provide a `title` attribute to serve as a tooltip for sighted users, in addition to an `aria-label` for screen reader users.

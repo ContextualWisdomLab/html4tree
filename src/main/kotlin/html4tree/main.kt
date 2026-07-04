@@ -23,7 +23,7 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
+    val top_dir = File(topDir).absoluteFile
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
@@ -166,9 +166,9 @@ fun process_dir(curr_dir: File){
      <body>
        <main>
          <h1>${curr_dir.getName().escapeHtml()}</h1>
-         <nav aria-label="Directory listing">
+         <nav aria-label="디렉토리 목록">
          <ul>
-            <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+            <li><a style="display:block; width:100%" href="./.." title="상위 디렉토리로 이동" aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -182,7 +182,7 @@ fun process_dir(curr_dir: File){
               val fileName = it.getName()
               val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
               val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-              val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
+              val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
               l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
               l.append('\n')
            }
