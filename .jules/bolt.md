@@ -5,3 +5,7 @@
 ## 2024-05-24 - Loop Allocation Hot Paths
 **Learning:** Rendering directory entries with repeated string concatenation and list-based exclusion lookups creates avoidable allocation and lookup cost in large directories.
 **Action:** Use `StringBuilder` for entry rendering and a `Set` for excluded file names.
+
+## 2024-08-01 - Chained String Replace
+**Learning:** Using chained `.replace()` calls on a String for frequent operations (like HTML escaping) is inefficient due to multiple intermediate allocations.
+**Action:** Use a single-pass loop with a lazily-initialized `StringBuilder` for string manipulation functions called frequently on hot paths to minimize allocations and improve performance.
