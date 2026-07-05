@@ -23,14 +23,15 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
+    val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
-    val ll = LinkedList()
+    // ⚡ Bolt: Use ArrayDeque instead of inefficient custom LinkedList (O(1) vs O(N) push)
+    val ll = java.util.ArrayDeque<LinkedListEntry>()
 
-    ll.push(LinkedListEntry(top_dir,0))
+    ll.addLast(LinkedListEntry(top_dir,0))
 
-    var lle: LinkedListEntry? = ll.pull()
+    var lle: LinkedListEntry? = ll.pollFirst()
 
     while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
         val currentLevel: Int = lle.level
@@ -40,11 +41,11 @@ fun go(topDir: String, maxLevel: Int)  {
         if(maxLevel == -1 || currentLevel < maxLevel) {
             lle.file.listFiles()?.forEach {
                 if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
-                    ll.push( LinkedListEntry(it, currentLevel+1))
+                    ll.addLast(LinkedListEntry(it, currentLevel+1))
                 }
             }
         }
-        lle = ll.pull()
+        lle = ll.pollFirst()
     }
 }
 
