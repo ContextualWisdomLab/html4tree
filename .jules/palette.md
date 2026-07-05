@@ -13,3 +13,6 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+## 2026-07-05 - [Improving Layout and Typography for Auto-generated index]
+**Learning:** Default unstyled browser rendering for auto-generated directory indexes takes up the full width and uses default serifs, reducing readability. Injecting a container with `max-width: 800px`, centering it, and setting `font-family: system-ui` drastically improves legibility, making it feel like a modern UI rather than a raw dump.
+**Action:** Always include basic typography (system fonts) and a bounded container (`max-width`) when generating raw HTML documents for users, and consider transition animations for interactive states to make them feel smoother.
