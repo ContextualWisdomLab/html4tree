@@ -22,3 +22,8 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+
+## 2024-06-29 - [html4tree] Static HTML Generation Security
+**Vulnerability:** Defense in Depth (CSP `unsafe-inline`)
+**Learning:** Using `unsafe-inline` in the Content Security Policy (CSP) weakens protection against XSS. When automatically generating HTML with CSS styling, it is more secure to use nonces or hashes for `<style>` blocks and avoid inline `style="..."` attributes altogether.
+**Prevention:** Always define CSS in a single `<style>` block protected by a cryptographically secure random nonce (e.g., `java.util.UUID.randomUUID().toString()`), and apply these styles using CSS classes instead of inline attributes. Ensure the CSP header uses `style-src 'nonce-<random>'`.
