@@ -159,7 +159,8 @@ class MainTest {
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
-        assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+        assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';"))
+        assertTrue(htmlContent.contains("name=\"referrer\" content=\"no-referrer\""))
     }
 
     @Test

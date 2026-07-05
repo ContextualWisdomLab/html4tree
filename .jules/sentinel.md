@@ -22,3 +22,7 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+## 2024-07-05 - Enhance Security Headers for Static HTML
+**Vulnerability:** Insufficient HTTP response headers in statically generated HTML (missing Referrer-Policy and strict CSP directives), potentially exposing local environment details or allowing clickjacking/base injection.
+**Learning:** Even statically generated offline HTML index pages require robust security headers (via meta tags) to implement defense-in-depth, as they might be viewed in various browser contexts.
+**Prevention:** Consistently apply strict Content-Security-Policy (including base-uri, form-action, frame-ancestors) and Referrer-Policy meta tags in all generated HTML templates by default.
