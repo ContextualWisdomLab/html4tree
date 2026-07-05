@@ -13,3 +13,7 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+
+## 2026-07-05 - Enhance Interactive Links with Accessible Animations
+**Learning:** Adding transitions (like `transition: all`) can create unintended or janky animations across properties that shouldn't animate, reducing performance and causing motion discomfort for some users.
+**Action:** When adding hover/focus transitions, explicitly list the properties to be transitioned (e.g. `transition: background-color 0.2s ease, outline-color 0.2s ease;`), and always wrap an override for users sensitive to motion by including a `@media (prefers-reduced-motion: reduce) { transition: none; }` block.

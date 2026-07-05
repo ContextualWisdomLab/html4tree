@@ -143,12 +143,19 @@ fun process_dir(curr_dir: File){
                 text-decoration: none;
                 color: #0366d6;
                 border-radius: 4px;
+                outline: 2px solid transparent;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
                 text-decoration: underline;
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
               }
               </style>
               """

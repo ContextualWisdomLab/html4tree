@@ -160,6 +160,8 @@ class MainTest {
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
         assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+        assertTrue(htmlContent.contains("transition: background-color 0.2s ease, outline-color 0.2s ease;"))
+        assertTrue(htmlContent.contains("@media (prefers-reduced-motion: reduce)"))
     }
 
     @Test
