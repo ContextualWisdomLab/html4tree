@@ -22,3 +22,8 @@
 **Vulnerability:** Defense in Depth (CSP Missing)
 **Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
 **Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+
+## 2026-07-05 - Path Traversal via Canonical File Resolution
+**Vulnerability:** Path traversal and sandbox escape through symlinked top directory.
+**Learning:** In Java/Kotlin, `File.canonicalFile` resolves symbolic links before returning the absolute path. If `canonicalFile` is called on a path *before* checking `Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)`, the symlink is already resolved to its target, rendering the `NOFOLLOW_LINKS` check completely useless, allowing traversal outside intended bounds.
+**Prevention:** Always use `.toPath().toAbsolutePath().normalize().toFile()` (or similar) to resolve paths without resolving symlinks, allowing proper validation of the original path with `LinkOption.NOFOLLOW_LINKS`.
