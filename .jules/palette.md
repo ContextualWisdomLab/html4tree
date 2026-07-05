@@ -13,3 +13,6 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+## 2026-07-05 - Enhance screen reader support for semantic lists
+**Learning:** Screen readers like VoiceOver sometimes strip list semantics from `<ul>` when `list-style: none` is applied, reducing accessibility for users navigating directory trees.
+**Action:** Add `role="list"` explicitly to `<ul>` elements when their default list style is removed in CSS to ensure screen readers announce them properly.
