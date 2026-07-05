@@ -39,6 +39,7 @@ class MainTest {
         assertEquals("&#x60;", "`".escapeHtml())
         assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
+        assertEquals("mixed &amp; matched text with &lt;tags&gt;", "mixed & matched text with <tags>".escapeHtml())
     }
 
     @Test
