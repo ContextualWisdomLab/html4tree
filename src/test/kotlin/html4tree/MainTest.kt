@@ -159,7 +159,8 @@ class MainTest {
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
-        assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+        assertTrue(htmlContent.contains("default-src 'none'; style-src 'nonce-"))
+        assertTrue(htmlContent.contains("class=\"item-link\""))
     }
 
     @Test
