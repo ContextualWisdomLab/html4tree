@@ -13,3 +13,6 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+## 2024-07-06 - [list-style-type이 none인 목록에 list 역할 추가]
+**Learning:** 목록(`<ul>`)에 `list-style-type: none`을 사용할 때 WebKit 기반 브라우저(예: Safari)는 스크린 리더에서 목록 의미를 제거하여 접근성을 떨어뜨릴 수 있습니다.
+**Action:** `list-style-type: none`을 사용하는 목록에 `role="list"`를 명시적으로 추가하여 스크린 리더가 목록을 올바르게 읽을 수 있도록 해야 합니다.

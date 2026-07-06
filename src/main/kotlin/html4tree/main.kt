@@ -167,7 +167,7 @@ fun process_dir(curr_dir: File){
        <main>
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="Directory listing">
-         <ul>
+         <ul role="list">
             <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
