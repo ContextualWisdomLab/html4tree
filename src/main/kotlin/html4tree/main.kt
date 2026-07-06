@@ -48,13 +48,33 @@ fun go(topDir: String, maxLevel: Int)  {
     }
 }
 
+// ⚡ Bolt Optimization: Replace chained .replace() with single-pass StringBuilder
+// Reduces intermediate allocations and improves performance when escaping strings.
 fun String.escapeHtml(): String {
-    return this.replace("&", "&amp;")
-               .replace("<", "&lt;")
-               .replace(">", "&gt;")
-               .replace("\"", "&quot;")
-               .replace("'", "&#x27;")
-               .replace("`", "&#x60;")
+    var sb: StringBuilder? = null
+    for (i in this.indices) {
+        val char = this[i]
+        val replacement = when (char) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
+
+        if (replacement != null) {
+            if (sb == null) {
+                sb = StringBuilder(this.length + 16)
+                sb.append(this, 0, i)
+            }
+            sb.append(replacement)
+        } else {
+            sb?.append(char)
+        }
+    }
+    return sb?.toString() ?: this
 }
 
 fun String.urlEncodePath(): String {
