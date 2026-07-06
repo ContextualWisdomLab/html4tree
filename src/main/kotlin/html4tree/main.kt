@@ -23,7 +23,7 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).absoluteFile
+    val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
@@ -48,7 +48,7 @@ fun go(topDir: String, maxLevel: Int)  {
     }
 }
 
-// ⚡ Bolt: 문자열 이스케이프 최적화
+// ⚡ Bolt: 단일 패스(single-pass) 문자열 이스케이프 최적화
 // 여러 번의 `replace()` 호출을 피하고, 변경이 필요 없는 경우 객체 할당(allocation)을 피하기 위해
 // 단일 패스(single-pass)로 처리합니다. 이는 많은 파일/디렉토리를 순회할 때 메모리 압박 및 가비지 컬렉션을 감소시킵니다.
 fun String.escapeHtml(): String {
@@ -65,7 +65,7 @@ fun String.escapeHtml(): String {
         return this
     }
 
-    val sb = java.lang.StringBuilder(this.length + 16)
+    val sb = StringBuilder(this.length + 16)
     for (i in 0 until this.length) {
         val c = this[i]
         when (c) {
