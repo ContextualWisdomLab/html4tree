@@ -13,3 +13,7 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+
+## 2024-07-06 - Respecting User Preferences in UI Transitions
+**Learning:** Adding CSS transitions for hover or focus states can create a smoother user experience, but these animations can cause discomfort or accessibility issues for users with vestibular disorders.
+**Action:** Always include a `@media (prefers-reduced-motion: reduce)` query to disable or simplify CSS transitions for users who have requested reduced motion in their system settings. Ensure that UI changes relying on motion also make sense statically.

@@ -139,16 +139,29 @@ fun process_dir(curr_dir: File){
                 padding-left: 0;
               }
               a {
+                display: block;
+                width: 100%;
                 padding: 0.5rem;
                 text-decoration: none;
                 color: #0366d6;
                 border-radius: 4px;
+                transition: background-color 0.2s, outline-color 0.2s;
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
                 text-decoration: underline;
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
+              }
+              .empty-state {
+                padding: 0.5rem;
+                color: #666;
+                font-style: italic;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
               }
               </style>
               """
@@ -168,7 +181,7 @@ fun process_dir(curr_dir: File){
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="Directory listing">
          <ul>
-            <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+            <li><a href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -183,13 +196,13 @@ fun process_dir(curr_dir: File){
               val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
               val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
               val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-              l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+              l.append("""          <li><a href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
               l.append('\n')
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div style="padding: 0.5rem; color: #666; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div class="empty-state">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 
