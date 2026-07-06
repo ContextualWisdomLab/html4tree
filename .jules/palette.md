@@ -13,3 +13,7 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+
+## 2024-05-24 - Default Browser Fonts and Spacing
+**Learning:** Automatically generated HTML without font-family and layout constraints uses browser defaults (like Times New Roman) and stretches full-width, which hurts readability and feels outdated.
+**Action:** Always include basic system-ui font stacks and sensible max-width/margins for generated HTML pages to provide an instantly better, modern reading experience.

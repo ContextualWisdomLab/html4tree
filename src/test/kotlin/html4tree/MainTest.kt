@@ -77,9 +77,10 @@ class MainTest {
                 Assume.assumeTrue("Symlink creation not supported in this environment", false)
             }
 
-            assertFailsWith<IllegalArgumentException> {
+            val ex = assertFailsWith<IllegalArgumentException> {
                 go(symlink.absolutePath, -1)
             }
+            assertTrue(ex.message!!.contains("Top directory must be an existing non-symlink directory"))
         } finally {
             targetDir.deleteRecursively()
         }

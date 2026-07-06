@@ -23,8 +23,9 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    val top_dir = File(topDir).canonicalFile
-    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
+    val top_dir_raw = File(topDir)
+    val top_dir = top_dir_raw.canonicalFile
+    require(Files.isDirectory(top_dir_raw.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
 
@@ -134,6 +135,14 @@ fun process_dir(curr_dir: File){
 
     val css = """
               <style>
+              body {
+                font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                line-height: 1.5;
+                color: #24292e;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 1rem;
+              }
               ul {
                 list-style-type: none;
                 padding-left: 0;
