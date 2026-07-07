@@ -157,6 +157,14 @@ fun process_dir(curr_dir: File){
 
     val css = """
               <style>
+              body {
+                font-family: system-ui, -apple-system, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 1rem;
+                line-height: 1.5;
+                color: #24292e;
+              }
               ul {
                 list-style-type: none;
                 padding-left: 0;

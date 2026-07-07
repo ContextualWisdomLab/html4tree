@@ -13,3 +13,6 @@
 ## 2024-06-25 - Directory Listing Navigation Landmark
 **Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
 **Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+## 2024-07-07 - Add basic responsive layout & typography to directory listing
+**Learning:** CLI 도구로 생성된 기본 HTML은 브라우저 뷰포트 전체를 차지하며, 줄글이 길어지거나 화면이 넓어지면 가독성이 크게 떨어지는 문제와 모바일에서 여백 없이 딱 붙어서 출력되는 문제가 발견됨.
+**Action:** 간단한 CLI 도구일지라도 생성하는 HTML 파일에는 `body` 태그에 최소한의 반응형(`max-width: 800px`, `margin: 0 auto`, `padding`) 및 시스템 폰트(`system-ui`)를 설정하여 어떤 디바이스에서든 읽기 편한 경험을 제공해야 함을 기억하기.
