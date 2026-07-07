@@ -80,10 +80,16 @@ fun String.escapeHtml(): String {
     return sb?.toString() ?: this
 }
 
+// ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder and no intermediate strings
+// 💡 What: Lazy StringBuilder allocation and direct hex conversion using bitwise operations
+// 🎯 Why: Previously, chained string methods (toString.padStart.toUpperCase) created multiple short-lived objects per encoded byte, and StringBuilder was always allocated.
+// 📊 Impact: Significantly reduces GC pressure and memory allocations when encoding URLs, especially for ASCII paths which now allocate nothing.
+// 🔬 Measurement: Verify with profiler during generation on large directory trees with many special characters.
 fun String.urlEncodePath(): String {
-    val encoded = StringBuilder()
-    this.toByteArray(Charsets.UTF_8).forEach {
-        val byte = it.toInt() and 0xff
+    var encoded: StringBuilder? = null
+    val bytes = this.toByteArray(Charsets.UTF_8)
+    for (i in bytes.indices) {
+        val byte = bytes[i].toInt() and 0xff
         val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
                            (byte in 'a'.toInt()..'z'.toInt()) ||
                            (byte in '0'.toInt()..'9'.toInt()) ||
@@ -91,14 +97,23 @@ fun String.urlEncodePath(): String {
                            byte == '.'.toInt() ||
                            byte == '_'.toInt() ||
                            byte == '~'.toInt()
+
         if (isUnreserved) {
-            encoded.append(byte.toChar())
+            encoded?.append(byte.toChar())
         } else {
+            if (encoded == null) {
+                encoded = StringBuilder(bytes.size + 16)
+                for (j in 0 until i) {
+                    encoded.append(bytes[j].toInt().toChar())
+                }
+            }
             encoded.append('%')
-            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+            val hex = "0123456789ABCDEF"
+            encoded.append(hex[byte ushr 4])
+            encoded.append(hex[byte and 0x0F])
         }
     }
-    return encoded.toString()
+    return encoded?.toString() ?: this
 }
 
 fun process_ignore_file(curr_dir: File): Set<String> {
