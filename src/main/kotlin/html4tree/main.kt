@@ -80,25 +80,31 @@ fun String.escapeHtml(): String {
     return sb?.toString() ?: this
 }
 
+// ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
+// Avoids multiple string allocations during byte.toString(16).padStart(2, '0').toUpperCase()
+// and skips StringBuilder creation if no encoding is needed.
 fun String.urlEncodePath(): String {
-    val encoded = StringBuilder()
-    this.toByteArray(Charsets.UTF_8).forEach {
-        val byte = it.toInt() and 0xff
-        val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
-                           (byte in 'a'.toInt()..'z'.toInt()) ||
-                           (byte in '0'.toInt()..'9'.toInt()) ||
-                           byte == '-'.toInt() ||
-                           byte == '.'.toInt() ||
-                           byte == '_'.toInt() ||
-                           byte == '~'.toInt()
+    val bytes = this.toByteArray(Charsets.UTF_8)
+    var sb: StringBuilder? = null
+    val hexChars = "0123456789ABCDEF"
+    for (i in bytes.indices) {
+        val byte = bytes[i].toInt() and 0xff
+        val char = byte.toChar()
+        val isUnreserved = (char in 'A'..'Z') || (char in 'a'..'z') || (char in '0'..'9') ||
+                           char == '-' || char == '.' || char == '_' || char == '~'
         if (isUnreserved) {
-            encoded.append(byte.toChar())
+            sb?.append(char)
         } else {
-            encoded.append('%')
-            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+            if (sb == null) {
+                sb = StringBuilder(bytes.size + 16)
+                for (j in 0 until i) sb.append(bytes[j].toChar())
+            }
+            sb.append('%')
+            sb.append(hexChars[byte ushr 4])
+            sb.append(hexChars[byte and 0x0F])
         }
     }
-    return encoded.toString()
+    return sb?.toString() ?: this
 }
 
 fun process_ignore_file(curr_dir: File): Set<String> {
