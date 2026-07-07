@@ -13,6 +13,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 class MainTest {
     private lateinit var tempDir: File
@@ -160,7 +161,13 @@ class MainTest {
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
-        assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+        assertFalse(htmlContent.contains("'unsafe-inline'"))
+        val cspRegex = "style-src 'nonce-([a-f0-9-]{32,36})'".toRegex()
+        val matchResult = cspRegex.find(htmlContent)
+        assertNotNull(matchResult, "CSP nonce should be generated")
+        val nonce = matchResult.groups[1]?.value ?: ""
+        assertTrue(htmlContent.contains("<style nonce=\"$nonce\">"), "Style tag should use the generated nonce")
+        assertTrue(htmlContent.contains("class=\"link-item\""))
     }
 
     @Test

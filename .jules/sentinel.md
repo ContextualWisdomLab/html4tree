@@ -27,3 +27,8 @@
 **Vulnerability:** `File(path).canonicalFile`를 사용하여 심볼릭 링크 여부를 검사하면, `canonicalFile` 함수 내부에서 심볼릭 링크를 이미 대상(target) 파일의 실제 경로로 해석(resolve)해 버리기 때문에, 이후에 진행되는 `Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)` 등의 심볼릭 링크 제한 검사가 완전히 무력화되는 취약점이 발견되었습니다.
 **Learning:** `canonicalFile`은 보안 검사(경로 조작 등)를 위해 절대 경로를 얻을 때 유용할 수 있지만, 심볼릭 링크 자체의 특성(심볼릭 링크인지 아닌지)을 보존해야 하는 맥락에서는 사용하면 안 됩니다.
 **Prevention:** 심볼릭 링크 여부를 검사해야 하거나 심볼릭 링크 자체를 제한해야 하는 경우에는 `canonicalFile` 대신 `absoluteFile.toPath().normalize().toFile()`과 같이 심볼릭 링크를 해석하지 않고 경로만 정규화하는 방식을 사용해야 합니다.
+
+## 2024-07-07 - [CSP 개선: unsafe-inline 제거 및 nonce 적용]
+**Vulnerability:** HTML 생성 시 `<meta http-equiv="Content-Security-Policy">`에 `style-src 'unsafe-inline'`이 설정되어 있어, 악의적인 사용자가 스타일 인젝션을 통해 XSS 공격을 수행할 위험이 존재했습니다.
+**Learning:** `unsafe-inline`은 브라우저에서 인라인 스크립트와 스타일을 허용하기 때문에 보안상 취약합니다. 동적으로 생성되는 HTML에 인라인 스타일을 적용해야 할 경우, CSS 클래스로 분리하고 스타일 태그에 동적으로 생성된 `nonce`를 사용하는 것이 더 안전하다는 것을 배웠습니다.
+**Prevention:** 향후 HTML 생성 시 인라인 스타일 속성(`style="..."`)의 사용을 지양하고, CSS 클래스와 `nonce` 기반의 CSP를 엄격하게 적용해야 합니다.
