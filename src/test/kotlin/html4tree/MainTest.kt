@@ -97,6 +97,33 @@ class MainTest {
     }
 
     @Test
+    fun testGoIgnoresHiddenFilesAndDirectories() {
+        val hiddenFile = File(tempDir, ".hidden_file.txt")
+        hiddenFile.createNewFile()
+
+        val hiddenDir = File(tempDir, ".hidden_dir")
+        hiddenDir.mkdir()
+        val fileInHiddenDir = File(hiddenDir, "file_in_hidden_dir.txt")
+        fileInHiddenDir.createNewFile()
+
+        val normalFile = File(tempDir, "normal_file.txt")
+        normalFile.createNewFile()
+
+        go(tempDir.absolutePath, -1)
+
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+
+        assertTrue(htmlContent.contains("normal_file.txt"), "normal_file.txt should be listed")
+        assertFalse(htmlContent.contains(".hidden_file.txt"), ".hidden_file.txt should not be listed")
+        assertFalse(htmlContent.contains(".hidden_dir"), ".hidden_dir should not be listed")
+
+        val hiddenDirIndexFile = File(hiddenDir, "index.html")
+        assertFalse(hiddenDirIndexFile.exists(), "Hidden directories should not be traversed to generate index.html")
+    }
+
+    @Test
     fun testProcessIgnoreFile() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText(".*\\.txt\n.*\\.log")

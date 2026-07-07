@@ -42,7 +42,7 @@ fun go(topDir: String, maxLevel: Int)  {
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             lle.file.listFiles()?.forEach {
-                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
+                if(!it.name.startsWith(".") && Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
                     ll.push( LinkedListEntry(it, currentLevel+1))
                 }
             }
@@ -201,7 +201,8 @@ fun process_dir(curr_dir: File){
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            val isLinkedDirectory = Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)
-           if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(it.toPath())) {
+           // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
+           if(!it.name.startsWith(".") && (it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(it.toPath())) {
               val fileName = it.getName()
               val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
               val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
