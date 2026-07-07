@@ -80,22 +80,29 @@ fun String.escapeHtml(): String {
     return sb?.toString() ?: this
 }
 
+// ⚡ Bolt Performance Optimization: Use pre-calculated hex array and indices loop
+// Reduces intermediate string allocations from .toString(16).padStart(2, '0').toUpperCase()
+// and avoids iterator creation by using a direct index loop.
+val HEX_ARRAY = "0123456789ABCDEF".toCharArray()
+
 fun String.urlEncodePath(): String {
-    val encoded = StringBuilder()
-    this.toByteArray(Charsets.UTF_8).forEach {
-        val byte = it.toInt() and 0xff
-        val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
-                           (byte in 'a'.toInt()..'z'.toInt()) ||
-                           (byte in '0'.toInt()..'9'.toInt()) ||
-                           byte == '-'.toInt() ||
-                           byte == '.'.toInt() ||
-                           byte == '_'.toInt() ||
-                           byte == '~'.toInt()
+    val bytes = this.toByteArray(Charsets.UTF_8)
+    val encoded = java.lang.StringBuilder(bytes.size * 2)
+    for (i in bytes.indices) {
+        val byte = bytes[i].toInt() and 0xff
+        val isUnreserved = (byte in 65..90) || // 'A'..'Z'
+                           (byte in 97..122) || // 'a'..'z'
+                           (byte in 48..57) || // '0'..'9'
+                           byte == 45 || // '-'
+                           byte == 46 || // '.'
+                           byte == 95 || // '_'
+                           byte == 126   // '~'
         if (isUnreserved) {
             encoded.append(byte.toChar())
         } else {
             encoded.append('%')
-            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+            encoded.append(HEX_ARRAY[byte ushr 4])
+            encoded.append(HEX_ARRAY[byte and 0x0f])
         }
     }
     return encoded.toString()

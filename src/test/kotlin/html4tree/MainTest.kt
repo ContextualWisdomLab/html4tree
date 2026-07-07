@@ -310,4 +310,10 @@ class MainTest {
         assertTrue(excluded.contains("test.txt"))
     }
 
+
+    @Test
+    fun testGetHexArray() {
+        assertEquals('0', HEX_ARRAY[0])
+        assertEquals('F', HEX_ARRAY[15])
+    }
 }
