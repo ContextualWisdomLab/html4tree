@@ -51,13 +51,33 @@ fun go(topDir: String, maxLevel: Int)  {
     }
 }
 
+// ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
+// Chained `.replace()` calls allocate multiple intermediate strings.
+// A single pass over the string lazily allocating a StringBuilder is much faster.
 fun String.escapeHtml(): String {
-    return this.replace("&", "&amp;")
-               .replace("<", "&lt;")
-               .replace(">", "&gt;")
-               .replace("\"", "&quot;")
-               .replace("'", "&#x27;")
-               .replace("`", "&#x60;")
+    var sb: StringBuilder? = null
+    for (i in 0 until this.length) {
+        val c = this[i]
+        val replacement = when (c) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
+        if (replacement != null) {
+            if (sb == null) {
+                sb = StringBuilder(this.length + 16)
+                sb.append(this as CharSequence, 0, i)
+            }
+            sb.append(replacement)
+        } else {
+            sb?.append(c)
+        }
+    }
+    return sb?.toString() ?: this
 }
 
 fun String.urlEncodePath(): String {
