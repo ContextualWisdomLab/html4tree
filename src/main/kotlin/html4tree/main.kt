@@ -80,22 +80,29 @@ fun String.escapeHtml(): String {
     return sb?.toString() ?: this
 }
 
+// ⚡ Bolt Performance Optimization: Array traversal, fixed-size StringBuilder, and hex array lookup
+// `forEach` with lambda allocates objects and creates indirection.
+// Pre-allocating `StringBuilder` size avoids resizing.
+// Direct hex lookup table `hexChars` avoids `byte.toString(16).padStart()` allocations.
 fun String.urlEncodePath(): String {
-    val encoded = StringBuilder()
-    this.toByteArray(Charsets.UTF_8).forEach {
-        val byte = it.toInt() and 0xff
-        val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
-                           (byte in 'a'.toInt()..'z'.toInt()) ||
-                           (byte in '0'.toInt()..'9'.toInt()) ||
-                           byte == '-'.toInt() ||
-                           byte == '.'.toInt() ||
-                           byte == '_'.toInt() ||
-                           byte == '~'.toInt()
+    val bytes = this.toByteArray(Charsets.UTF_8)
+    val encoded = StringBuilder(bytes.size * 2)
+    val hexChars = "0123456789ABCDEF"
+    for (b in bytes) {
+        val byte = b.toInt() and 0xff
+        val isUnreserved = (byte in 65..90) || // 'A'..'Z'
+                           (byte in 97..122) || // 'a'..'z'
+                           (byte in 48..57) || // '0'..'9'
+                           byte == 45 || // '-'
+                           byte == 46 || // '.'
+                           byte == 95 || // '_'
+                           byte == 126   // '~'
         if (isUnreserved) {
             encoded.append(byte.toChar())
         } else {
             encoded.append('%')
-            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+            encoded.append(hexChars[byte ushr 4])
+            encoded.append(hexChars[byte and 0x0F])
         }
     }
     return encoded.toString()
