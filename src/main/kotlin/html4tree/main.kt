@@ -189,7 +189,6 @@ fun process_dir(curr_dir: File){
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
               }
-<<<<<<< HEAD
               .dir-link {
                 display: block;
                 width: 100%;
@@ -198,12 +197,11 @@ fun process_dir(curr_dir: File){
                 padding: 0.5rem;
                 color: #666;
                 font-style: italic;
-=======
+              }
               @media (prefers-reduced-motion: reduce) {
                 a {
                   transition: none;
                 }
->>>>>>> origin/master
               }
               </style>
               """
