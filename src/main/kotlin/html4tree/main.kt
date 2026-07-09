@@ -164,10 +164,7 @@ fun process_dir(curr_dir: File){
     
     val exclude: Set<String> = process_ignore_file(curr_dir)
 
-    val nonce = java.util.Base64.getEncoder().encodeToString(java.security.SecureRandom().generateSeed(16))
-
-    val css = """
-              <style nonce="${nonce}">
+    val cssContent = """
               ul {
                 list-style-type: none;
                 padding-left: 0;
@@ -199,16 +196,20 @@ fun process_dir(curr_dir: File){
                 color: #666;
                 font-style: italic;
               }
-              </style>
               """
+
+    val digest = java.security.MessageDigest.getInstance("SHA-256")
+    val hash = java.util.Base64.getEncoder().encodeToString(digest.digest(cssContent.toByteArray(Charsets.UTF_8)))
+
+    val css = "<style>${cssContent}</style>"
 
     val index_top = """<!doctype html>
 <html lang="ko">
      <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}';">
+        <!-- 보안 향상: 인라인 스크립트 실행 방지 (정적 HTML이므로 nonce 대신 sha256 해시 사용) -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-${hash}';">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>

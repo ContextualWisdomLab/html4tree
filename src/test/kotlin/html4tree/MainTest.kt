@@ -160,7 +160,7 @@ class MainTest {
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
-        assertTrue(htmlContent.contains("default-src 'none'; style-src 'nonce-"))
+        assertTrue(htmlContent.contains("default-src 'none'; style-src 'sha256-"))
         assertTrue(htmlContent.contains("class=\"dir-link\""))
     }
 

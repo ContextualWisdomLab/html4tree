@@ -35,3 +35,11 @@
 **Vulnerability:** CSP(Content-Security-Policy) 헤더에 `style-src 'unsafe-inline'`이 포함되어 있어, 공격자가 HTML 인젝션을 통해 임의의 CSS 속성을 적용하거나 스크립트 우회(예: data URI)를 시도할 수 있는 잠재적 위험이 존재했습니다.
 **Learning:** `unsafe-inline`을 허용하면 CSP의 방어 효과가 크게 저하됩니다. 정적 생성 도구라 할지라도 동적인 랜덤 Base64 Nonce를 생성하여 `style` 태그 및 CSP 헤더에 주입하는 방식으로 보다 엄격한 보안을 유지해야 합니다.
 **Prevention:** 런타임에 16-byte 랜덤 Base64 문자열을 생성하여 CSP 메타 태그(`style-src 'nonce-...'`)와 `<style nonce="...">`에 동일하게 주입하고, 인라인 `style="..."` 속성 대신 CSS 클래스를 활용하여 UI를 스타일링합니다.
+## 2026-07-09 - [html4tree] Path Traversal in Root Directory Parameter
+**Vulnerability:** The `topDir` parameter in the `go` function lacked explicit boundary validation, allowing an attacker to pass traversal sequences (e.g., `../../etc`) to crawl unintended directories outside the expected context.
+**Learning:** While `File(path).absoluteFile.toPath().normalize()` correctly resolves the absolute path and prevents some logical traversal issues downstream, it does not intrinsically validate whether the provided input string is maliciously attempting to escape a sandbox or intended root scope. The initial input must always be validated.
+**Prevention:** Explicitly block `..` sequence strings from being supplied in the target directory parameter.
+## 2026-07-09 - [html4tree] Static File Nonce Anti-Pattern
+**Vulnerability:** A previous security fix injected a dynamically generated `nonce` into statically generated HTML files to prevent inline script execution (CSP). However, a `nonce` should only be used dynamically per-HTTP request. In static files, the nonce remains the same across all accesses to that file, completely invalidating the security properties of a nonce and allowing an attacker to scrape and reuse it.
+**Learning:** For statically generated files, do not use `nonce`. You must pivot to either external stylesheets or compute a cryptographic hash of the content (e.g., `sha256-<hash>`) to strictly validate block-level inline elements.
+**Prevention:** Compute the SHA-256 hash of the static CSS string during build generation, base64 encode it, and inject `style-src 'sha256-<hash>'` into the CSP header.
