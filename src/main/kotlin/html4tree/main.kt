@@ -83,7 +83,7 @@ fun String.escapeHtml(): String {
 // ⚡ Bolt Performance Optimization: Use pre-calculated hex array and indices loop
 // Reduces intermediate string allocations from .toString(16).padStart(2, '0').toUpperCase()
 // and avoids iterator creation by using a direct index loop.
-val HEX_ARRAY = "0123456789ABCDEF".toCharArray()
+internal val HEX_ARRAY = "0123456789ABCDEF".toCharArray()
 
 fun String.urlEncodePath(): String {
     val bytes = this.toByteArray(Charsets.UTF_8)
