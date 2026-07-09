@@ -116,7 +116,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
     val files_to_exclude = mutableSetOf<String>()
 
-    if(ignore_file.exists()){
+    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath())){
        val ignored_regexes = mutableListOf<Regex>()
 
        ignore_file.forEachLine {
