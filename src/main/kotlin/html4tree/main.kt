@@ -41,8 +41,9 @@ fun go(topDir: String, maxLevel: Int)  {
            process_dir(lle.file)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
+            val exclude = process_ignore_file(lle.file)
             lle.file.listFiles()?.forEach {
-                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
+                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
                     ll.push( LinkedListEntry(it, currentLevel+1))
                 }
             }
