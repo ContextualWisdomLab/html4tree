@@ -129,13 +129,10 @@ fun process_ignore_file(curr_dir: File): Set<String> {
            }
        }
 
-       curr_dir.list()?.sorted()?.forEach {
-           val current = it
-           ignored_regexes.forEach { regex ->
-              if(regex.matches(current)){
-                 files_to_exclude.add(current)
-              }
-         }
+       curr_dir.list()?.forEach { current ->
+           if (ignored_regexes.any { it.matches(current) }) {
+               files_to_exclude.add(current)
+           }
        }
     }
 
@@ -215,14 +212,17 @@ fun process_dir(curr_dir: File){
         val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
-           val isLinkedDirectory = Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)
-           if((it.getName() !in exclude) && (isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(it.toPath())) {
-              val fileName = it.getName()
-              val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-              val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-              val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-              l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
-              l.append('\n')
+           val fileName = it.getName()
+           if (fileName !in exclude) {
+               val path = it.toPath()
+               val isLinkedDirectory = Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)
+               if ((isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(path)) {
+                  val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
+                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
+                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
+                  l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+                  l.append('\n')
+               }
            }
         }
 

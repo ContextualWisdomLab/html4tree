@@ -12,3 +12,11 @@
 ## 2024-07-08 - URL Encoding String Allocation Bottleneck
 **Learning:** `byte.toString(16).padStart(2, '0').toUpperCase()` inside a loop allocating up to 3 strings per reserved byte in a hot path causes significant GC pressure. This is a common but dangerous anti-pattern in Kotlin when processing large strings or numerous files in directory crawlers.
 **Action:** Replace chained string operations with direct character mapping and bitwise operations (`ushr`, `and`) when building formatted hex output, which avoids intermediate string creation entirely. Ensure 100% branch coverage with test inputs spanning both < 10 and > 9 hex values.
+
+## 2024-07-29 - Excessive File Object and I/O Operations in Filter Loops
+**Learning:** In directory crawlers, calling `.listFiles()` loads `File` objects for every item, and subsequently calling `it.toPath()` and expensive I/O operations (`Files.isDirectory`, `Files.isSymbolicLink`) *before* checking exclusions creates significant overhead on large directories with many excluded files.
+**Action:** Always check file names against exclusion sets (`if (fileName !in exclude)`) *before* allocating `Path` objects or executing I/O checks.
+
+## 2024-07-29 - Unnecessary Sorting in Set Accumulation
+**Learning:** Calling `.sorted()` on a directory listing (`curr_dir.list()?.sorted()?.forEach`) before adding elements to a `Set` or checking against a list of RegExes wastes O(N log N) time and allocates unnecessary arrays.
+**Action:** Omit `.sorted()` when order is irrelevant (e.g., when populating an exclusion `Set`) and use `.any` to short-circuit regex checking.
