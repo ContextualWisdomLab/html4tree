@@ -129,13 +129,13 @@ fun process_ignore_file(curr_dir: File): Set<String> {
            }
        }
 
-       curr_dir.list()?.sorted()?.forEach {
-           val current = it
-           ignored_regexes.forEach { regex ->
-              if(regex.matches(current)){
-                 files_to_exclude.add(current)
-              }
-         }
+       // ⚡ Bolt Performance Optimization: Skip unnecessary sorting and use short-circuiting
+       // Removing .sorted() avoids creating a new list and sorting it when we only need to check for matches.
+       // Using .any() short-circuits the regex checks as soon as a match is found.
+       curr_dir.list()?.forEach { current ->
+           if (ignored_regexes.any { it.matches(current) }) {
+               files_to_exclude.add(current)
+           }
        }
     }
 

@@ -12,3 +12,6 @@
 ## 2024-07-08 - URL Encoding String Allocation Bottleneck
 **Learning:** `byte.toString(16).padStart(2, '0').toUpperCase()` inside a loop allocating up to 3 strings per reserved byte in a hot path causes significant GC pressure. This is a common but dangerous anti-pattern in Kotlin when processing large strings or numerous files in directory crawlers.
 **Action:** Replace chained string operations with direct character mapping and bitwise operations (`ushr`, `and`) when building formatted hex output, which avoids intermediate string creation entirely. Ensure 100% branch coverage with test inputs spanning both < 10 and > 9 hex values.
+## 2024-08-01 - Avoid List Sorting and Re-Iteration For Matching
+**Learning:** In Kotlin, using `.sorted().forEach()` and an inner `.forEach()` over regexes to find matching files is inefficient. It allocates a new list, sorts it (O(N log N)), and evaluates every regex even after a match is found.
+**Action:** Remove `.sorted()` when order doesn't matter for the operation (like adding to a Set). Use `.any()` on the regex list to short-circuit evaluation as soon as the first match is found, saving CPU cycles on N * M comparisons.
