@@ -142,6 +142,10 @@ fun process_ignore_file(curr_dir: File): Set<String> {
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
 
+    // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml")
+    files_to_exclude.addAll(defaultSensitiveFiles)
+
     return files_to_exclude
 }
 
