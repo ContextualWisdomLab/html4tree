@@ -31,3 +31,7 @@
 **Vulnerability:** 정적 HTML 디렉토리 인덱서(`html4tree`)가 민감한 시스템 및 설정 파일(`.git`, `.env`, `.ssh`, `.htpasswd` 등)을 포함하여 모든 파일과 디렉토리를 무분별하게 나열하여, 생성된 HTML이 공개적으로 호스팅될 경우 심각한 정보 노출로 이어질 수 있었습니다.
 **Learning:** 디렉토리 구조를 자동 생성하는 도구는 반드시 "기본적으로 안전한(secure by default)" 정책을 채택해야 합니다. 사용자 제공 무시 파일(`.html4ignore`)에만 의존하는 것은 사용자가 설정을 잊거나 어떤 파일이 민감한지 모를 수 있기 때문에 불충분합니다.
 **Prevention:** 출력에서 기본적으로 제외되는 보편적으로 민감한 파일 및 디렉토리의 하드코딩된 기준 목록을 항상 포함하십시오. 이는 우발적인 정보 유출을 방지하기 위한 강력한 심층 방어(defense-in-depth) 조치로 작용합니다.
+## 2024-05-27 - [html4tree] CSP 우회 방지를 위한 Nonce 기반 스타일 적용
+**Vulnerability:** CSP(Content-Security-Policy) 헤더에 `style-src 'unsafe-inline'`이 포함되어 있어, 공격자가 HTML 인젝션을 통해 임의의 CSS 속성을 적용하거나 스크립트 우회(예: data URI)를 시도할 수 있는 잠재적 위험이 존재했습니다.
+**Learning:** `unsafe-inline`을 허용하면 CSP의 방어 효과가 크게 저하됩니다. 정적 생성 도구라 할지라도 동적인 랜덤 Base64 Nonce를 생성하여 `style` 태그 및 CSP 헤더에 주입하는 방식으로 보다 엄격한 보안을 유지해야 합니다.
+**Prevention:** 런타임에 16-byte 랜덤 Base64 문자열을 생성하여 CSP 메타 태그(`style-src 'nonce-...'`)와 `<style nonce="...">`에 동일하게 주입하고, 인라인 `style="..."` 속성 대신 CSS 클래스를 활용하여 UI를 스타일링합니다.
