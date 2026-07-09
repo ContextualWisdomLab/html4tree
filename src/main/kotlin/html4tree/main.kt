@@ -96,8 +96,13 @@ fun String.urlEncodePath(): String {
         if (isUnreserved) {
             encoded.append(byte.toChar())
         } else {
+            // ⚡ Bolt Performance Optimization: Direct character mapping
+            // Avoids multiple string allocations (toString, padStart, toUpperCase) per reserved byte.
             encoded.append('%')
-            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+            val hex1 = byte ushr 4
+            val hex2 = byte and 0xf
+            encoded.append(if (hex1 < 10) (hex1 + 48).toChar() else (hex1 + 55).toChar())
+            encoded.append(if (hex2 < 10) (hex2 + 48).toChar() else (hex2 + 55).toChar())
         }
     }
     return encoded.toString()
@@ -139,6 +144,10 @@ fun process_ignore_file(curr_dir: File): Set<String> {
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
 
+    // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml")
+    files_to_exclude.addAll(defaultSensitiveFiles)
+
     return files_to_exclude
 }
 
@@ -172,6 +181,7 @@ fun process_dir(curr_dir: File){
                 text-decoration: none;
                 color: #0366d6;
                 border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
@@ -179,6 +189,7 @@ fun process_dir(curr_dir: File){
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
               }
+<<<<<<< HEAD
               .dir-link {
                 display: block;
                 width: 100%;
@@ -187,6 +198,12 @@ fun process_dir(curr_dir: File){
                 padding: 0.5rem;
                 color: #666;
                 font-style: italic;
+=======
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+>>>>>>> origin/master
               }
               </style>
               """
