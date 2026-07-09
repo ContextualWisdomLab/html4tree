@@ -94,8 +94,13 @@ fun String.urlEncodePath(): String {
         if (isUnreserved) {
             encoded.append(byte.toChar())
         } else {
+            // ⚡ Bolt Performance Optimization: Direct character mapping
+            // Avoids multiple string allocations (toString, padStart, toUpperCase) per reserved byte.
             encoded.append('%')
-            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+            val hex1 = byte ushr 4
+            val hex2 = byte and 0xf
+            encoded.append(if (hex1 < 10) (hex1 + 48).toChar() else (hex1 + 55).toChar())
+            encoded.append(if (hex2 < 10) (hex2 + 48).toChar() else (hex2 + 55).toChar())
         }
     }
     return encoded.toString()

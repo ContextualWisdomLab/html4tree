@@ -300,6 +300,18 @@ class MainTest {
     }
 
     @Test
+    fun testUrlEncodePathReservedHexCoverage() {
+        // Need characters that produce hex digit > 9 to hit the `else` branch of `if (hex1 < 10)` and `if (hex2 < 10)`.
+        // The byte for '가' (EA B0 80) is useful here.
+        // EA: E(14)>9, A(10)>9 -> both hex1 and hex2 > 9
+        // B0: B(11)>9, 0<10 -> hex1 > 9, hex2 < 10
+        // 80: 8<10, 0<10 -> both hex1 and hex2 < 10
+        assertEquals("%EA%B0%80", "가".urlEncodePath())
+        // And something with <10 for hex1 but >9 for hex2: e.g. ASCII DEL (127 -> 7F)
+        assertEquals("%7F", "\u007F".urlEncodePath())
+    }
+
+    @Test
     fun testProcessIgnoreFileEmptyLine() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("\n.*\\.txt\n\n.*\\.log\n")
