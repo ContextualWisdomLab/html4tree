@@ -166,6 +166,15 @@ fun process_dir(curr_dir: File){
 
     val css = """
               <style>
+              body {
+                font-family: system-ui, -apple-system, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 1rem;
+                color: #24292e;
+                background-color: #ffffff;
+                line-height: 1.5;
+              }
               ul {
                 list-style-type: none;
                 padding-left: 0;
@@ -182,6 +191,19 @@ fun process_dir(curr_dir: File){
                 text-decoration: underline;
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  color: #c9d1d9;
+                  background-color: #0d1117;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
               }
               @media (prefers-reduced-motion: reduce) {
                 a {

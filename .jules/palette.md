@@ -1,15 +1,7 @@
-## 2024-05-15 - Enhancing Generated File Tree HTML
-**Learning:** Raw directory listings generated into HTML often lack critical accessibility meta tags (like `lang="en"`, `viewport` for responsive scaling) and aria-labels for directory/file links (which are otherwise non-descriptive for screen readers like just `&#128193; folderName`).
-**Action:** Always include base semantic structures (`<main>`, `<html lang="en">`, responsive meta tags) and aria-labels specifying the entity type (e.g., `folderName directory`) when generating raw navigation trees to ensure keyboard and screen-reader usability. Add `:focus` styles mimicking `:hover` for keyboard users.
+## 2024-07-09 - HTML Directory Listing A11y
+**Learning:** Pure HTML output files need semantic HTML elements like `<main>`, `<nav>`, `<ul>` and `<li>`, and CSS-driven interaction hints (hover, focus-visible) are crucial for accessibility and UX in static site generation. Screen readers and keyboard navigation rely heavily on these base HTML tags when JS is not present.
+**Action:** When working on CLI tools that output HTML, treat the generated HTML string as a full web page interface, applying standard web accessibility practices.
 
-## 2024-05-18 - Improve Screen Reader Experience for Directory Trees
-**Learning:** Decorative unicode icons (like &#128193; for folders or &#x21B0; for back arrows) in generated HTML directory listings are read aloud by screen readers as confusing literals, degrading the user experience.
-**Action:** Wrap decorative emoji and unicode symbols in `<span aria-hidden="true">` to prevent screen readers from announcing them, and add explicit `aria-label` attributes to ambiguous links (like `..`) to provide context.
-
-## 2024-05-24 - Providing Helpful Empty States for Generated HTML Trees
-**Learning:** Automatically generated directory listings often fail to provide guidance when a directory contains no viewable files, leaving users with an empty list structure that looks broken or confusing.
-**Action:** When generating raw navigation trees, always check if the content list is empty. If it is, inject a visually distinct, helpful message (e.g. italicized gray text) explaining that the directory is empty, rather than rendering an empty `<ul>`.
-
-## 2024-06-25 - Directory Listing Navigation Landmark
-**Learning:** Generated directory listings act as navigation regions, and screen readers benefit when the listing is announced separately from the page's main content.
-**Action:** Wrap generated directory listing `<ul>` elements in `<nav aria-label="Directory listing">` while keeping the surrounding semantic `<main>` structure.
+## 2024-07-09 - CLI HTML Typography and Dark Mode
+**Learning:** Even statically generated directory listings need proper typography and color scheme support. Without a constrained max-width, line length becomes unreadable on large monitors. Without dark mode support (`prefers-color-scheme: dark`), opening the generated HTML page can cause sudden visual strain for users on dark-themed OS settings.
+**Action:** Always include basic typography constraints (max-width, line-height, system font) and dark mode media queries for any CLI tool that generates HTML output to ensure accessibility and visual comfort.
