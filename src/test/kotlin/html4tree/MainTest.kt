@@ -322,4 +322,15 @@ class MainTest {
         assertTrue(excluded.contains("test.txt"))
     }
 
+    @Test
+    fun testProcessIgnoreFileHiddenFiles() {
+        File(tempDir, ".env").createNewFile()
+        File(tempDir, ".git").mkdir()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains(".env"))
+        assertTrue(excluded.contains(".git"))
+        assertFalse(excluded.contains("test.txt"))
+    }
 }

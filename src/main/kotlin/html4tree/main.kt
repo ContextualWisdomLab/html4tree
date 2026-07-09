@@ -142,6 +142,13 @@ fun process_ignore_file(curr_dir: File): Set<String> {
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
 
+    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
+    curr_dir.list()?.forEach {
+        if (it.startsWith(".")) {
+            files_to_exclude.add(it)
+        }
+    }
+
     return files_to_exclude
 }
 
