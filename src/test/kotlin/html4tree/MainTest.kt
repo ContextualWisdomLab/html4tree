@@ -322,4 +322,33 @@ class MainTest {
         assertTrue(excluded.contains("test.txt"))
     }
 
+    @Test
+    fun testIgnoreFileIsDirectory() {
+        val ignoreDir = File(tempDir, ".html4ignore")
+        ignoreDir.mkdir()
+
+        // This should not crash or parse the directory
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testIgnoreFileIsSymlink() {
+        val targetFile = File(tempDir, "target.ignore")
+        targetFile.writeText(".*\\.txt")
+        val ignoreFile = File(tempDir, ".html4ignore")
+        try {
+            Files.createSymbolicLink(ignoreFile.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        File(tempDir, "test.txt").createNewFile()
+
+        // Should ignore the symlink and NOT parse it
+        val excluded = process_ignore_file(tempDir)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
 }
