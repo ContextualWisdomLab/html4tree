@@ -130,13 +130,13 @@ fun process_ignore_file(curr_dir: File): Set<String> {
            }
        }
 
-       curr_dir.list()?.sorted()?.forEach {
-           val current = it
-           ignored_regexes.forEach { regex ->
-              if(regex.matches(current)){
-                 files_to_exclude.add(current)
-              }
-         }
+       // ⚡ Bolt 성능 최적화: 불필요한 정렬을 제거하고 any를 사용하여 조기 종료
+       // 결과를 Set에 추가하므로 디렉토리 목록을 정렬할 필요가 없습니다.
+       // `any`를 사용하면 일치 항목을 찾는 즉시 정규식 평가를 중지하여 최악의 경우(O(n*m))를 방지합니다.
+       curr_dir.list()?.forEach { current ->
+           if (ignored_regexes.any { regex -> regex.matches(current) }) {
+               files_to_exclude.add(current)
+           }
        }
     }
 
