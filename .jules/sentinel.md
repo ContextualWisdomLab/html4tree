@@ -36,3 +36,7 @@
 **Vulnerability:** DoS and Path Traversal via symlinked/directory `.html4ignore`
 **Learning:** Application configuration files that are parsed at runtime (like `.html4ignore`) can be targeted if their file type is implicitly trusted. A user or attacker might create a directory named `.html4ignore` causing a crash upon reading, or symlink it to `/dev/zero` or `/dev/urandom` causing the application to hang and consume resources indefinitely.
 **Prevention:** Always verify that configuration files are regular files (`isFile`) and explicitly reject symbolic links (`!Files.isSymbolicLink`) before attempting to parse them.
+## 2024-05-31 - [DoS Risk] Uncontrolled Resource Consumption in Ignore File Processing
+**Vulnerability:** Processing `.html4ignore` reads regex patterns line-by-line without any upper limit on the number of patterns or their lengths. An attacker could craft a file with thousands of excessively long regex patterns causing a Denial of Service (DoS) and potentially ReDoS.
+**Learning:** File processing loops, especially those dynamically compiling regular expressions, are vulnerable to uncontrolled resource consumption and regex denial of service. Memory limit exhaustion and high CPU loads are likely.
+**Prevention:** Always impose sensible bounds (e.g., maximum line count, maximum pattern length) when dynamically processing loop-based inputs for resource-intensive operations like regex compilation.
