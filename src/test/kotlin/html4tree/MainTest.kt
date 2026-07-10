@@ -274,6 +274,13 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsRootDirectory() {
+        assertFailsWith<IllegalArgumentException> {
+            go(File("/").absolutePath, -1)
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFileWithIndexHtml() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index\\.html")

@@ -41,3 +41,8 @@
 **Vulnerability:** The `.html4ignore` file was parsed without checking its size, line count, or individual line lengths. Maliciously crafted or excessively large ignore files could cause memory exhaustion (OOM) or trigger ReDoS when complex regexes are compiled.
 **Learning:** Even local configuration files that process user input via regular expressions need strict bounds checking. The `File.useLines` function in Kotlin combined with `take(limit)` is a memory-efficient way to process a bounded portion of a file, compared to reading all lines into memory.
 **Prevention:** Always implement hard limits on configuration file processing: file size (e.g., 1MB), max parsed lines (e.g., 1000), and max item length (e.g., 100 characters for a regex pattern) to safely limit resource usage during parsing.
+
+## $(date -I) - Cross-Platform Root Directory Constraint
+**Vulnerability:** Accidental or malicious execution of the CLI tool on the system root directory could lead to extensive resource exhaustion (DoS) or unintentional exposure of the entire file system hierarchy when generating index.html files.
+**Learning:** Using simple string matches like `path == "/"` fails to adequately protect cross-platform environments (e.g., Windows paths like `C:\`). A local CLI tool expects relative paths (like `../`), so blocking path traversal sequences breaks core functionality and is incorrect.
+**Prevention:** Use `File.parentFile != null` as a robust, cross-platform method to identify and reject operations on the filesystem root without breaking relative path resolution for standard usage.
