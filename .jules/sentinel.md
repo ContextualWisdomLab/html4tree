@@ -18,10 +18,10 @@
 **Learning:** `File.listFiles()` returns null (not empty) on unreadable directories. Directory crawlers must reject symlink roots, skip symlink children, and avoid enqueueing paths deeper than the configured traversal limit.
 **Prevention:** Use `java.nio.file.Files.isSymbolicLink(file.toPath())` for root and child directory checks, gracefully handle `null` arrays from `listFiles()` and `list()`, and only enqueue child directories when the current level is still below `maxLevel`.
 
-## 2024-06-28 - [html4tree] Static HTML Generation Security
-**Vulnerability:** Defense in Depth (CSP Missing)
-**Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
-**Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+## 2024-06-28 - [html4tree] 정적 HTML 생성 보안
+**Vulnerability:** 심층 방어 누락 (CSP 누락)
+**Learning:** 입력값이 적절히 이스케이프 되더라도, 파일/디렉토리 구조를 표시하는 정적 생성 HTML은 잠재적인 XSS 우회 공격에 대비하여 추가적인 방어 계층을 제공하는 콘텐츠 보안 정책(CSP)을 반드시 구현해야 합니다.
+**Prevention:** 외부 스크립트나 리소스가 필요하지 않은 경우 자동 생성되는 HTML 헤더에 엄격한 CSP 메타 태그(예: `default-src 'none'; style-src 'unsafe-inline';`)를 포함하십시오.
 
 ## 2024-05-31 - [CRITICAL] 심볼릭 링크 검사 우회 취약점 (canonicalFile)
 **Vulnerability:** `File(path).canonicalFile`를 사용하여 심볼릭 링크 여부를 검사하면, `canonicalFile` 함수 내부에서 심볼릭 링크를 이미 대상(target) 파일의 실제 경로로 해석(resolve)해 버리기 때문에, 이후에 진행되는 `Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)` 등의 심볼릭 링크 제한 검사가 완전히 무력화되는 취약점이 발견되었습니다.
@@ -31,19 +31,12 @@
 **Vulnerability:** 정적 HTML 디렉토리 인덱서(`html4tree`)가 민감한 시스템 및 설정 파일(`.git`, `.env`, `.ssh`, `.htpasswd` 등)을 포함하여 모든 파일과 디렉토리를 무분별하게 나열하여, 생성된 HTML이 공개적으로 호스팅될 경우 심각한 정보 노출로 이어질 수 있었습니다.
 **Learning:** 디렉토리 구조를 자동 생성하는 도구는 반드시 "기본적으로 안전한(secure by default)" 정책을 채택해야 합니다. 사용자 제공 무시 파일(`.html4ignore`)에만 의존하는 것은 사용자가 설정을 잊거나 어떤 파일이 민감한지 모를 수 있기 때문에 불충분합니다.
 **Prevention:** 출력에서 기본적으로 제외되는 보편적으로 민감한 파일 및 디렉토리의 하드코딩된 기준 목록을 항상 포함하십시오. 이는 우발적인 정보 유출을 방지하기 위한 강력한 심층 방어(defense-in-depth) 조치로 작용합니다.
-## 2024-05-27 - [html4tree] CSP 우회 방지를 위한 Nonce 기반 스타일 적용
-**Vulnerability:** CSP(Content-Security-Policy) 헤더에 `style-src 'unsafe-inline'`이 포함되어 있어, 공격자가 HTML 인젝션을 통해 임의의 CSS 속성을 적용하거나 스크립트 우회(예: data URI)를 시도할 수 있는 잠재적 위험이 존재했습니다.
-**Learning:** `unsafe-inline`을 허용하면 CSP의 방어 효과가 크게 저하됩니다. 정적 생성 도구라 할지라도 동적인 랜덤 Base64 Nonce를 생성하여 `style` 태그 및 CSP 헤더에 주입하는 방식으로 보다 엄격한 보안을 유지해야 합니다.
-**Prevention:** 런타임에 16-byte 랜덤 Base64 문자열을 생성하여 CSP 메타 태그(`style-src 'nonce-...'`)와 `<style nonce="...">`에 동일하게 주입하고, 인라인 `style="..."` 속성 대신 CSS 클래스를 활용하여 UI를 스타일링합니다.
-## 2026-07-09 - [html4tree] Path Traversal in Root Directory Parameter
-**Vulnerability:** The `topDir` parameter in the `go` function lacked explicit boundary validation, allowing an attacker to pass traversal sequences (e.g., `../../etc`) to crawl unintended directories outside the expected context.
-**Learning:** While `File(path).absoluteFile.toPath().normalize()` correctly resolves the absolute path and prevents some logical traversal issues downstream, it does not intrinsically validate whether the provided input string is maliciously attempting to escape a sandbox or intended root scope. The initial input must always be validated.
-**Prevention:** Explicitly block `..` sequence strings from being supplied in the target directory parameter.
-## 2026-07-09 - [html4tree] Static File Nonce Anti-Pattern
-**Vulnerability:** A previous security fix injected a dynamically generated `nonce` into statically generated HTML files to prevent inline script execution (CSP). However, a `nonce` should only be used dynamically per-HTTP request. In static files, the nonce remains the same across all accesses to that file, completely invalidating the security properties of a nonce and allowing an attacker to scrape and reuse it.
-**Learning:** For statically generated files, do not use `nonce`. You must pivot to either external stylesheets or compute a cryptographic hash of the content (e.g., `sha256-<hash>`) to strictly validate block-level inline elements.
-**Prevention:** Compute the SHA-256 hash of the static CSS string during build generation, base64 encode it, and inject `style-src 'sha256-<hash>'` into the CSP header.
-## 2026-07-09 - [html4tree] Sensitive Directories Traversal (Information Exposure)
-**Vulnerability:** A previous security enhancement attempted to exclude sensitive directories from being listed in `process_dir()`. However, the root recursive crawler `go()` blindly enqueued subdirectories via `Files.isDirectory` without consulting the exclusion list. As a result, sensitive directories like `.git` were still crawled, and `.git/index.html` was generated.
-**Learning:** Security exclusions for file listing must be uniformly applied at the traversal stage as well. Masking sensitive paths from a parent index is useless if the static generator still runs inside them and creates child indexes.
-**Prevention:** Always gate recursive tree traversal functions with the exact same exclusion filters (e.g. `it.name !in exclude && !Files.isSymbolicLink(...)`) as the rendering functions.
+
+## 2024-06-28 - [html4tree] 설정 파일에 대한 심볼릭 링크 및 디렉토리 공격
+**Vulnerability:** 심볼릭 링크/디렉토리 형태의 `.html4ignore`를 통한 DoS 및 경로 탐색(Path Traversal) 취약점
+**Learning:** 런타임에 파싱되는 애플리케이션 설정 파일(예: `.html4ignore`)의 파일 유형을 무조건적으로 신뢰할 경우 공격의 대상이 될 수 있습니다. 공격자가 `.html4ignore`라는 이름의 디렉토리를 생성하여 읽기 시 충돌을 유발하거나, `/dev/zero`나 `/dev/urandom`으로 심볼릭 링크를 연결하여 애플리케이션이 리소스를 무한정 소모하며 다운되도록(hang) 만들 수 있습니다.
+**Prevention:** 설정 파일을 파싱하기 전에는 항상 해당 파일이 일반 파일인지(`isFile`) 확인하고 심볼릭 링크를 명시적으로 거부(`!Files.isSymbolicLink`)해야 합니다.
+## 2024-06-29 - [html4tree] 민감한 디렉토리 순회 (정보 노출)
+**Vulnerability:** 이전 보안 패치는 `process_dir()`에서 나열되는 디렉토리 목록에서 민감한 디렉토리를 제외하려 했습니다. 하지만 트리를 재귀적으로 순회하는 `go()` 함수가 제외 목록을 확인하지 않은 채 `Files.isDirectory`를 통해 하위 디렉토리를 무조건 탐색 큐에 삽입했습니다. 결과적으로 `.git`과 같은 민감한 디렉토리가 여전히 크롤링되어 내부에 `.git/index.html` 파일이 생성되었습니다.
+**Learning:** 파일 목록에 대한 보안 제외 규칙은 트리 순회(Traversal) 단계에서도 동일하게 적용되어야 합니다. 상위 인덱스 파일에서 민감한 경로를 숨기더라도, 정적 생성기가 여전히 그 내부로 진입해 하위 인덱스를 생성한다면 정보 노출을 막을 수 없습니다.
+**Prevention:** 재귀적 트리 순회 함수를 호출할 때 렌더링 함수와 완전히 동일한 제외 필터(예: `it.name !in exclude && !Files.isSymbolicLink(...)`)를 적용하여 안전하게 제어해야 합니다.

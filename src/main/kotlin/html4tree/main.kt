@@ -117,7 +117,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
     val files_to_exclude = mutableSetOf<String>()
 
-    if(ignore_file.exists()){
+    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath())){
        val ignored_regexes = mutableListOf<Regex>()
 
        ignore_file.forEachLine {
@@ -165,7 +166,8 @@ fun process_dir(curr_dir: File){
     
     val exclude: Set<String> = process_ignore_file(curr_dir)
 
-    val cssContent = """
+    val css = """
+              <style>
               ul {
                 list-style-type: none;
                 padding-left: 0;
@@ -188,29 +190,16 @@ fun process_dir(curr_dir: File){
                   transition: none;
                 }
               }
-              .dir-link {
-                display: block;
-                width: 100%;
-              }
-              .empty-dir {
-                padding: 0.5rem;
-                color: #666;
-                font-style: italic;
-              }
+              </style>
               """
-
-    val digest = java.security.MessageDigest.getInstance("SHA-256")
-    val hash = java.util.Base64.getEncoder().encodeToString(digest.digest(cssContent.toByteArray(Charsets.UTF_8)))
-
-    val css = "<style>${cssContent}</style>"
 
     val index_top = """<!doctype html>
 <html lang="ko">
      <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!-- 보안 향상: 인라인 스크립트 실행 방지 (정적 HTML이므로 nonce 대신 sha256 해시 사용) -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-${hash}';">
+        <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
@@ -219,7 +208,7 @@ fun process_dir(curr_dir: File){
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="Directory listing">
          <ul>
-            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+            <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -234,13 +223,13 @@ fun process_dir(curr_dir: File){
               val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
               val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
               val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-              l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+              l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
               l.append('\n')
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div style="padding: 0.5rem; color: #666; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 
