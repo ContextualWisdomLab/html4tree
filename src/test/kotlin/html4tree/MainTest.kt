@@ -97,6 +97,13 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsRelativePathTraversal() {
+        assertFailsWith<IllegalArgumentException> {
+            go("../../../etc/passwd", -1)
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFile() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText(".*\\.txt\n.*\\.log")
