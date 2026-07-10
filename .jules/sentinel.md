@@ -36,3 +36,8 @@
 **Vulnerability:** DoS and Path Traversal via symlinked/directory `.html4ignore`
 **Learning:** Application configuration files that are parsed at runtime (like `.html4ignore`) can be targeted if their file type is implicitly trusted. A user or attacker might create a directory named `.html4ignore` causing a crash upon reading, or symlink it to `/dev/zero` or `/dev/urandom` causing the application to hang and consume resources indefinitely.
 **Prevention:** Always verify that configuration files are regular files (`isFile`) and explicitly reject symbolic links (`!Files.isSymbolicLink`) before attempting to parse them.
+
+## $(date -I) - ReDoS and OOM DoS Mitigation in Ignore File Processing
+**Vulnerability:** The `.html4ignore` file was parsed without checking its size, line count, or individual line lengths. Maliciously crafted or excessively large ignore files could cause memory exhaustion (OOM) or trigger ReDoS when complex regexes are compiled.
+**Learning:** Even local configuration files that process user input via regular expressions need strict bounds checking. The `File.useLines` function in Kotlin combined with `take(limit)` is a memory-efficient way to process a bounded portion of a file, compared to reading all lines into memory.
+**Prevention:** Always implement hard limits on configuration file processing: file size (e.g., 1MB), max parsed lines (e.g., 1000), and max item length (e.g., 100 characters for a regex pattern) to safely limit resource usage during parsing.

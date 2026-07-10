@@ -117,15 +117,18 @@ fun process_ignore_file(curr_dir: File): Set<String> {
     val files_to_exclude = mutableSetOf<String>()
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath())){
+    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
        val ignored_regexes = mutableListOf<Regex>()
 
-       ignore_file.forEachLine {
-           val pattern = it.trim()
-           if (pattern.isNotEmpty()) {
-               try {
-                   ignored_regexes.add(("^"+pattern+"$").toRegex())
-               } catch (_: IllegalArgumentException) {
+       ignore_file.useLines { lines ->
+           lines.take(1000).forEach {
+               val pattern = it.trim()
+               if (pattern.isNotEmpty() && pattern.length <= 100) {
+                   try {
+                       ignored_regexes.add(("^"+pattern+"$").toRegex())
+                   } catch (_: IllegalArgumentException) {
+                   }
                }
            }
        }
