@@ -189,6 +189,19 @@ fun process_dir(curr_dir: File){
                   transition: none;
                 }
               }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background-color: #0d1117;
+                  color: #c9d1d9;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
+              }
               </style>
               """
 
@@ -205,7 +218,7 @@ fun process_dir(curr_dir: File){
      <body>
        <main>
          <h1>${curr_dir.getName().escapeHtml()}</h1>
-         <nav aria-label="Directory listing">
+         <nav aria-label="디렉토리 목록">
          <ul>
             <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 

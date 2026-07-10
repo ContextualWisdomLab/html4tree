@@ -148,7 +148,7 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
-        assertTrue(htmlContent.contains("<nav aria-label=\"Directory listing\">"))
+        assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
         assertTrue(htmlContent.contains("<main>"))
         assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
@@ -161,6 +161,7 @@ class MainTest {
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
         assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+        assertTrue(htmlContent.contains("prefers-color-scheme: dark"))
     }
 
     @Test
