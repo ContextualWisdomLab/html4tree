@@ -161,6 +161,7 @@ class MainTest {
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
         assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+        assertTrue(htmlContent.contains("prefers-color-scheme: dark"))
     }
 
     @Test
