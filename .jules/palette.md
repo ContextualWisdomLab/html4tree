@@ -17,3 +17,6 @@
 ## 2026-07-10 - ARIA Label Language Matching
 **Learning:** Screen readers rely on the document's language attribute (`lang="ko"`) to select the appropriate pronunciation engine. If semantic descriptors like `aria-label` are provided in a language different from the document language (e.g., English text in a Korean document), they may be mispronounced or skipped entirely, breaking accessibility.
 **Action:** Always ensure that `aria-label`, `alt` text, and other hidden semantic text strings match the language specified in the document's `<html lang="...">` tag for proper localization and screen reader compatibility.
+## 2026-07-11 - Safari VoiceOver List Semantics Fix
+**Learning:** Using `list-style: none` or `list-style-type: none` in CSS causes Safari (VoiceOver) to remove list semantics entirely, which harms accessibility for screen reader users trying to navigate directory listings.
+**Action:** Always explicitly add `role="list"` to `<ul>` or `<ol>` elements when removing their default list styling to preserve accessibility semantics across all browsers.

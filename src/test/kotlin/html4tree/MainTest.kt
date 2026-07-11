@@ -94,6 +94,7 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
+        assertTrue(htmlContent.contains("role=\"list\""))
     }
 
     @Test
@@ -149,6 +150,7 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
+        assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("<main>"))
         assertTrue(htmlContent.contains("</main>"))
         assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
