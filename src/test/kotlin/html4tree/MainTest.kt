@@ -117,7 +117,7 @@ class MainTest {
     fun testProcessIgnoreFileNoIgnore() {
         val excluded = process_ignore_file(tempDir)
         assertTrue(excluded.contains("index.html"))
-        assertEquals(1, excluded.size)
+        assertEquals(9, excluded.size) // index.html + 8 default sensitive files
     }
 
     @Test
@@ -274,6 +274,13 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsRootDirectory() {
+        assertFailsWith<IllegalArgumentException> {
+            go(File("/").absolutePath, -1)
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFileWithIndexHtml() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index\\.html")
@@ -300,6 +307,18 @@ class MainTest {
     }
 
     @Test
+    fun testUrlEncodePathReservedHexCoverage() {
+        // Need characters that produce hex digit > 9 to hit the `else` branch of `if (hex1 < 10)` and `if (hex2 < 10)`.
+        // The byte for '가' (EA B0 80) is useful here.
+        // EA: E(14)>9, A(10)>9 -> both hex1 and hex2 > 9
+        // B0: B(11)>9, 0<10 -> hex1 > 9, hex2 < 10
+        // 80: 8<10, 0<10 -> both hex1 and hex2 < 10
+        assertEquals("%EA%B0%80", "가".urlEncodePath())
+        // And something with <10 for hex1 but >9 for hex2: e.g. ASCII DEL (127 -> 7F)
+        assertEquals("%7F", "\u007F".urlEncodePath())
+    }
+
+    @Test
     fun testProcessIgnoreFileEmptyLine() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("\n.*\\.txt\n\n.*\\.log\n")
@@ -310,4 +329,109 @@ class MainTest {
         assertTrue(excluded.contains("test.txt"))
     }
 
+    @Test
+    fun testIgnoreFileIsDirectory() {
+        val ignoreDir = File(tempDir, ".html4ignore")
+        ignoreDir.mkdir()
+
+        // This should not crash or parse the directory
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileDosProtection() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val longPattern = "a".repeat(101)
+        val sb = StringBuilder()
+
+        // Add the long pattern early so it gets evaluated before hitting the 1000 limit
+        sb.append(longPattern).append("\n")
+
+        for (i in 0..1005) {
+            sb.append("pattern$i\n")
+        }
+        ignoreFile.writeText(sb.toString())
+
+        File(tempDir, "pattern500").createNewFile()
+        File(tempDir, "pattern1005").createNewFile() // Should not be ignored as we stop at 1000
+        File(tempDir, longPattern).createNewFile() // Should not be ignored as length > 100
+
+        val excluded = process_ignore_file(tempDir)
+
+        assertTrue(excluded.contains("pattern500"))
+        assertFalse(excluded.contains("pattern1005"))
+        assertFalse(excluded.contains(longPattern))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testIgnoreFileIsSymlink() {
+        val targetFile = File(tempDir, "target.ignore")
+        targetFile.writeText(".*\\.txt")
+        val ignoreFile = File(tempDir, ".html4ignore")
+        try {
+            Files.createSymbolicLink(ignoreFile.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        File(tempDir, "test.txt").createNewFile()
+
+        // Should ignore the symlink and NOT parse it
+        val excluded = process_ignore_file(tempDir)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileLargeSize() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        // Write slightly more than 1MB
+        val largeContent = "a".repeat(1048576 + 10)
+        ignoreFile.writeText(largeContent)
+
+        File(tempDir, "test.txt").createNewFile()
+
+        // Should ignore the file because it's too large
+        val excluded = process_ignore_file(tempDir)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileLongRegex() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val longRegex = ".*".repeat(55) // Length 110
+        ignoreFile.writeText("$longRegex\n.*\\.log")
+
+        File(tempDir, "test.log").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        // .log is excluded because it's valid
+        assertTrue(excluded.contains("test.log"))
+        // test.txt is not excluded because long regex was ignored
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileMaxLines() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val content = StringBuilder()
+        for (i in 1..1005) {
+            content.append(".*\\.txt$i\n")
+        }
+        ignoreFile.writeText(content.toString())
+
+        File(tempDir, "test.txt1000").createNewFile()
+        File(tempDir, "test.txt1001").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        // Line 1000 should be processed
+        assertTrue(excluded.contains("test.txt1000"))
+        // Line 1001 should be ignored due to line limit
+        assertFalse(excluded.contains("test.txt1001"))
+    }
 }
