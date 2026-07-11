@@ -13,11 +13,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      # Gradle 5.1.1 (wrapper) supports up to Java 11.
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '11'
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      # Gradle 5.1.1 (wrapper) supports up to Java 11. Uses the runner image's
+      # bundled Temurin JDK instead of actions/setup-java to keep every
+      # workflow dependency hash-pinned (Scorecard Pinned-Dependencies).
+      - name: Use preinstalled Temurin JDK 11
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_11_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_11_X64/bin" >> "$GITHUB_PATH"
       - name: Build and test (includes jacoco coverage verification)
         run: ./gradlew build --no-daemon
+      - name: Report coverage gaps on failure
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          try:
+              tree = ET.parse('build/reports/jacoco/test/jacocoTestReport.xml')
+          except OSError:
+              print('no jacoco XML report found')
+              raise SystemExit(0)
+          for pkg in tree.iter('package'):
+              for sf in pkg.iter('sourcefile'):
+                  missed = [l.get('nr') for l in sf.iter('line') if l.get('mi') != '0']
+                  if missed:
+                      print(f"{pkg.get('name')}/{sf.get('name')}: missed instructions on lines {', '.join(missed)}")
+              for cls in pkg.iter('class'):
+                  for m in cls.iter('method'):
+                      counter = next((c for c in m.iter('counter') if c.get('type') == 'INSTRUCTION'), None)
+                      if counter is not None and counter.get('covered') == '0':
+                          print(f"uncovered method: {cls.get('name')}.{m.get('name')}{m.get('desc')} (line {m.get('line')})")
+          PY

@@ -164,6 +164,24 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileCleansUpTempFileOnFailure() {
+        // Files.move cannot replace a non-empty directory, so this drives the
+        // exception path through write_index_file's finally block.
+        val indexDir = File(tempDir, "index.html")
+        indexDir.mkdir()
+        File(indexDir, "occupant.txt").writeText("keep")
+
+        assertFailsWith<Exception> {
+            write_index_file(tempDir, "content")
+        }
+
+        assertTrue(indexDir.isDirectory)
+        assertEquals("keep", File(indexDir, "occupant.txt").readText())
+        val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
+        assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
