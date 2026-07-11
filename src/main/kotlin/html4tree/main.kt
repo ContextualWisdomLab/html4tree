@@ -27,9 +27,6 @@ fun go(topDir: String, maxLevel: Int)  {
     // canonicalFile은 symlink를 대상 경로로 해석하여 이어지는 NOFOLLOW_LINKS 검사를 무력화합니다.
     val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
 
-    // 보안 향상: 시스템 전체 정보 노출 및 리소스 고갈(DoS) 방지를 위해 크로스 플랫폼 방식으로 루트 디렉토리 크롤링을 제한합니다.
-    require(top_dir.parentFile != null) { "Crawling the root directory is not allowed for security reasons" }
-
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
@@ -119,22 +116,15 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
     val files_to_exclude = mutableSetOf<String>()
 
-    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
-    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
+    if(ignore_file.exists()){
        val ignored_regexes = mutableListOf<Regex>()
-       var patternCount = 0
 
-       ignore_file.useLines { lines ->
-           for ((lineIndex, it) in lines.withIndex()) {
-               if (lineIndex >= 1000 || patternCount >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_regexes.add(("^"+pattern+"$").toRegex())
-                       patternCount++
-                   } catch (_: IllegalArgumentException) {
-                   }
+       ignore_file.forEachLine {
+           val pattern = it.trim()
+           if (pattern.isNotEmpty()) {
+               try {
+                   ignored_regexes.add(("^"+pattern+"$").toRegex())
+               } catch (_: IllegalArgumentException) {
                }
            }
        }
@@ -202,6 +192,11 @@ fun process_dir(curr_dir: File){
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
               }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+              }
               @media (prefers-color-scheme: dark) {
                 body {
                   color: #c9d1d9;
@@ -213,11 +208,6 @@ fun process_dir(curr_dir: File){
                 a:hover, a:focus-visible {
                   background-color: #161b22;
                   outline-color: #58a6ff;
-                }
-              }
-              @media (prefers-reduced-motion: reduce) {
-                a {
-                  transition: none;
                 }
               }
               </style>
