@@ -27,6 +27,9 @@ fun go(topDir: String, maxLevel: Int)  {
     // canonicalFile은 symlink를 대상 경로로 해석하여 이어지는 NOFOLLOW_LINKS 검사를 무력화합니다.
     val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
 
+    // 보안 향상: 시스템 전체 정보 노출 및 리소스 고갈(DoS) 방지를 위해 크로스 플랫폼 방식으로 루트 디렉토리 크롤링을 제한합니다.
+    require(top_dir.parentFile != null) { "Crawling the root directory is not allowed for security reasons" }
+
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
     val ll = LinkedList()
@@ -94,8 +97,13 @@ fun String.urlEncodePath(): String {
         if (isUnreserved) {
             encoded.append(byte.toChar())
         } else {
+            // ⚡ Bolt Performance Optimization: Direct character mapping
+            // Avoids multiple string allocations (toString, padStart, toUpperCase) per reserved byte.
             encoded.append('%')
-            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
+            val hex1 = byte ushr 4
+            val hex2 = byte and 0xf
+            encoded.append(if (hex1 < 10) (hex1 + 48).toChar() else (hex1 + 55).toChar())
+            encoded.append(if (hex2 < 10) (hex2 + 48).toChar() else (hex2 + 55).toChar())
         }
     }
     return encoded.toString()
@@ -111,15 +119,22 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
     val files_to_exclude = mutableSetOf<String>()
 
-    if(ignore_file.exists()){
+    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
+    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
        val ignored_regexes = mutableListOf<Regex>()
+       var patternCount = 0
 
-       ignore_file.forEachLine {
-           val pattern = it.trim()
-           if (pattern.isNotEmpty()) {
-               try {
-                   ignored_regexes.add(("^"+pattern+"$").toRegex())
-               } catch (_: IllegalArgumentException) {
+       ignore_file.useLines { lines ->
+           for ((lineIndex, it) in lines.withIndex()) {
+               if (lineIndex >= 1000 || patternCount >= 1000) break
+               val pattern = it.trim()
+               if (pattern.isNotEmpty() && pattern.length <= 100) {
+                   try {
+                       ignored_regexes.add(("^"+pattern+"$").toRegex())
+                       patternCount++
+                   } catch (_: IllegalArgumentException) {
+                   }
                }
            }
        }
@@ -136,6 +151,10 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
+
+    // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml")
+    files_to_exclude.addAll(defaultSensitiveFiles)
 
     return files_to_exclude
 }
@@ -174,12 +193,18 @@ fun process_dir(curr_dir: File){
                 text-decoration: none;
                 color: #0366d6;
                 border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
                 text-decoration: underline;
                 outline: 2px solid #0366d6;
                 outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
               }
               </style>
               """
