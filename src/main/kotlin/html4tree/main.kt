@@ -138,7 +138,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
            }
        }
 
-       curr_dir.list()?.sorted()?.forEach {
+       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+       curr_dir.list()?.forEach {
            val current = it
            ignored_regexes.forEach { regex ->
               if(regex.matches(current)){
