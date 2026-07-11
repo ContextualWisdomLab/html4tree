@@ -36,13 +36,12 @@
 **Vulnerability:** DoS and Path Traversal via symlinked/directory `.html4ignore`
 **Learning:** Application configuration files that are parsed at runtime (like `.html4ignore`) can be targeted if their file type is implicitly trusted. A user or attacker might create a directory named `.html4ignore` causing a crash upon reading, or symlink it to `/dev/zero` or `/dev/urandom` causing the application to hang and consume resources indefinitely.
 **Prevention:** Always verify that configuration files are regular files (`isFile`) and explicitly reject symbolic links (`!Files.isSymbolicLink`) before attempting to parse them.
+## 2024-05-31 - [DoS Risk] Uncontrolled Resource Consumption in Ignore File Processing
+**Vulnerability:** Processing `.html4ignore` reads regex patterns line-by-line without any upper limit on the number of patterns or their lengths. An attacker could craft a file with thousands of excessively long regex patterns causing a Denial of Service (DoS) and potentially ReDoS.
+**Learning:** File processing loops, especially those dynamically compiling regular expressions, are vulnerable to uncontrolled resource consumption and regex denial of service. Memory limit exhaustion and high CPU loads are likely.
+**Prevention:** Always impose sensible bounds (e.g., maximum line count, maximum pattern length) when dynamically processing loop-based inputs for resource-intensive operations like regex compilation.
 
-## $(date -I) - ReDoS and OOM DoS Mitigation in Ignore File Processing
-**Vulnerability:** The `.html4ignore` file was parsed without checking its size, line count, or individual line lengths. Maliciously crafted or excessively large ignore files could cause memory exhaustion (OOM) or trigger ReDoS when complex regexes are compiled.
-**Learning:** Even local configuration files that process user input via regular expressions need strict bounds checking. The `File.useLines` function in Kotlin combined with `take(limit)` is a memory-efficient way to process a bounded portion of a file, compared to reading all lines into memory.
-**Prevention:** Always implement hard limits on configuration file processing: file size (e.g., 1MB), max parsed lines (e.g., 1000), and max item length (e.g., 100 characters for a regex pattern) to safely limit resource usage during parsing.
-
-## $(date -I) - Cross-Platform Root Directory Constraint
-**Vulnerability:** Accidental or malicious execution of the CLI tool on the system root directory could lead to extensive resource exhaustion (DoS) or unintentional exposure of the entire file system hierarchy when generating index.html files.
-**Learning:** Using simple string matches like `path == "/"` fails to adequately protect cross-platform environments (e.g., Windows paths like `C:\`). A local CLI tool expects relative paths (like `../`), so blocking path traversal sequences breaks core functionality and is incorrect.
-**Prevention:** Use `File.parentFile != null` as a robust, cross-platform method to identify and reject operations on the filesystem root without breaking relative path resolution for standard usage.
+## 2026-07-10 - [MEDIUM] ReDoS, OOM, and Root Crawl DoS Mitigations
+**Vulnerability:** The `.html4ignore` parser still allowed excessively large files and root-directory crawls could generate unbounded filesystem output.
+**Learning:** Local CLI configuration inputs and traversal roots need explicit resource ceilings, not only syntactic validation.
+**Prevention:** Limit `.html4ignore` file size, parsed line count, compiled pattern count, and regex length; reject filesystem root traversal using `File.parentFile != null`.
