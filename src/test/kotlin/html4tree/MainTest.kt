@@ -333,6 +333,32 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileDosProtection() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val longPattern = "a".repeat(101)
+        val sb = StringBuilder()
+
+        // Add the long pattern early so it gets evaluated before hitting the 1000 limit
+        sb.append(longPattern).append("\n")
+
+        for (i in 0..1005) {
+            sb.append("pattern$i\n")
+        }
+        ignoreFile.writeText(sb.toString())
+
+        File(tempDir, "pattern500").createNewFile()
+        File(tempDir, "pattern1005").createNewFile() // Should not be ignored as we stop at 1000
+        File(tempDir, longPattern).createNewFile() // Should not be ignored as length > 100
+
+        val excluded = process_ignore_file(tempDir)
+
+        assertTrue(excluded.contains("pattern500"))
+        assertFalse(excluded.contains("pattern1005"))
+        assertFalse(excluded.contains(longPattern))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
     fun testIgnoreFileIsSymlink() {
         val targetFile = File(tempDir, "target.ignore")
         targetFile.writeText(".*\\.txt")
