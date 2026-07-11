@@ -274,6 +274,13 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsRootDirectory() {
+        assertFailsWith<IllegalArgumentException> {
+            go(File("/").absolutePath, -1)
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFileWithIndexHtml() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index\\.html")
@@ -377,4 +384,54 @@ class MainTest {
         assertTrue(excluded.contains("index.html"))
     }
 
+    @Test
+    fun testProcessIgnoreFileLargeSize() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        // Write slightly more than 1MB
+        val largeContent = "a".repeat(1048576 + 10)
+        ignoreFile.writeText(largeContent)
+
+        File(tempDir, "test.txt").createNewFile()
+
+        // Should ignore the file because it's too large
+        val excluded = process_ignore_file(tempDir)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileLongRegex() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val longRegex = ".*".repeat(55) // Length 110
+        ignoreFile.writeText("$longRegex\n.*\\.log")
+
+        File(tempDir, "test.log").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        // .log is excluded because it's valid
+        assertTrue(excluded.contains("test.log"))
+        // test.txt is not excluded because long regex was ignored
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileMaxLines() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val content = StringBuilder()
+        for (i in 1..1005) {
+            content.append(".*\\.txt$i\n")
+        }
+        ignoreFile.writeText(content.toString())
+
+        File(tempDir, "test.txt1000").createNewFile()
+        File(tempDir, "test.txt1001").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        // Line 1000 should be processed
+        assertTrue(excluded.contains("test.txt1000"))
+        // Line 1001 should be ignored due to line limit
+        assertFalse(excluded.contains("test.txt1001"))
+    }
 }

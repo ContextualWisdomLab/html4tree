@@ -40,3 +40,8 @@
 **Vulnerability:** Processing `.html4ignore` reads regex patterns line-by-line without any upper limit on the number of patterns or their lengths. An attacker could craft a file with thousands of excessively long regex patterns causing a Denial of Service (DoS) and potentially ReDoS.
 **Learning:** File processing loops, especially those dynamically compiling regular expressions, are vulnerable to uncontrolled resource consumption and regex denial of service. Memory limit exhaustion and high CPU loads are likely.
 **Prevention:** Always impose sensible bounds (e.g., maximum line count, maximum pattern length) when dynamically processing loop-based inputs for resource-intensive operations like regex compilation.
+
+## 2026-07-10 - [MEDIUM] ReDoS, OOM, and Root Crawl DoS Mitigations
+**Vulnerability:** The `.html4ignore` parser still allowed excessively large files and root-directory crawls could generate unbounded filesystem output.
+**Learning:** Local CLI configuration inputs and traversal roots need explicit resource ceilings, not only syntactic validation.
+**Prevention:** Limit `.html4ignore` file size, parsed line count, compiled pattern count, and regex length; reject filesystem root traversal using `File.parentFile != null`.
