@@ -99,7 +99,7 @@ class MainTest {
     @Test
     fun testProcessIgnoreFile() {
         val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.writeText(".*\\.txt\n.*\\.log")
+        ignoreFile.writeText("*.txt\n*.log")
 
         File(tempDir, "test.txt").createNewFile()
         File(tempDir, "test.log").createNewFile()
@@ -123,7 +123,7 @@ class MainTest {
     @Test
     fun testProcessIgnoreFileInvalidRegex() {
         val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.writeText("[\n.*\\.log")
+        ignoreFile.writeText("[\n*.log")
 
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.txt").createNewFile()
@@ -140,7 +140,7 @@ class MainTest {
         subdir.mkdir()
         File(tempDir, "file1.txt").createNewFile()
         File(tempDir, "test.ignore").createNewFile()
-        File(tempDir, ".html4ignore").writeText(".*\\.ignore")
+        File(tempDir, ".html4ignore").writeText("*.ignore")
 
         process_dir(tempDir)
 
@@ -302,7 +302,7 @@ class MainTest {
     @Test
     fun testProcessIgnoreFileWithIndexHtml() {
         val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.writeText("index\\.html")
+        ignoreFile.writeText("index.html")
         File(tempDir, "index.html").writeText("existing")
         val excluded = process_ignore_file(tempDir)
         assertTrue(excluded.contains("index.html"))
@@ -340,7 +340,7 @@ class MainTest {
     @Test
     fun testProcessIgnoreFileEmptyLine() {
         val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.writeText("\n.*\\.txt\n\n.*\\.log\n")
+        ignoreFile.writeText("\n*.txt\n\n*.log\n")
 
         File(tempDir, "test.txt").createNewFile()
 
@@ -387,7 +387,7 @@ class MainTest {
     @Test
     fun testIgnoreFileIsSymlink() {
         val targetFile = File(tempDir, "target.ignore")
-        targetFile.writeText(".*\\.txt")
+        targetFile.writeText("*.txt")
         val ignoreFile = File(tempDir, ".html4ignore")
         try {
             Files.createSymbolicLink(ignoreFile.toPath(), targetFile.toPath())
@@ -421,8 +421,8 @@ class MainTest {
     @Test
     fun testProcessIgnoreFileLongRegex() {
         val ignoreFile = File(tempDir, ".html4ignore")
-        val longRegex = ".*".repeat(55) // Length 110
-        ignoreFile.writeText("$longRegex\n.*\\.log")
+        val longRegex = "*".repeat(110) // Length 110
+        ignoreFile.writeText("$longRegex\n*.log")
 
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.txt").createNewFile()
@@ -440,7 +440,7 @@ class MainTest {
         val ignoreFile = File(tempDir, ".html4ignore")
         val content = StringBuilder()
         for (i in 1..1005) {
-            content.append(".*\\.txt$i\n")
+            content.append("*.txt$i\n")
         }
         ignoreFile.writeText(content.toString())
 
