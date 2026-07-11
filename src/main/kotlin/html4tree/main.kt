@@ -120,8 +120,9 @@ fun process_ignore_file(curr_dir: File): Set<String> {
     val files_to_exclude = mutableSetOf<String>()
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
+    // 보안 향상: 권한 기반 서비스 거부(DoS) 방지를 위해 읽기 권한을 확인합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_regexes = mutableListOf<Regex>()
 
        ignore_file.useLines { lines ->
@@ -160,12 +161,16 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
 fun write_index_file(curr_dir: File, content: String) {
     val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
-        Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
-    } finally {
-        Files.deleteIfExists(tempPath)
+        val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+        try {
+            Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
+            Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            Files.deleteIfExists(tempPath)
+        }
+    } catch (e: java.io.IOException) {
+        // 보안 향상: 쓰기 권한이 없는 디렉토리에서 크래시(가용성 저하)가 발생하지 않도록 예외를 잡아서 무시합니다.
     }
 }
  

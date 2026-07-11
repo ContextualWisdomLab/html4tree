@@ -172,9 +172,9 @@ class MainTest {
         indexDir.mkdir()
         File(indexDir, "occupant.txt").writeText("keep")
 
-        assertFailsWith<Exception> {
-            write_index_file(tempDir, "content")
-        }
+        // Since we now catch IOException and AccessDeniedException in write_index_file,
+        // it should no longer throw an exception.
+        write_index_file(tempDir, "content")
 
         assertTrue(indexDir.isDirectory)
         assertEquals("keep", File(indexDir, "occupant.txt").readText())
@@ -452,5 +452,40 @@ class MainTest {
         assertTrue(excluded.contains("test.txt1000"))
         // Line 1001 should be ignored due to line limit
         assertFalse(excluded.contains("test.txt1001"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileUnreadable() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText(".*\\.txt\n")
+        File(tempDir, "test.txt").createNewFile()
+
+        try {
+            Assume.assumeTrue(ignoreFile.setReadable(false, false))
+            val excluded = process_ignore_file(tempDir)
+            // unreadable ignore file is ignored, so the file is not excluded
+            assertFalse(excluded.contains("test.txt"))
+            assertTrue(excluded.contains("index.html"))
+        } finally {
+            ignoreFile.setReadable(true, false)
+        }
+    }
+
+    @Test
+    fun testProcessDirUnwritable() {
+        val unwritableDir = File(tempDir, "unwritable")
+        unwritableDir.mkdir()
+        File(unwritableDir, "test.txt").createNewFile()
+
+        try {
+            Assume.assumeTrue(unwritableDir.setWritable(false, false))
+            // This should not throw an exception
+            process_dir(unwritableDir)
+
+            // The index.html should not have been created
+            assertFalse(File(unwritableDir, "index.html").exists())
+        } finally {
+            unwritableDir.setWritable(true, false)
+        }
     }
 }

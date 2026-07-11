@@ -45,3 +45,7 @@
 **Vulnerability:** The `.html4ignore` parser still allowed excessively large files and root-directory crawls could generate unbounded filesystem output.
 **Learning:** Local CLI configuration inputs and traversal roots need explicit resource ceilings, not only syntactic validation.
 **Prevention:** Limit `.html4ignore` file size, parsed line count, compiled pattern count, and regex length; reject filesystem root traversal using `File.parentFile != null`.
+## 2024-06-29 - [html4tree] App Crashing on Unreadable Files/Unwritable Directories
+**Vulnerability:** DoS (Denial of Service) via Permissions
+**Learning:** Application blindly reading `.html4ignore` or attempting to create `index.html` without verifying `canRead()` or catching `IOException`/`AccessDeniedException` allows a user/process with sufficient privileges to create directories/files with restricted permissions, crashing the entire tree traversal crawler.
+**Prevention:** Always verify `canRead()` on configuration files before parsing them, and wrap I/O operations (like file writes) in `try-catch` blocks for `IOException` to ensure the crawler skips restricted areas gracefully rather than terminating.
