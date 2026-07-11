@@ -122,7 +122,7 @@ fun process_ignore_file(curr_dir: File): Set<String> {
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
-       val ignored_regexes = mutableListOf<Regex>()
+       val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        ignore_file.useLines { lines ->
            for ((lineIndex, it) in lines.withIndex()) {
@@ -131,8 +131,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
                val pattern = it.trim()
                if (pattern.isNotEmpty() && pattern.length <= 100) {
                    try {
-                       ignored_regexes.add(("^"+pattern+"$").toRegex())
-                   } catch (_: IllegalArgumentException) {
+                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                   } catch (_: java.util.regex.PatternSyntaxException) {
                    }
                }
            }
@@ -141,8 +141,9 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
        curr_dir.list()?.forEach {
            val current = it
-           ignored_regexes.forEach { regex ->
-              if(regex.matches(current)){
+           val pathCurrent = java.nio.file.Paths.get(current)
+           ignored_matchers.forEach { matcher ->
+              if(matcher.matches(pathCurrent)){
                  files_to_exclude.add(current)
               }
          }

@@ -45,3 +45,7 @@
 **Vulnerability:** The `.html4ignore` parser still allowed excessively large files and root-directory crawls could generate unbounded filesystem output.
 **Learning:** Local CLI configuration inputs and traversal roots need explicit resource ceilings, not only syntactic validation.
 **Prevention:** Limit `.html4ignore` file size, parsed line count, compiled pattern count, and regex length; reject filesystem root traversal using `File.parentFile != null`.
+## 2024-07-11 - [.html4ignore 파일의 ReDoS 취약점 수정 (Glob 패턴 적용)]
+**Vulnerability:** [사용자가 제공한 `.html4ignore` 패턴을 직접 정규표현식으로 컴파일하여 발생하는 ReDoS(정규표현식 서비스 거부) 취약점 발견.]
+**Learning:** [필터링 패턴으로 정규표현식을 직접 노출하면 악의적으로 조작된 긴 문자열이나 복잡한 패턴을 통해 애플리케이션의 리소스를 고갈시킬 수 있음.]
+**Prevention:** [사용자 입력 패턴은 정규표현식으로 변환하기 전 `java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern")`와 같은 안전한 Glob 매칭 방식을 사용해야 함.]
