@@ -123,16 +123,15 @@ fun process_ignore_file(curr_dir: File): Set<String> {
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
        val ignored_regexes = mutableListOf<Regex>()
-       var patternCount = 0
 
        ignore_file.useLines { lines ->
            for ((lineIndex, it) in lines.withIndex()) {
-               if (lineIndex >= 1000 || patternCount >= 1000) break
+               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+               if (lineIndex >= 1000) break
                val pattern = it.trim()
                if (pattern.isNotEmpty() && pattern.length <= 100) {
                    try {
                        ignored_regexes.add(("^"+pattern+"$").toRegex())
-                       patternCount++
                    } catch (_: IllegalArgumentException) {
                    }
                }
