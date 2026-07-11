@@ -197,6 +197,16 @@ fun process_dir(curr_dir: File){
                   transition: none;
                 }
               }
+              .item-link {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+              }
+              .empty-state {
+                padding: 0.5rem;
+                color: #666;
+                font-style: italic;
+              }
               @media (prefers-color-scheme: dark) {
                 body {
                   background-color: #0d1117;
@@ -208,6 +218,9 @@ fun process_dir(curr_dir: File){
                 a:hover, a:focus-visible {
                   background-color: #161b22;
                   outline-color: #58a6ff;
+                }
+                .empty-state {
+                  color: #8b949e;
                 }
               }
               </style>
@@ -228,7 +241,7 @@ fun process_dir(curr_dir: File){
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul>
-            <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+            <li><a class="item-link" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -245,14 +258,14 @@ fun process_dir(curr_dir: File){
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-                  l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+                  l.append("""          <li><a class="item-link" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
                   l.append('\n')
                }
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div style="padding: 0.5rem; color: #666; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div class="empty-state">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 

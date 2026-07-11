@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+        <title>test</title>
+
+              <style>
+              ul {
+                list-style-type: none;
+                padding-left: 0;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0366d6;
+                border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0366d6;
+                outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+              }
+              .item-link {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+              }
+              .empty-state {
+                padding: 0.5rem;
+                color: #666;
+                font-style: italic;
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background-color: #0d1117;
+                  color: #c9d1d9;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
+                .empty-state {
+                  color: #8b949e;
+                }
+              }
+              </style>
+
+     </head>
+     <body>
+       <main>
+         <h1>test</h1>
+         <nav aria-label="디렉토리 목록">
+         <ul>
+            <li><a class="item-link" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+          <li><a class="item-link" href="./kotlin/" aria-label="kotlin 디렉토리"><span aria-hidden="true">&#128193;</span> kotlin</a></li>
+
+         </ul>
+         </nav>
+       </main>
+    </body>
+</html>
