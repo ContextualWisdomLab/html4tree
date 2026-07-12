@@ -20,3 +20,7 @@
 ## 2026-07-11 - Safari VoiceOver List Semantics Fix
 **Learning:** Using `list-style: none` or `list-style-type: none` in CSS causes Safari (VoiceOver) to remove list semantics entirely, which harms accessibility for screen reader users trying to navigate directory listings.
 **Action:** Always explicitly add `role="list"` to `<ul>` or `<ol>` elements when removing their default list styling to preserve accessibility semantics across all browsers.
+
+## 2026-07-12 - Inline Colors vs Dark Mode
+**Learning:** Hardcoded inline colors (like `color: #666`) fail to adapt in dark mode because they bypass CSS media queries and cannot be easily overridden without `!important`, causing text legibility issues on dark backgrounds.
+**Action:** Use `opacity: 0.7` instead of hardcoded hex values for muted text to dynamically inherit theme colors and ensure legibility across all color schemes.
