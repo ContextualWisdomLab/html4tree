@@ -26,10 +26,21 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 private val nonceRandom = SecureRandom()
 
+internal data class FileIdentity(val key: Any?, val readable: Boolean)
+
 fun generate_csp_nonce(): String {
     val nonceBytes = ByteArray(16)
     nonceRandom.nextBytes(nonceBytes)
     return Base64.getEncoder().encodeToString(nonceBytes)
+}
+
+internal fun read_file_identity(file: File): FileIdentity {
+    return try {
+        val attrs = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        FileIdentity(attrs.fileKey(), true)
+    } catch (e: Exception) {
+        FileIdentity(null, false)
+    }
 }
 
 fun go(topDir: String, maxLevel: Int)  {
@@ -46,44 +57,39 @@ fun go(topDir: String, maxLevel: Int)  {
 
     val ll = LinkedList()
 
-    val topEntry = LinkedListEntry(top_dir,0)
-    try {
-        val attrs = Files.readAttributes(top_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        topEntry.fileKey = attrs.fileKey()
-    } catch (e: Exception) {
-        // 무시
-    }
+    val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
     ll.push(topEntry)
+    crawl_directories(ll, maxLevel)
+}
 
+internal fun crawl_directories(
+    ll: LinkedList,
+    maxLevel: Int,
+    processDirectory: (File) -> Unit = ::process_dir,
+    processIgnoreFile: (File) -> Set<String> = ::process_ignore_file,
+    listFiles: (File) -> Array<File>? = { it.listFiles() },
+    isDirectory: (File) -> Boolean = { Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) },
+    isSymbolicLink: (File) -> Boolean = { Files.isSymbolicLink(it.toPath()) },
+    readIdentity: (File) -> FileIdentity = ::read_file_identity
+) {
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
-        try {
-            val currentAttrs = Files.readAttributes(lle.file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-            if (lle.fileKey != null && currentAttrs.fileKey() != lle.fileKey) {
-                lle = ll.pull()
-                continue
-            }
-        } catch (e: Exception) {
+    while(lle != null && isDirectory(lle.file)){
+        val currentIdentity = readIdentity(lle.file)
+        if (!currentIdentity.readable || (lle.fileKey != null && currentIdentity.key != lle.fileKey)) {
             lle = ll.pull()
             continue
         }
 
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           process_dir(lle.file)
+           processDirectory(lle.file)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
-            val exclude = process_ignore_file(lle.file)
-            lle.file.listFiles()?.forEach {
-                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
-                    val childEntry = LinkedListEntry(it, currentLevel+1)
-                    try {
-                        val childAttrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-                        childEntry.fileKey = childAttrs.fileKey()
-                    } catch (e: Exception) {
-                        // 무시
-                    }
+            val exclude = processIgnoreFile(lle.file)
+            listFiles(lle.file)?.forEach {
+                if(isDirectory(it) && !isSymbolicLink(it) && it.name !in exclude) {
+                    val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
                     ll.push(childEntry)
                 }
             }

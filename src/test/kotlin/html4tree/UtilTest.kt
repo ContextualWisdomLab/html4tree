@@ -42,7 +42,7 @@ class UtilTest {
         val entry2 = Entry(file1, 0, null)
 
         assertEquals(entry1, entry2)
-        assertEquals("Entry(data=file1, level=0, next=null)", entry1.toString())
+        assertEquals("Entry(data=file1, level=0, next=null, fileKey=null)", entry1.toString())
     }
 
     @Test
@@ -127,6 +127,19 @@ class UtilTest {
         assertEquals(File("fake"), list.pull()?.file)
         assertEquals(File("f3"), list.pull()?.file)
         assertEquals(File("f3"), list.first?.data)
+    }
+
+    @Test
+    fun testLinkedListPreservesFileKey() {
+        val key = Any()
+        val list = LinkedList()
+
+        list.push(LinkedListEntry(File("secure"), 1, key))
+
+        val pulled = list.pull()
+        assertEquals(File("secure"), pulled?.file)
+        assertEquals(1, pulled?.level)
+        assertEquals(key, pulled?.fileKey)
     }
 
     @Test

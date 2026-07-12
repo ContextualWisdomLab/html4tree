@@ -105,6 +105,95 @@ class MainTest {
     }
 
     @Test
+    fun testReadFileIdentityMissingPathIsUnreadable() {
+        val identity = read_file_identity(File(tempDir, "missing"))
+
+        assertFalse(identity.readable)
+        assertNull(identity.key)
+    }
+
+    @Test
+    fun testCrawlDirectoriesSkipsFileKeyMismatch() {
+        val candidate = File(tempDir, "candidate")
+        candidate.mkdir()
+        val processed = mutableListOf<File>()
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(candidate, 0, "before-swap"))
+
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { processed.add(it) },
+            processIgnoreFile = { emptySet() },
+            listFiles = { emptyArray() },
+            isDirectory = { true },
+            isSymbolicLink = { false },
+            readIdentity = { FileIdentity("after-swap", true) }
+        )
+
+        assertTrue(processed.isEmpty(), "fileKey mismatch should skip a swapped directory")
+    }
+
+    @Test
+    fun testCrawlDirectoriesSkipsUnreadableCurrentEntry() {
+        val candidate = File(tempDir, "candidate")
+        candidate.mkdir()
+        val processed = mutableListOf<File>()
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(candidate, 0, null))
+
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { processed.add(it) },
+            processIgnoreFile = { emptySet() },
+            listFiles = { emptyArray() },
+            isDirectory = { true },
+            isSymbolicLink = { false },
+            readIdentity = { FileIdentity(null, false) }
+        )
+
+        assertTrue(processed.isEmpty(), "unreadable directory identity should fail closed")
+    }
+
+    @Test
+    fun testCrawlDirectoriesCarriesChildFileKey() {
+        val root = File(tempDir, "root")
+        val child = File(root, "child")
+        child.mkdirs()
+        val processed = mutableListOf<File>()
+        val callsByPath = mutableMapOf<String, Int>()
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(root, 0, "root-key"))
+
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { processed.add(it) },
+            processIgnoreFile = { emptySet() },
+            listFiles = { file -> if (file == root) arrayOf(child) else emptyArray() },
+            isDirectory = { true },
+            isSymbolicLink = { false },
+            readIdentity = { file ->
+                val key = file.absolutePath
+                val callCount = callsByPath.getOrDefault(key, 0)
+                callsByPath[key] = callCount + 1
+                when (file) {
+                    root -> FileIdentity("root-key", true)
+                    child -> if (callCount == 0) {
+                        FileIdentity("child-before-swap", true)
+                    } else {
+                        FileIdentity("child-after-swap", true)
+                    }
+                    else -> FileIdentity(null, false)
+                }
+            }
+        )
+
+        assertEquals(listOf(root), processed)
+    }
+
+    @Test
     fun testProcessIgnoreFile() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("*.txt\n*.log")
