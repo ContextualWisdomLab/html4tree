@@ -202,8 +202,17 @@ fun process_dir(curr_dir: File){
                 padding-left: 0;
               }
               a.dir-link {
-                display: block;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
                 width: 100%;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+              }
+              .icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                text-align: center;
               }
               a {
                 padding: 0.5rem;
@@ -259,7 +268,7 @@ fun process_dir(curr_dir: File){
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -276,7 +285,7 @@ fun process_dir(curr_dir: File){
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
            }
