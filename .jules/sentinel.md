@@ -62,3 +62,8 @@
 **Vulnerability:** 큐(LinkedList)에 추가된 디렉토리가 대기하는 동안 외부(또는 공격자)에 의해 심볼릭 링크로 스왑될 수 있는 TOCTOU 취약점.
 **Learning:** 큐에 넣기 전(`listFiles`)에 한 번 검사했다고 해서, 큐에서 빼내어 처리(`process_dir`)하는 시점에도 파일 시스템 상태가 동일할 것이라고 가정(Implicit Trust)하면 안 됩니다.
 **Prevention:** 큐에 넣는 시점(`Time-of-Check`)에 파일의 고유 식별자(`BasicFileAttributes.fileKey()`)를 캡처해두고, 큐에서 꺼내어 실제로 처리하는 시점(`Time-of-Use`)에 현재 파일의 `fileKey()`를 다시 읽어 두 값이 일치하는지 재검증(Re-verify)해야 합니다.
+
+## 2024-05-25 - Information Exposure via Default Inclusion and Referrer
+**Vulnerability:** Common sensitive files (like `.aws`, `.kube`, `.npmrc`) could be accidentally indexed if present in the tree. Furthermore, clicking on external links (if any were added) could leak the directory structure via the HTTP Referer header.
+**Learning:** Default exclude lists must encompass modern toolchains and cloud credentials, as users often run directory indexers in their home or project root directories. HTML templates need explicit policies to prevent accidental data leakage via headers.
+**Prevention:** Maintain an extensive default deny-list for known sensitive files and enforce `no-referrer` globally on generated index pages.

@@ -123,8 +123,8 @@ class MainTest {
         crawl_directories(
             queue,
             -1,
-            processDirectory = { processed.add(it) },
-            processIgnoreFile = { emptySet() },
+            processDirectory = { file, _, _ -> processed.add(file) },
+            processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
             isDirectory = { true },
             isSymbolicLink = { false },
@@ -145,8 +145,8 @@ class MainTest {
         crawl_directories(
             queue,
             -1,
-            processDirectory = { processed.add(it) },
-            processIgnoreFile = { emptySet() },
+            processDirectory = { file, _, _ -> processed.add(file) },
+            processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
             isDirectory = { true },
             isSymbolicLink = { false },
@@ -169,8 +169,8 @@ class MainTest {
         crawl_directories(
             queue,
             -1,
-            processDirectory = { processed.add(it) },
-            processIgnoreFile = { emptySet() },
+            processDirectory = { file, _, _ -> processed.add(file) },
+            processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { file -> if (file == root) arrayOf(child) else emptyArray() },
             isDirectory = { true },
             isSymbolicLink = { false },
@@ -194,6 +194,32 @@ class MainTest {
     }
 
     @Test
+    fun testCrawlDirectoriesSkipsNonDirectoryEntryAndContinues() {
+        val fileEntry = File(tempDir, "not-a-directory.txt")
+        fileEntry.writeText("not a directory")
+        val directoryEntry = File(tempDir, "directory")
+        directoryEntry.mkdir()
+
+        val processed = mutableListOf<File>()
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(fileEntry, 0, "file-key"))
+        queue.push(LinkedListEntry(directoryEntry, 0, "directory-key"))
+
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { file, _, _ -> processed.add(file) },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() },
+            isDirectory = { it == directoryEntry },
+            isSymbolicLink = { false },
+            readIdentity = { FileIdentity("directory-key", true) }
+        )
+
+        assertEquals(listOf(directoryEntry), processed)
+    }
+
+    @Test
     fun testProcessIgnoreFile() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("*.txt\n*.log")
@@ -202,7 +228,7 @@ class MainTest {
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.md").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
 
         assertTrue(excluded.contains("test.txt"))
         assertTrue(excluded.contains("test.log"))
@@ -212,9 +238,19 @@ class MainTest {
 
     @Test
     fun testProcessIgnoreFileNoIgnore() {
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("index.html"))
-        assertEquals(9, excluded.size) // index.html + 8 default sensitive files
+        assertEquals(17, excluded.size) // index.html + 16 default sensitive files
+    }
+
+    @Test
+    fun testProcessIgnoreFileWithDirFilesNames() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("test1.txt\ntest2.txt")
+
+        val excluded = process_ignore_file(tempDir, arrayOf("test1.txt", "test3.txt"))
+        assertTrue(excluded.contains("index.html"))
+        assertEquals(18, excluded.size) // index.html + 16 default sensitive + test1.txt
     }
 
     @Test
@@ -225,7 +261,7 @@ class MainTest {
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.txt").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
 
         assertTrue(excluded.contains("test.log"))
         assertFalse(excluded.contains("test.txt"))
@@ -438,7 +474,7 @@ class MainTest {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index.html")
         File(tempDir, "index.html").writeText("existing")
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("index.html"))
     }
 
@@ -478,7 +514,7 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("test.txt"))
     }
 
@@ -488,7 +524,7 @@ class MainTest {
         ignoreDir.mkdir()
 
         // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("index.html"))
     }
 
@@ -510,7 +546,7 @@ class MainTest {
         File(tempDir, "pattern1005").createNewFile() // Should not be ignored as we stop at 1000
         File(tempDir, longPattern).createNewFile() // Should not be ignored as length > 100
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
 
         assertTrue(excluded.contains("pattern500"))
         assertFalse(excluded.contains("pattern1005"))
@@ -532,7 +568,7 @@ class MainTest {
         File(tempDir, "test.txt").createNewFile()
 
         // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         assertFalse(excluded.contains("test.txt"))
         assertTrue(excluded.contains("index.html"))
     }
@@ -547,7 +583,7 @@ class MainTest {
         File(tempDir, "test.txt").createNewFile()
 
         // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         assertFalse(excluded.contains("test.txt"))
         assertTrue(excluded.contains("index.html"))
     }
@@ -561,7 +597,7 @@ class MainTest {
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.txt").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         // .log is excluded because it's valid
         assertTrue(excluded.contains("test.log"))
         // test.txt is not excluded because long regex was ignored
@@ -581,7 +617,7 @@ class MainTest {
         File(tempDir, "test.txt1000").createNewFile()
         File(tempDir, "test.txt1001").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, null)
         // Line 1000 should be processed
         assertTrue(excluded.contains("test.txt1000"))
         // Line 1001 should be ignored due to line limit
@@ -592,39 +628,29 @@ class MainTest {
     fun testToctouSymlinkSwapRejection() {
         val subdir = File(tempDir, "toctou_test_dir")
         subdir.mkdir()
-        File(tempDir, "index.html").writeText("top")
-
-        // Simulating the TOCTOU symlink swap condition:
-        // Create an entry that appears to be valid but give it a dummy fileKey
-        // that will definitely not match the real filesystem fileKey when `go` pulls it.
         val ll = LinkedList()
         val entry = LinkedListEntry(subdir, 0)
-        entry.fileKey = Any() // Dummy fileKey
+        entry.fileKey = "queued-key"
         ll.push(entry)
 
-        // Since we cannot easily inject `ll` into `go` natively, we reproduce the TOCTOU scenario
-        // by tricking the core loop directly. We can do this by wrapping a mocked directory processing.
-        // But since this is an integration test class, we can simulate the scenario on the topDir.
+        var processed = false
+        var listed = false
 
-        val fakeTopDir = File(tempDir, "fakeTop")
-        fakeTopDir.mkdir()
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = {
+                listed = true
+                emptyArray()
+            },
+            isDirectory = { true },
+            isSymbolicLink = { false },
+            readIdentity = { FileIdentity("current-key", true) }
+        )
 
-        // Testing TOCTOU directly via race conditions is unreliable, but we can verify that the
-        // application handles invalid fileKey and try/catch gracefully through the coverage we measured.
-        // To make this test functional, we simulate an unreadable scenario to hit the catch block during readAttributes.
-        val unreadable = File(tempDir, "unreadable_toctou")
-        unreadable.mkdir()
-        unreadable.setReadable(true)
-        unreadable.setExecutable(true)
-
-        try {
-            Assume.assumeTrue(unreadable.setReadable(false, false))
-            go(tempDir.absolutePath, -1)
-            // It should gracefully handle the exception and still generate the top-level index
-            assertTrue(File(tempDir, "index.html").exists())
-        } finally {
-            unreadable.setReadable(true, false)
-            unreadable.setExecutable(true, false)
-        }
+        assertFalse(processed, "fileKey mismatch should skip directory processing")
+        assertFalse(listed, "fileKey mismatch should skip child listing")
     }
 }
