@@ -75,7 +75,7 @@ class UtilTest {
         val entry2 = LinkedListEntry(file1, 0)
 
         assertEquals(entry1, entry2)
-        assertEquals("LinkedListEntry(file=file1, level=0)", entry1.toString())
+        assertEquals("LinkedListEntry(file=file1, level=0, fileKey=null)", entry1.toString())
     }
 
     @Test
@@ -93,9 +93,10 @@ class UtilTest {
         assertEquals(file1, copied.file)
         assertEquals(5, copied.level)
 
-        val (file, level) = entry
+        val (file, level, fileKey) = entry
         assertEquals(file1, file)
         assertEquals(0, level)
+        assertNull(fileKey)
     }
 
     @Test

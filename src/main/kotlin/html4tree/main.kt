@@ -5,6 +5,7 @@ import java.security.SecureRandom
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
@@ -45,11 +46,29 @@ fun go(topDir: String, maxLevel: Int)  {
 
     val ll = LinkedList()
 
-    ll.push(LinkedListEntry(top_dir,0))
+    val topEntry = LinkedListEntry(top_dir,0)
+    try {
+        val attrs = Files.readAttributes(top_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        topEntry.fileKey = attrs.fileKey()
+    } catch (e: Exception) {
+        // 무시
+    }
+    ll.push(topEntry)
 
     var lle: LinkedListEntry? = ll.pull()
 
     while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
+        try {
+            val currentAttrs = Files.readAttributes(lle.file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+            if (lle.fileKey != null && currentAttrs.fileKey() != lle.fileKey) {
+                lle = ll.pull()
+                continue
+            }
+        } catch (e: Exception) {
+            lle = ll.pull()
+            continue
+        }
+
         val currentLevel: Int = lle.level
         if(maxLevel == -1 || currentLevel <= maxLevel)
            process_dir(lle.file)
@@ -58,7 +77,14 @@ fun go(topDir: String, maxLevel: Int)  {
             val exclude = process_ignore_file(lle.file)
             lle.file.listFiles()?.forEach {
                 if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
-                    ll.push( LinkedListEntry(it, currentLevel+1))
+                    val childEntry = LinkedListEntry(it, currentLevel+1)
+                    try {
+                        val childAttrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                        childEntry.fileKey = childAttrs.fileKey()
+                    } catch (e: Exception) {
+                        // 무시
+                    }
+                    ll.push(childEntry)
                 }
             }
         }

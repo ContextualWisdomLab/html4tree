@@ -4,7 +4,7 @@ import java.io.File
 
 data class Entry (val data: File, val level: Int, var next: Entry?)
 
-data class LinkedListEntry(val file: File, val level: Int)
+data class LinkedListEntry(val file: File, val level: Int, var fileKey: Any? = null)
 
 class LinkedList {
     var first: Entry? = null
