@@ -51,12 +51,17 @@ fun go(topDir: String, maxLevel: Int)  {
 
     while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
         val currentLevel: Int = lle.level
+
+        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
+        val dirFiles = lle.file.listFiles()
+        val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
+        val exclude = process_ignore_file(lle.file, dirFilesNames)
+
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           process_dir(lle.file)
+           process_dir(lle.file, exclude, dirFiles)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
-            val exclude = process_ignore_file(lle.file)
-            lle.file.listFiles()?.forEach {
+            dirFiles?.forEach {
                 if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
                     ll.push( LinkedListEntry(it, currentLevel+1))
                 }
@@ -121,7 +126,7 @@ fun String.urlEncodePath(): String {
     return encoded.toString()
 }
 
-fun process_ignore_file(curr_dir: File): Set<String> {
+fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -152,7 +157,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       curr_dir.list()?.forEach {
+       val list = dirFilesNames ?: curr_dir.list()
+       list?.forEach {
            val current = it
            val pathCurrent = java.nio.file.Paths.get(current)
            for (matcher in ignored_matchers) {
@@ -185,9 +191,9 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File){
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
     
-    val exclude: Set<String> = process_ignore_file(curr_dir)
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val styleNonce = generate_csp_nonce()
 
     val css = """
@@ -265,7 +271,8 @@ fun process_dir(curr_dir: File){
     val index_middle = fun():String{ 
         val l = StringBuilder()
 
-        val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
+        val filesList = dirFiles ?: curr_dir.listFiles()
+        val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            val fileName = it.getName()
