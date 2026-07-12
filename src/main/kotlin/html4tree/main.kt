@@ -1,9 +1,11 @@
 package html4tree
 
 import java.io.File
+import java.security.SecureRandom
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
+import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -20,6 +22,14 @@ class Html4tree : CliktCommand() {
 }
 
 fun main(args: Array<String>)  = Html4tree().main(args)
+
+private val nonceRandom = SecureRandom()
+
+fun generate_csp_nonce(): String {
+    val nonceBytes = ByteArray(16)
+    nonceRandom.nextBytes(nonceBytes)
+    return Base64.getEncoder().encodeToString(nonceBytes)
+}
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
@@ -178,12 +188,17 @@ fun write_index_file(curr_dir: File, content: String) {
 fun process_dir(curr_dir: File){
     
     val exclude: Set<String> = process_ignore_file(curr_dir)
+    val styleNonce = generate_csp_nonce()
 
     val css = """
-              <style>
+              <style nonce="${styleNonce}">
               ul {
                 list-style-type: none;
                 padding-left: 0;
+              }
+              a.dir-link {
+                display: block;
+                width: 100%;
               }
               a {
                 padding: 0.5rem;
@@ -216,6 +231,11 @@ fun process_dir(curr_dir: File){
                   outline-color: #58a6ff;
                 }
               }
+              .empty-dir {
+                padding: 0.5rem;
+                opacity: 0.7;
+                font-style: italic;
+              }
               </style>
               """
 
@@ -225,7 +245,7 @@ fun process_dir(curr_dir: File){
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${styleNonce}'; base-uri 'none'; form-action 'none';">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
@@ -234,7 +254,7 @@ fun process_dir(curr_dir: File){
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -251,14 +271,14 @@ fun process_dir(curr_dir: File){
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-                  l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
                   l.append('\n')
                }
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div style="padding: 0.5rem; opacity: 0.7; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div class="empty-dir">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 
