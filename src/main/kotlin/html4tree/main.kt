@@ -192,6 +192,11 @@ fun process_dir(curr_dir: File){
 
     val css = """
               <style nonce="${styleNonce}">
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+                padding: 1rem;
+              }
               ul {
                 list-style-type: none;
                 padding-left: 0;
