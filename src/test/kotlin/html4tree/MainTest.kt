@@ -179,6 +179,9 @@ class MainTest {
         assertTrue(htmlContent.contains("class=\"dir-link\""))
         assertTrue(htmlContent.contains(".empty-dir"))
         assertTrue(htmlContent.contains("prefers-color-scheme: dark"))
+        assertTrue(htmlContent.contains("font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;"))
+        assertTrue(htmlContent.contains("line-height: 1.5;"))
+        assertTrue(htmlContent.contains("padding: 1rem;"))
     }
 
     @Test
