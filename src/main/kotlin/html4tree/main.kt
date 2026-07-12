@@ -168,7 +168,7 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        files_to_exclude.add("index.html")
 
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml")
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     return files_to_exclude
@@ -251,6 +251,8 @@ fun process_dir(curr_dir: File){
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${styleNonce}'; base-uri 'none'; form-action 'none';">
+        <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
+        <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>

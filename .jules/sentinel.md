@@ -53,3 +53,7 @@
 **Vulnerability:** When encountering an unreadable `.html4ignore` file or a directory without write permissions, an unhandled `java.io.FileNotFoundException` or `java.nio.file.AccessDeniedException` was thrown, respectively. This causes the entire crawler to crash (DoS) when encountering files/directories with restricted permissions.
 **Learning:** Application processes that recursively scan filesystem directories must gracefully handle permission denied exceptions to ensure that one inaccessible node does not halt the entire scanning/processing operation.
 **Prevention:** Check `.canRead()` before attempting to parse configuration/ignore files, and wrap file writing operations in `try-catch` blocks to securely handle `AccessDeniedException` or other `IOException`s, failing gracefully (Fail Securely) rather than crashing the application.
+## 2024-05-25 - Information Exposure via Default Inclusion and Referrer
+**Vulnerability:** Common sensitive files (like `.aws`, `.kube`, `.npmrc`) could be accidentally indexed if present in the tree. Furthermore, clicking on external links (if any were added) could leak the directory structure via the HTTP Referer header.
+**Learning:** Default exclude lists must encompass modern toolchains and cloud credentials, as users often run directory indexers in their home or project root directories. HTML templates need explicit policies to prevent accidental data leakage via headers.
+**Prevention:** Maintain an extensive default deny-list for known sensitive files and enforce `no-referrer` globally on generated index pages.
