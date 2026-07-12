@@ -51,12 +51,16 @@ fun go(topDir: String, maxLevel: Int)  {
 
     while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
         val currentLevel: Int = lle.level
+        // Capture one immutable directory snapshot for rendering, ignore matching,
+        // and traversal. This avoids repeated filesystem enumeration and keeps all
+        // decisions for a visited directory internally consistent.
+        val dirFiles = directory_snapshot(lle.file)
+        val exclude = process_ignore_file(lle.file, dirFiles)
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           process_dir(lle.file)
+           process_dir(lle.file, dirFiles, exclude)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
-            val exclude = process_ignore_file(lle.file)
-            lle.file.listFiles()?.forEach {
+            dirFiles.forEach {
                 if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
                     ll.push( LinkedListEntry(it, currentLevel+1))
                 }
@@ -121,7 +125,13 @@ fun String.urlEncodePath(): String {
     return encoded.toString()
 }
 
-fun process_ignore_file(curr_dir: File): Set<String> {
+fun directory_snapshot(curr_dir: File): List<File> =
+    curr_dir.listFiles()?.toList() ?: emptyList()
+
+fun process_ignore_file(
+    curr_dir: File,
+    dirFiles: List<File> = directory_snapshot(curr_dir)
+): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -152,8 +162,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       curr_dir.list()?.forEach {
-           val current = it
+       dirFiles.forEach {
+           val current = it.name
            val pathCurrent = java.nio.file.Paths.get(current)
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
@@ -185,9 +195,12 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File){
+fun process_dir(
+    curr_dir: File,
+    dirFiles: List<File> = directory_snapshot(curr_dir),
+    exclude: Set<String> = process_ignore_file(curr_dir, dirFiles)
+){
     
-    val exclude: Set<String> = process_ignore_file(curr_dir)
     val styleNonce = generate_csp_nonce()
 
     val css = """
@@ -265,7 +278,7 @@ fun process_dir(curr_dir: File){
     val index_middle = fun():String{ 
         val l = StringBuilder()
 
-        val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
+        val dir_files: MutableList<File> = dirFiles.toMutableList()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            val fileName = it.getName()

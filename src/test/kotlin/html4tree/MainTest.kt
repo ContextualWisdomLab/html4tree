@@ -498,4 +498,32 @@ class MainTest {
         // Line 1001 should be ignored due to line limit
         assertFalse(excluded.contains("test.txt1001"))
     }
+
+    @Test
+    fun testProcessIgnoreFileUsesProvidedDirectorySnapshot() {
+        File(tempDir, ".html4ignore").writeText("*.txt")
+        val visibleAtSnapshot = File(tempDir, "visible.txt")
+        visibleAtSnapshot.createNewFile()
+        val snapshot = tempDir.listFiles()?.toList() ?: emptyList()
+        File(tempDir, "created-later.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir, snapshot)
+
+        assertTrue(excluded.contains("visible.txt"))
+        assertFalse(excluded.contains("created-later.txt"))
+    }
+
+    @Test
+    fun testProcessDirUsesProvidedDirectorySnapshot() {
+        val visibleAtSnapshot = File(tempDir, "visible.txt")
+        visibleAtSnapshot.createNewFile()
+        val snapshot = tempDir.listFiles()?.toList() ?: emptyList()
+        File(tempDir, "created-later.txt").createNewFile()
+
+        process_dir(tempDir, snapshot)
+
+        val html = File(tempDir, "index.html").readText()
+        assertTrue(html.contains("visible.txt"))
+        assertFalse(html.contains("created-later.txt"))
+    }
 }
