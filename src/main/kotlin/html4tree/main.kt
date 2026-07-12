@@ -184,14 +184,14 @@ fun process_dir(curr_dir: File){
               a {
                 padding: 0.5rem;
                 text-decoration: none;
-                color: #0366d6;
+                color: #0969da;
                 border-radius: 4px;
                 transition: background-color 0.2s ease, outline-color 0.2s ease;
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
                 text-decoration: underline;
-                outline: 2px solid #0366d6;
+                outline: 2px solid #0969da;
                 outline-offset: -2px;
               }
               @media (prefers-reduced-motion: reduce) {
@@ -254,7 +254,7 @@ fun process_dir(curr_dir: File){
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div style="padding: 0.5rem; color: #666; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div style="padding: 0.5rem; opacity: 0.7; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 
