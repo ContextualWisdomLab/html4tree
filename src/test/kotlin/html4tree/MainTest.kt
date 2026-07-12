@@ -98,6 +98,13 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsRelativePathTraversal() {
+        assertFailsWith<IllegalArgumentException> {
+            go("../../../etc/passwd", -1)
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFile() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("*.txt\n*.log")
@@ -162,7 +169,15 @@ class MainTest {
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
-        assertTrue(htmlContent.contains("default-src 'none'; style-src 'unsafe-inline';"))
+        val nonce = Regex("""<style nonce="([A-Za-z0-9+/=]+)">""").find(htmlContent)?.groupValues?.get(1)
+        assertTrue(!nonce.isNullOrBlank(), "style nonce should be rendered")
+        assertTrue(htmlContent.contains("default-src 'none'; style-src 'nonce-${nonce}'"))
+        assertTrue(htmlContent.contains("base-uri 'none'; form-action 'none';"))
+        assertFalse(htmlContent.contains("unsafe-inline"))
+        assertFalse(htmlContent.contains("style=\""))
+        assertTrue(htmlContent.contains("a.dir-link"))
+        assertTrue(htmlContent.contains("class=\"dir-link\""))
+        assertTrue(htmlContent.contains(".empty-dir"))
         assertTrue(htmlContent.contains("prefers-color-scheme: dark"))
     }
 
@@ -247,6 +262,31 @@ class MainTest {
         assertTrue(File(tempDir, "index.html").exists())
         assertFalse(File(subdir, "index.html").exists())
         assertFalse(File(subsubdir, "index.html").exists())
+    }
+
+    @Test
+    fun testGoIndexesNormalChildButSkipsSensitiveTraversal() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+        File(tempDir, "plain.txt").writeText("plain")
+        val gitDir = File(tempDir, ".git")
+        gitDir.mkdir()
+
+        go(tempDir.absolutePath, -1)
+
+        assertTrue(File(tempDir, "index.html").exists())
+        assertTrue(File(subdir, "index.html").exists())
+        assertFalse(File(gitDir, "index.html").exists())
+    }
+
+    @Test
+    fun testProcessDirHandlesNonDirectoryWithoutThrowing() {
+        val notADirectory = File(tempDir, "not-a-directory")
+        notADirectory.writeText("content")
+
+        process_dir(notADirectory)
+
+        assertEquals("content", notADirectory.readText())
     }
 
     @Test

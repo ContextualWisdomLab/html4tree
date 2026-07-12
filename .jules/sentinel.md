@@ -18,10 +18,10 @@
 **Learning:** `File.listFiles()` returns null (not empty) on unreadable directories. Directory crawlers must reject symlink roots, skip symlink children, and avoid enqueueing paths deeper than the configured traversal limit.
 **Prevention:** Use `java.nio.file.Files.isSymbolicLink(file.toPath())` for root and child directory checks, gracefully handle `null` arrays from `listFiles()` and `list()`, and only enqueue child directories when the current level is still below `maxLevel`.
 
-## 2024-06-28 - [html4tree] Static HTML Generation Security
-**Vulnerability:** Defense in Depth (CSP Missing)
-**Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
-**Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+## 2024-06-28 - [html4tree] 정적 HTML 생성 보안
+**Vulnerability:** 심층 방어 누락 (CSP 누락)
+**Learning:** 입력값이 적절히 이스케이프 되더라도, 파일/디렉토리 구조를 표시하는 정적 생성 HTML은 잠재적인 XSS 우회 공격에 대비하여 추가적인 방어 계층을 제공하는 콘텐츠 보안 정책(CSP)을 반드시 구현해야 합니다.
+**Prevention:** 외부 스크립트나 리소스가 필요하지 않은 경우 자동 생성되는 HTML 헤더에 엄격한 CSP 메타 태그(예: `default-src 'none'; style-src 'nonce-...'; base-uri 'none'; form-action 'none';`)를 포함하고, 스타일 블록에는 일회성 nonce를 부여하십시오.
 
 ## 2024-05-31 - [CRITICAL] 심볼릭 링크 검사 우회 취약점 (canonicalFile)
 **Vulnerability:** `File(path).canonicalFile`를 사용하여 심볼릭 링크 여부를 검사하면, `canonicalFile` 함수 내부에서 심볼릭 링크를 이미 대상(target) 파일의 실제 경로로 해석(resolve)해 버리기 때문에, 이후에 진행되는 `Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)` 등의 심볼릭 링크 제한 검사가 완전히 무력화되는 취약점이 발견되었습니다.
