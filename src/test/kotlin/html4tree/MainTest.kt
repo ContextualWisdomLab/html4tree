@@ -113,7 +113,7 @@ class MainTest {
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.md").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
 
         assertTrue(excluded.contains("test.txt"))
         assertTrue(excluded.contains("test.log"))
@@ -123,7 +123,7 @@ class MainTest {
 
     @Test
     fun testProcessIgnoreFileNoIgnore() {
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         assertTrue(excluded.contains("index.html"))
         assertEquals(9, excluded.size) // index.html + 8 default sensitive files
     }
@@ -136,7 +136,7 @@ class MainTest {
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.txt").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
 
         assertTrue(excluded.contains("test.log"))
         assertFalse(excluded.contains("test.txt"))
@@ -150,7 +150,7 @@ class MainTest {
         File(tempDir, "test.ignore").createNewFile()
         File(tempDir, ".html4ignore").writeText("*.ignore")
 
-        process_dir(tempDir)
+        process_dir(tempDir, tempDir.listFiles())
 
         val indexFile = File(tempDir, "index.html")
         assertTrue(indexFile.exists())
@@ -214,7 +214,7 @@ class MainTest {
             Assume.assumeTrue("Symlink creation not supported in this environment", false)
         }
 
-        process_dir(tempDir)
+        process_dir(tempDir, tempDir.listFiles())
 
         assertEquals("original content", targetFile.readText())
         assertTrue(indexFile.exists())
@@ -287,7 +287,7 @@ class MainTest {
         val notADirectory = File(tempDir, "not-a-directory")
         notADirectory.writeText("content")
 
-        process_dir(notADirectory)
+        process_dir(notADirectory, notADirectory.listFiles())
 
         assertEquals("content", notADirectory.readText())
     }
@@ -349,14 +349,14 @@ class MainTest {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index.html")
         File(tempDir, "index.html").writeText("existing")
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         assertTrue(excluded.contains("index.html"))
     }
 
     @Test
     fun testProcessDirItEqualsCurrDir() {
         File(tempDir, "tempDir").mkdir()
-        process_dir(tempDir)
+        process_dir(tempDir, tempDir.listFiles())
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -389,7 +389,7 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         assertTrue(excluded.contains("test.txt"))
     }
 
@@ -399,7 +399,7 @@ class MainTest {
         ignoreDir.mkdir()
 
         // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         assertTrue(excluded.contains("index.html"))
     }
 
@@ -421,7 +421,7 @@ class MainTest {
         File(tempDir, "pattern1005").createNewFile() // Should not be ignored as we stop at 1000
         File(tempDir, longPattern).createNewFile() // Should not be ignored as length > 100
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
 
         assertTrue(excluded.contains("pattern500"))
         assertFalse(excluded.contains("pattern1005"))
@@ -443,7 +443,7 @@ class MainTest {
         File(tempDir, "test.txt").createNewFile()
 
         // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         assertFalse(excluded.contains("test.txt"))
         assertTrue(excluded.contains("index.html"))
     }
@@ -458,7 +458,7 @@ class MainTest {
         File(tempDir, "test.txt").createNewFile()
 
         // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         assertFalse(excluded.contains("test.txt"))
         assertTrue(excluded.contains("index.html"))
     }
@@ -472,7 +472,7 @@ class MainTest {
         File(tempDir, "test.log").createNewFile()
         File(tempDir, "test.txt").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         // .log is excluded because it's valid
         assertTrue(excluded.contains("test.log"))
         // test.txt is not excluded because long regex was ignored
@@ -492,7 +492,7 @@ class MainTest {
         File(tempDir, "test.txt1000").createNewFile()
         File(tempDir, "test.txt1001").createNewFile()
 
-        val excluded = process_ignore_file(tempDir)
+        val excluded = process_ignore_file(tempDir, tempDir.listFiles())
         // Line 1000 should be processed
         assertTrue(excluded.contains("test.txt1000"))
         // Line 1001 should be ignored due to line limit

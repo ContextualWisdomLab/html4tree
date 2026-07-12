@@ -26,3 +26,6 @@
 ## 2024-07-28 - 디렉토리 목록 불필요한 정렬 오버헤드
 **학습:** 디렉토리 목록(`list()` 또는 `listFiles()`)을 단순히 필터링하여 `Set`에 추가하는 경우처럼 특정 순서가 필요하지 않은 작업에서 `.sorted()`를 호출하면 불필요한 O(N log N) 오버헤드가 발생합니다.
 **조치:** `Set`과 같은 순서에 무관한 자료구조에 요소를 추가하기 위한 필터링 작업에서는 디렉토리 목록에서 `.sorted()` 호출을 제거하여 성능을 최적화합니다.
+## 2024-07-12 - [Filesystem Access Optimization]
+**Learning:** Calling `File.listFiles()` multiple times for the same directory is a significant performance bottleneck in deeply nested directory trees, causing expensive OS-level I/O operations per file or directory. This overhead compounds geometrically with the depth and width of the tree.
+**Action:** Always fetch the directory contents once and pass the resulting array (`Array<File>?`) down to helper methods (like sorting and filtering) to eliminate redundant filesystem reads.

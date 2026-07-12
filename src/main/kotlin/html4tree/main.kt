@@ -51,12 +51,14 @@ fun go(topDir: String, maxLevel: Int)  {
 
     while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
         val currentLevel: Int = lle.level
+        val dirFiles: Array<File>? = lle.file.listFiles()
+
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           process_dir(lle.file)
+           process_dir(lle.file, dirFiles)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
-            val exclude = process_ignore_file(lle.file)
-            lle.file.listFiles()?.forEach {
+            val exclude = process_ignore_file(lle.file, dirFiles)
+            dirFiles?.forEach {
                 if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
                     ll.push( LinkedListEntry(it, currentLevel+1))
                 }
@@ -121,7 +123,7 @@ fun String.urlEncodePath(): String {
     return encoded.toString()
 }
 
-fun process_ignore_file(curr_dir: File): Set<String> {
+fun process_ignore_file(curr_dir: File, dirFiles: Array<File>?): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -152,8 +154,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       curr_dir.list()?.forEach {
-           val current = it
+       dirFiles?.forEach { file ->
+           val current = file.name
            val pathCurrent = java.nio.file.Paths.get(current)
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
@@ -185,9 +187,9 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File){
+fun process_dir(curr_dir: File, dirFiles: Array<File>?){
     
-    val exclude: Set<String> = process_ignore_file(curr_dir)
+    val exclude: Set<String> = process_ignore_file(curr_dir, dirFiles)
     val styleNonce = generate_csp_nonce()
 
     val css = """
@@ -265,9 +267,9 @@ fun process_dir(curr_dir: File){
     val index_middle = fun():String{ 
         val l = StringBuilder()
 
-        val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
-        dir_files.sortWith(compareBy ({it.name}) )
-        dir_files.forEach {
+        val dir_files_list: MutableList<File> = dirFiles?.toMutableList() ?: mutableListOf()
+        dir_files_list.sortWith(compareBy ({it.name}) )
+        dir_files_list.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            if (fileName !in exclude) {

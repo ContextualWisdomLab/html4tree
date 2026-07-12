@@ -12,7 +12,7 @@ class CoverageTest {
         readOnlyDir.mkdir()
         readOnlyDir.setWritable(false, false)
         try {
-            process_dir(readOnlyDir)
+            process_dir(readOnlyDir, readOnlyDir.listFiles())
             // It should be handled securely
             assertTrue(true)
         } finally {
