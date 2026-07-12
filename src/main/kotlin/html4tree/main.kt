@@ -143,11 +143,12 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        curr_dir.list()?.forEach {
            val current = it
            val pathCurrent = java.nio.file.Paths.get(current)
-           ignored_matchers.forEach { matcher ->
-              if(matcher.matches(pathCurrent)){
+           for (matcher in ignored_matchers) {
+              if (matcher.matches(pathCurrent)) {
                  files_to_exclude.add(current)
+                 break
               }
-         }
+           }
        }
     }
 
