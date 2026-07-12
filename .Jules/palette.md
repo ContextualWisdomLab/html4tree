@@ -1,3 +1,0 @@
-## 2024-05-24 - [Add smooth transitions for a tags but respect user motion preferences]
-**Learning:** Adding CSS transitions (`transition: all`) can create unintended animations and performance issues. Also, animations can cause problems for users with vestibular motion disorders.
-**Action:** When adding CSS transitions, explicitly specify properties (e.g., `background-color`, `outline-color`) instead of `transition: all`. Always include a `@media (prefers-reduced-motion: reduce)` override to set `transition: none` for accessibility.
