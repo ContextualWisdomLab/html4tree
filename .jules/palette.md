@@ -24,3 +24,6 @@
 ## 2026-07-12 - Inline Colors vs Dark Mode
 **Learning:** Hardcoded inline colors (like `color: #666`) fail to adapt in dark mode because they bypass CSS media queries and cannot be easily overridden without `!important`, causing text legibility issues on dark backgrounds.
 **Action:** Use `opacity: 0.7` instead of hardcoded hex values for muted text to dynamically inherit theme colors and ensure legibility across all color schemes.
+## 2024-07-12 - Prevent icon misalignment on long file names
+**Learning:** Very long file names in a fluid layout without explicit flexbox wrapping can cause text to wrap below preceding inline icons, breaking the visual hierarchy and alignment.
+**Action:** Always wrap file/directory listings in a flex container with `align-items: flex-start` and isolate icons with `flex-shrink: 0` alongside text content wrapped in a `<span style="overflow-wrap: anywhere;">` (or a global `overflow-wrap` on the container) to ensure text wraps cleanly next to fixed-width icons on mobile devices.
