@@ -121,7 +121,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
+    // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        ignore_file.useLines { lines ->
@@ -269,7 +270,12 @@ fun process_dir(curr_dir: File){
 </html>
 """
 
-   write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+   try {
+       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+   } catch (e: Exception) {
+       // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
+       // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
+   }
 
 }
 
