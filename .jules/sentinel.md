@@ -49,3 +49,7 @@
 **Vulnerability:** [사용자가 제공한 `.html4ignore` 패턴을 직접 정규표현식으로 컴파일하여 발생하는 ReDoS(정규표현식 서비스 거부) 취약점 발견.]
 **Learning:** [필터링 패턴으로 정규표현식을 직접 노출하면 악의적으로 조작된 긴 문자열이나 복잡한 패턴을 통해 애플리케이션의 리소스를 고갈시킬 수 있음.]
 **Prevention:** [사용자 입력 패턴은 정규표현식으로 변환하기 전 `java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern")`와 같은 안전한 Glob 매칭 방식을 사용해야 함.]
+## 2024-07-12 - [html4tree] Unhandled File/Directory Permissions causing DoS
+**Vulnerability:** When encountering an unreadable `.html4ignore` file or a directory without write permissions, an unhandled `java.io.FileNotFoundException` or `java.nio.file.AccessDeniedException` was thrown, respectively. This causes the entire crawler to crash (DoS) when encountering files/directories with restricted permissions.
+**Learning:** Application processes that recursively scan filesystem directories must gracefully handle permission denied exceptions to ensure that one inaccessible node does not halt the entire scanning/processing operation.
+**Prevention:** Check `.canRead()` before attempting to parse configuration/ignore files, and wrap file writing operations in `try-catch` blocks to securely handle `AccessDeniedException` or other `IOException`s, failing gracefully (Fail Securely) rather than crashing the application.
