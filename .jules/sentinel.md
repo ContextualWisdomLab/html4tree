@@ -32,11 +32,24 @@
 **Learning:** 디렉토리 구조를 자동 생성하는 도구는 반드시 "기본적으로 안전한(secure by default)" 정책을 채택해야 합니다. 사용자 제공 무시 파일(`.html4ignore`)에만 의존하는 것은 사용자가 설정을 잊거나 어떤 파일이 민감한지 모를 수 있기 때문에 불충분합니다.
 **Prevention:** 출력에서 기본적으로 제외되는 보편적으로 민감한 파일 및 디렉토리의 하드코딩된 기준 목록을 항상 포함하십시오. 이는 우발적인 정보 유출을 방지하기 위한 강력한 심층 방어(defense-in-depth) 조치로 작용합니다.
 
-## 2024-06-28 - [html4tree] 설정 파일에 대한 심볼릭 링크 및 디렉토리 공격
-**Vulnerability:** 심볼릭 링크/디렉토리 형태의 `.html4ignore`를 통한 DoS 및 경로 탐색(Path Traversal) 취약점
-**Learning:** 런타임에 파싱되는 애플리케이션 설정 파일(예: `.html4ignore`)의 파일 유형을 무조건적으로 신뢰할 경우 공격의 대상이 될 수 있습니다. 공격자가 `.html4ignore`라는 이름의 디렉토리를 생성하여 읽기 시 충돌을 유발하거나, `/dev/zero`나 `/dev/urandom`으로 심볼릭 링크를 연결하여 애플리케이션이 리소스를 무한정 소모하며 다운되도록(hang) 만들 수 있습니다.
-**Prevention:** 설정 파일을 파싱하기 전에는 항상 해당 파일이 일반 파일인지(`isFile`) 확인하고 심볼릭 링크를 명시적으로 거부(`!Files.isSymbolicLink`)해야 합니다.
-## 2024-06-29 - [html4tree] 민감한 디렉토리 순회 (정보 노출)
-**Vulnerability:** 이전 보안 패치는 `process_dir()`에서 나열되는 디렉토리 목록에서 민감한 디렉토리를 제외하려 했습니다. 하지만 트리를 재귀적으로 순회하는 `go()` 함수가 제외 목록을 확인하지 않은 채 `Files.isDirectory`를 통해 하위 디렉토리를 무조건 탐색 큐에 삽입했습니다. 결과적으로 `.git`과 같은 민감한 디렉토리가 여전히 크롤링되어 내부에 `.git/index.html` 파일이 생성되었습니다.
-**Learning:** 파일 목록에 대한 보안 제외 규칙은 트리 순회(Traversal) 단계에서도 동일하게 적용되어야 합니다. 상위 인덱스 파일에서 민감한 경로를 숨기더라도, 정적 생성기가 여전히 그 내부로 진입해 하위 인덱스를 생성한다면 정보 노출을 막을 수 없습니다.
-**Prevention:** 재귀적 트리 순회 함수를 호출할 때 렌더링 함수와 완전히 동일한 제외 필터(예: `it.name !in exclude && !Files.isSymbolicLink(...)`)를 적용하여 안전하게 제어해야 합니다.
+## 2024-06-28 - [html4tree] Symlink and Directory Attacks on Configuration Files
+**Vulnerability:** DoS and Path Traversal via symlinked/directory `.html4ignore`
+**Learning:** Application configuration files that are parsed at runtime (like `.html4ignore`) can be targeted if their file type is implicitly trusted. A user or attacker might create a directory named `.html4ignore` causing a crash upon reading, or symlink it to `/dev/zero` or `/dev/urandom` causing the application to hang and consume resources indefinitely.
+**Prevention:** Always verify that configuration files are regular files (`isFile`) and explicitly reject symbolic links (`!Files.isSymbolicLink`) before attempting to parse them.
+## 2024-05-31 - [DoS Risk] Uncontrolled Resource Consumption in Ignore File Processing
+**Vulnerability:** Processing `.html4ignore` reads regex patterns line-by-line without any upper limit on the number of patterns or their lengths. An attacker could craft a file with thousands of excessively long regex patterns causing a Denial of Service (DoS) and potentially ReDoS.
+**Learning:** File processing loops, especially those dynamically compiling regular expressions, are vulnerable to uncontrolled resource consumption and regex denial of service. Memory limit exhaustion and high CPU loads are likely.
+**Prevention:** Always impose sensible bounds (e.g., maximum line count, maximum pattern length) when dynamically processing loop-based inputs for resource-intensive operations like regex compilation.
+
+## 2026-07-10 - [MEDIUM] ReDoS, OOM, and Root Crawl DoS Mitigations
+**Vulnerability:** The `.html4ignore` parser still allowed excessively large files and root-directory crawls could generate unbounded filesystem output.
+**Learning:** Local CLI configuration inputs and traversal roots need explicit resource ceilings, not only syntactic validation.
+**Prevention:** Limit `.html4ignore` file size, parsed line count, compiled pattern count, and regex length; reject filesystem root traversal using `File.parentFile != null`.
+## 2024-07-11 - [.html4ignore 파일의 ReDoS 취약점 수정 (Glob 패턴 적용)]
+**Vulnerability:** [사용자가 제공한 `.html4ignore` 패턴을 직접 정규표현식으로 컴파일하여 발생하는 ReDoS(정규표현식 서비스 거부) 취약점 발견.]
+**Learning:** [필터링 패턴으로 정규표현식을 직접 노출하면 악의적으로 조작된 긴 문자열이나 복잡한 패턴을 통해 애플리케이션의 리소스를 고갈시킬 수 있음.]
+**Prevention:** [사용자 입력 패턴은 정규표현식으로 변환하기 전 `java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern")`와 같은 안전한 Glob 매칭 방식을 사용해야 함.]
+## 2024-07-12 - [html4tree] Unhandled File/Directory Permissions causing DoS
+**Vulnerability:** When encountering an unreadable `.html4ignore` file or a directory without write permissions, an unhandled `java.io.FileNotFoundException` or `java.nio.file.AccessDeniedException` was thrown, respectively. This causes the entire crawler to crash (DoS) when encountering files/directories with restricted permissions.
+**Learning:** Application processes that recursively scan filesystem directories must gracefully handle permission denied exceptions to ensure that one inaccessible node does not halt the entire scanning/processing operation.
+**Prevention:** Check `.canRead()` before attempting to parse configuration/ignore files, and wrap file writing operations in `try-catch` blocks to securely handle `AccessDeniedException` or other `IOException`s, failing gracefully (Fail Securely) rather than crashing the application.
