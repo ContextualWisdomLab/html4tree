@@ -1,9 +1,11 @@
 package html4tree
 
 import java.io.File
+import java.security.SecureRandom
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
+import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -21,8 +23,17 @@ class Html4tree : CliktCommand() {
 
 fun main(args: Array<String>)  = Html4tree().main(args)
 
+private val nonceRandom = SecureRandom()
+
+fun generate_csp_nonce(): String {
+    val nonceBytes = ByteArray(16)
+    nonceRandom.nextBytes(nonceBytes)
+    return Base64.getEncoder().encodeToString(nonceBytes)
+}
+
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
+    require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
     // 보안 수정: symlink 검사를 우회하는 canonicalFile 대신 absoluteFile을 사용
     // canonicalFile은 symlink를 대상 경로로 해석하여 이어지는 NOFOLLOW_LINKS 검사를 무력화합니다.
     val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
@@ -40,17 +51,17 @@ fun go(topDir: String, maxLevel: Int)  {
 
     while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
         val currentLevel: Int = lle.level
-        // ⚡ Bolt Performance Optimization: Hoist listFiles() out of nested functions
-        // By fetching directory contents once, we eliminate redundant OS syscalls
-        // in process_dir and process_ignore_file (saves 2x I/O calls per directory).
-        val dir_files = lle.file.listFiles()?.toList() ?: emptyList()
-
+        // Capture one immutable directory snapshot for rendering, ignore matching,
+        // and traversal. This avoids repeated filesystem enumeration and keeps all
+        // decisions for a visited directory internally consistent.
+        val dirFiles = directory_snapshot(lle.file)
+        val exclude = process_ignore_file(lle.file, dirFiles)
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           process_dir(lle.file, dir_files)
+           process_dir(lle.file, dirFiles, exclude)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
-            dir_files.forEach {
-                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)){
+            dirFiles.forEach {
+                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
                     ll.push( LinkedListEntry(it, currentLevel+1))
                 }
             }
@@ -114,7 +125,13 @@ fun String.urlEncodePath(): String {
     return encoded.toString()
 }
 
-fun process_ignore_file(curr_dir: File, dir_files: List<File>): Set<String> {
+fun directory_snapshot(curr_dir: File): List<File> =
+    curr_dir.listFiles()?.toList() ?: emptyList()
+
+fun process_ignore_file(
+    curr_dir: File,
+    dirFiles: List<File> = directory_snapshot(curr_dir)
+): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -126,8 +143,9 @@ fun process_ignore_file(curr_dir: File, dir_files: List<File>): Set<String> {
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.length() <= 1048576){
-       val ignored_regexes = mutableListOf<Regex>()
+    // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
+       val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        ignore_file.useLines { lines ->
            for ((lineIndex, it) in lines.withIndex()) {
@@ -136,20 +154,23 @@ fun process_ignore_file(curr_dir: File, dir_files: List<File>): Set<String> {
                val pattern = it.trim()
                if (pattern.isNotEmpty() && pattern.length <= 100) {
                    try {
-                       ignored_regexes.add(("^"+pattern+"$").toRegex())
-                   } catch (_: IllegalArgumentException) {
+                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                   } catch (_: java.util.regex.PatternSyntaxException) {
                    }
                }
            }
        }
 
-       dir_files.map { it.name }.sorted().forEach {
-           val current = it
-           ignored_regexes.forEach { regex ->
-              if(regex.matches(current)){
+       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+       dirFiles.forEach {
+           val current = it.name
+           val pathCurrent = java.nio.file.Paths.get(current)
+           for (matcher in ignored_matchers) {
+              if (matcher.matches(pathCurrent)) {
                  files_to_exclude.add(current)
+                 break
               }
-         }
+           }
        }
     }
 
@@ -174,27 +195,40 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File, dir_files: List<File>){
+fun process_dir(
+    curr_dir: File,
+    dirFiles: List<File> = directory_snapshot(curr_dir),
+    exclude: Set<String> = process_ignore_file(curr_dir, dirFiles)
+){
     
-    val exclude: Set<String> = process_ignore_file(curr_dir, dir_files)
+    val styleNonce = generate_csp_nonce()
 
     val css = """
-              <style>
+              <style nonce="${styleNonce}">
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+                padding: 1rem;
+              }
               ul {
                 list-style-type: none;
                 padding-left: 0;
               }
+              a.dir-link {
+                display: block;
+                width: 100%;
+              }
               a {
                 padding: 0.5rem;
                 text-decoration: none;
-                color: #0366d6;
+                color: #0969da;
                 border-radius: 4px;
                 transition: background-color 0.2s ease, outline-color 0.2s ease;
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
                 text-decoration: underline;
-                outline: 2px solid #0366d6;
+                outline: 2px solid #0969da;
                 outline-offset: -2px;
               }
               @media (prefers-reduced-motion: reduce) {
@@ -215,6 +249,11 @@ fun process_dir(curr_dir: File, dir_files: List<File>){
                   outline-color: #58a6ff;
                 }
               }
+              .empty-dir {
+                padding: 0.5rem;
+                opacity: 0.7;
+                font-style: italic;
+              }
               </style>
               """
 
@@ -224,7 +263,7 @@ fun process_dir(curr_dir: File, dir_files: List<File>){
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${styleNonce}'; base-uri 'none'; form-action 'none';">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
@@ -232,16 +271,16 @@ fun process_dir(curr_dir: File, dir_files: List<File>){
        <main>
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
-         <ul>
-            <li><a style="display:block; width:100%" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+         <ul role="list">
+            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
 """ 
 
     val index_middle = fun():String{ 
         val l = StringBuilder()
 
-        val sorted_files = dir_files.toMutableList()
-        sorted_files.sortWith(compareBy ({it.name}) )
-        sorted_files.forEach {
+        val dir_files: MutableList<File> = dirFiles.toMutableList()
+        dir_files.sortWith(compareBy ({it.name}) )
+        dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            if (fileName !in exclude) {
@@ -250,14 +289,14 @@ fun process_dir(curr_dir: File, dir_files: List<File>){
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-                  l.append("""          <li><a style="display:block; width:100%" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
                   l.append('\n')
                }
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div style="padding: 0.5rem; color: #666; font-style: italic;">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div class="empty-dir">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 
@@ -272,7 +311,12 @@ fun process_dir(curr_dir: File, dir_files: List<File>){
 </html>
 """
 
-   write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+   try {
+       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+   } catch (e: Exception) {
+       // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
+       // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
+   }
 
 }
 

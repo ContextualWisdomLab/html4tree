@@ -18,10 +18,10 @@
 **Learning:** `File.listFiles()` returns null (not empty) on unreadable directories. Directory crawlers must reject symlink roots, skip symlink children, and avoid enqueueing paths deeper than the configured traversal limit.
 **Prevention:** Use `java.nio.file.Files.isSymbolicLink(file.toPath())` for root and child directory checks, gracefully handle `null` arrays from `listFiles()` and `list()`, and only enqueue child directories when the current level is still below `maxLevel`.
 
-## 2024-06-28 - [html4tree] Static HTML Generation Security
-**Vulnerability:** Defense in Depth (CSP Missing)
-**Learning:** Even when inputs are properly escaped, statically generated HTML that displays file/directory structures should implement a Content Security Policy (CSP) to provide an extra layer of defense against potential XSS bypasses.
-**Prevention:** Include a strict CSP meta tag (e.g., `default-src 'none'; style-src 'unsafe-inline';`) in auto-generated HTML headers when external scripts or resources are not required.
+## 2024-06-28 - [html4tree] 정적 HTML 생성 보안
+**Vulnerability:** 심층 방어 누락 (CSP 누락)
+**Learning:** 입력값이 적절히 이스케이프 되더라도, 파일/디렉토리 구조를 표시하는 정적 생성 HTML은 잠재적인 XSS 우회 공격에 대비하여 추가적인 방어 계층을 제공하는 콘텐츠 보안 정책(CSP)을 반드시 구현해야 합니다.
+**Prevention:** 외부 스크립트나 리소스가 필요하지 않은 경우 자동 생성되는 HTML 헤더에 엄격한 CSP 메타 태그(예: `default-src 'none'; style-src 'nonce-...'; base-uri 'none'; form-action 'none';`)를 포함하고, 스타일 블록에는 일회성 nonce를 부여하십시오.
 
 ## 2024-05-31 - [CRITICAL] 심볼릭 링크 검사 우회 취약점 (canonicalFile)
 **Vulnerability:** `File(path).canonicalFile`를 사용하여 심볼릭 링크 여부를 검사하면, `canonicalFile` 함수 내부에서 심볼릭 링크를 이미 대상(target) 파일의 실제 경로로 해석(resolve)해 버리기 때문에, 이후에 진행되는 `Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)` 등의 심볼릭 링크 제한 검사가 완전히 무력화되는 취약점이 발견되었습니다.
@@ -45,3 +45,11 @@
 **Vulnerability:** The `.html4ignore` parser still allowed excessively large files and root-directory crawls could generate unbounded filesystem output.
 **Learning:** Local CLI configuration inputs and traversal roots need explicit resource ceilings, not only syntactic validation.
 **Prevention:** Limit `.html4ignore` file size, parsed line count, compiled pattern count, and regex length; reject filesystem root traversal using `File.parentFile != null`.
+## 2024-07-11 - [.html4ignore 파일의 ReDoS 취약점 수정 (Glob 패턴 적용)]
+**Vulnerability:** [사용자가 제공한 `.html4ignore` 패턴을 직접 정규표현식으로 컴파일하여 발생하는 ReDoS(정규표현식 서비스 거부) 취약점 발견.]
+**Learning:** [필터링 패턴으로 정규표현식을 직접 노출하면 악의적으로 조작된 긴 문자열이나 복잡한 패턴을 통해 애플리케이션의 리소스를 고갈시킬 수 있음.]
+**Prevention:** [사용자 입력 패턴은 정규표현식으로 변환하기 전 `java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern")`와 같은 안전한 Glob 매칭 방식을 사용해야 함.]
+## 2024-07-12 - [html4tree] Unhandled File/Directory Permissions causing DoS
+**Vulnerability:** When encountering an unreadable `.html4ignore` file or a directory without write permissions, an unhandled `java.io.FileNotFoundException` or `java.nio.file.AccessDeniedException` was thrown, respectively. This causes the entire crawler to crash (DoS) when encountering files/directories with restricted permissions.
+**Learning:** Application processes that recursively scan filesystem directories must gracefully handle permission denied exceptions to ensure that one inaccessible node does not halt the entire scanning/processing operation.
+**Prevention:** Check `.canRead()` before attempting to parse configuration/ignore files, and wrap file writing operations in `try-catch` blocks to securely handle `AccessDeniedException` or other `IOException`s, failing gracefully (Fail Securely) rather than crashing the application.

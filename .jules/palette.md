@@ -17,3 +17,10 @@
 ## 2026-07-10 - ARIA Label Language Matching
 **Learning:** Screen readers rely on the document's language attribute (`lang="ko"`) to select the appropriate pronunciation engine. If semantic descriptors like `aria-label` are provided in a language different from the document language (e.g., English text in a Korean document), they may be mispronounced or skipped entirely, breaking accessibility.
 **Action:** Always ensure that `aria-label`, `alt` text, and other hidden semantic text strings match the language specified in the document's `<html lang="...">` tag for proper localization and screen reader compatibility.
+## 2026-07-11 - Safari VoiceOver List Semantics Fix
+**Learning:** Using `list-style: none` or `list-style-type: none` in CSS causes Safari (VoiceOver) to remove list semantics entirely, which harms accessibility for screen reader users trying to navigate directory listings.
+**Action:** Always explicitly add `role="list"` to `<ul>` or `<ol>` elements when removing their default list styling to preserve accessibility semantics across all browsers.
+
+## 2026-07-12 - Inline Colors vs Dark Mode
+**Learning:** Hardcoded inline colors (like `color: #666`) fail to adapt in dark mode because they bypass CSS media queries and cannot be easily overridden without `!important`, causing text legibility issues on dark backgrounds.
+**Action:** Use `opacity: 0.7` instead of hardcoded hex values for muted text to dynamically inherit theme colors and ensure legibility across all color schemes.
