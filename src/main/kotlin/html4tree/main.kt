@@ -5,6 +5,7 @@ import java.security.SecureRandom
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
@@ -25,10 +26,21 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 private val nonceRandom = SecureRandom()
 
+internal data class FileIdentity(val key: Any?, val readable: Boolean)
+
 fun generate_csp_nonce(): String {
     val nonceBytes = ByteArray(16)
     nonceRandom.nextBytes(nonceBytes)
     return Base64.getEncoder().encodeToString(nonceBytes)
+}
+
+internal fun read_file_identity(file: File): FileIdentity {
+    return try {
+        val attrs = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        FileIdentity(attrs.fileKey(), true)
+    } catch (e: Exception) {
+        FileIdentity(null, false)
+    }
 }
 
 fun go(topDir: String, maxLevel: Int)  {
@@ -45,25 +57,50 @@ fun go(topDir: String, maxLevel: Int)  {
 
     val ll = LinkedList()
 
-    ll.push(LinkedListEntry(top_dir,0))
+    val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
+    ll.push(topEntry)
+    crawl_directories(ll, maxLevel)
+}
 
+internal fun crawl_directories(
+    ll: LinkedList,
+    maxLevel: Int,
+    processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
+    processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
+    listFiles: (File) -> Array<File>? = { it.listFiles() },
+    isDirectory: (File) -> Boolean = { Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) },
+    isSymbolicLink: (File) -> Boolean = { Files.isSymbolicLink(it.toPath()) },
+    readIdentity: (File) -> FileIdentity = ::read_file_identity
+) {
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
+    while(lle != null){
+        if (!isDirectory(lle.file)) {
+            lle = ll.pull()
+            continue
+        }
+
+        val currentIdentity = readIdentity(lle.file)
+        if (!currentIdentity.readable || (lle.fileKey != null && currentIdentity.key != lle.fileKey)) {
+            lle = ll.pull()
+            continue
+        }
+
         val currentLevel: Int = lle.level
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
-        val dirFiles = lle.file.listFiles()
+        val dirFiles = listFiles(lle.file)
         val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
-        val exclude = process_ignore_file(lle.file, dirFilesNames)
+        val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           process_dir(lle.file, exclude, dirFiles)
+           processDirectory(lle.file, exclude, dirFiles)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
-                if(Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
-                    ll.push( LinkedListEntry(it, currentLevel+1))
+                if(isDirectory(it) && !isSymbolicLink(it) && it.name !in exclude) {
+                    val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                    ll.push(childEntry)
                 }
             }
         }
