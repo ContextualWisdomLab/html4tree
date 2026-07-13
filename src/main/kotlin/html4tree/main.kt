@@ -5,6 +5,7 @@ import java.security.SecureRandom
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
@@ -25,10 +26,21 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 private val nonceRandom = SecureRandom()
 
+internal data class FileIdentity(val key: Any?, val readable: Boolean)
+
 fun generate_csp_nonce(): String {
     val nonceBytes = ByteArray(16)
     nonceRandom.nextBytes(nonceBytes)
     return Base64.getEncoder().encodeToString(nonceBytes)
+}
+
+internal fun read_file_identity(file: File): FileIdentity {
+    return try {
+        val attrs = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        FileIdentity(attrs.fileKey(), true)
+    } catch (e: Exception) {
+        FileIdentity(null, false)
+    }
 }
 
 fun go(topDir: String, maxLevel: Int)  {
@@ -45,20 +57,50 @@ fun go(topDir: String, maxLevel: Int)  {
 
     val ll = LinkedList()
 
-    ll.push(LinkedListEntry(top_dir,0))
+    val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
+    ll.push(topEntry)
+    crawl_directories(ll, maxLevel)
+}
 
+internal fun crawl_directories(
+    ll: LinkedList,
+    maxLevel: Int,
+    processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
+    processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
+    listFiles: (File) -> Array<File>? = { it.listFiles() },
+    isDirectory: (File) -> Boolean = { Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) },
+    isSymbolicLink: (File) -> Boolean = { Files.isSymbolicLink(it.toPath()) },
+    readIdentity: (File) -> FileIdentity = ::read_file_identity
+) {
     var lle: LinkedListEntry? = ll.pull()
 
-    while(lle != null && Files.isDirectory(lle.file.toPath(), LinkOption.NOFOLLOW_LINKS)){
+    while(lle != null){
+        if (!isDirectory(lle.file)) {
+            lle = ll.pull()
+            continue
+        }
+
+        val currentIdentity = readIdentity(lle.file)
+        if (!currentIdentity.readable || (lle.fileKey != null && currentIdentity.key != lle.fileKey)) {
+            lle = ll.pull()
+            continue
+        }
+
         val currentLevel: Int = lle.level
+
+        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
+        val dirFiles = listFiles(lle.file)
+        val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
+        val exclude = processIgnoreFile(lle.file, dirFilesNames)
+
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           process_dir(lle.file)
+           processDirectory(lle.file, exclude, dirFiles)
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
-            val exclude = process_ignore_file(lle.file)
-            lle.file.listFiles()?.forEach {
-                if(!it.name.startsWith(".") && Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(it.toPath()) && it.name !in exclude) {
-                    ll.push( LinkedListEntry(it, currentLevel+1))
+            dirFiles?.forEach {
+                if(!it.name.startsWith(".") && isDirectory(it) && !isSymbolicLink(it) && it.name !in exclude) {
+                    val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                    ll.push(childEntry)
                 }
             }
         }
@@ -121,7 +163,7 @@ fun String.urlEncodePath(): String {
     return encoded.toString()
 }
 
-fun process_ignore_file(curr_dir: File): Set<String> {
+fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -152,7 +194,8 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       curr_dir.list()?.forEach {
+       val list = dirFilesNames ?: curr_dir.list()
+       list?.forEach {
            val current = it
            val pathCurrent = java.nio.file.Paths.get(current)
            for (matcher in ignored_matchers) {
@@ -168,7 +211,7 @@ fun process_ignore_file(curr_dir: File): Set<String> {
        files_to_exclude.add("index.html")
 
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml")
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     return files_to_exclude
@@ -185,9 +228,9 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File){
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
     
-    val exclude: Set<String> = process_ignore_file(curr_dir)
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val styleNonce = generate_csp_nonce()
 
     val css = """
@@ -202,8 +245,17 @@ fun process_dir(curr_dir: File){
                 padding-left: 0;
               }
               a.dir-link {
-                display: block;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
                 width: 100%;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+              }
+              .icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                text-align: center;
               }
               a {
                 padding: 0.5rem;
@@ -251,6 +303,8 @@ fun process_dir(curr_dir: File){
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${styleNonce}'; base-uri 'none'; form-action 'none';">
+        <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
+        <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
@@ -259,13 +313,14 @@ fun process_dir(curr_dir: File){
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동"><span aria-hidden="true">&#x21B0;</span> ..</a></li>
+            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
         val l = StringBuilder()
 
-        val dir_files: MutableList<File> = curr_dir.listFiles()?.toMutableList() ?: mutableListOf()
+        val filesList = dirFiles ?: curr_dir.listFiles()
+        val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            val fileName = it.getName()
@@ -277,7 +332,7 @@ fun process_dir(curr_dir: File){
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span aria-hidden="true">${icon}</span> ${fileName.escapeHtml()}</a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
            }
