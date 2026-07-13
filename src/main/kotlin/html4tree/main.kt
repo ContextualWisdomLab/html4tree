@@ -331,7 +331,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                if ((isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(it.toPath())) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&rtrif;" }
+                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
                   l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
