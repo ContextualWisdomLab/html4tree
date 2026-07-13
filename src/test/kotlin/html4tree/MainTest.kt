@@ -553,6 +553,22 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileHiddenFiles() {
+        // .myhidden/.hiddendir are NOT in the static sensitive-file list,
+        // so this fails if the dynamic hidden-file exclusion is removed.
+        File(tempDir, ".myhidden").createNewFile()
+        File(tempDir, ".hiddendir").mkdir()
+        File(tempDir, ".env").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains(".myhidden"))
+        assertTrue(excluded.contains(".hiddendir"))
+        assertTrue(excluded.contains(".env"))
+        assertFalse(excluded.contains("test.txt"))
+    }
+
+    @Test
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
