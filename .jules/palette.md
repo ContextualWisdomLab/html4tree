@@ -33,3 +33,6 @@
 ## 2024-08-01 - 파일 아이콘 메타포
 **학습:** 일반 파일을 나타낼 때 방향 지시 아이콘(우측 삼각형 등)을 사용하면 폴더나 확장 가능한 요소로 오해할 수 있어 시각적인 모호함을 초래합니다. 문서나 페이지 형태의 아이콘이 파일이라는 것을 직관적으로 알 수 있게 해줍니다.
 **조치:** 일반 파일 옆에 표시되는 장식용 아이콘을 우측 삼각형 등에서 페이지 아이콘(예: `&#128196;`)으로 교체하여 시각적 메타포를 일관성 있게 유지하십시오.
+## 2026-07-13 - Add title attributes for parity with aria-labels
+**Learning:** Relying solely on icons or technical symbols (like `..`) without native tooltips can confuse sighted users who don't use screen readers. `title` attributes matching `aria-label` provide parity.
+**Action:** Add `title` attributes to icon-only links to ensure visual tooltips match screen reader text.
