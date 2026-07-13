@@ -98,7 +98,7 @@ internal fun crawl_directories(
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
-                if(isDirectory(it) && !isSymbolicLink(it) && it.name !in exclude) {
+                if(!it.name.startsWith(".") && isDirectory(it) && !isSymbolicLink(it) && it.name !in exclude) {
                     val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
                     ll.push(childEntry)
                 }
@@ -325,7 +325,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
-           if (fileName !in exclude) {
+           // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
+           if (!fileName.startsWith(".") && fileName !in exclude) {
                val isLinkedDirectory = Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)
                if ((isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(it.toPath())) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }

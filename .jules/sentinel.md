@@ -67,3 +67,8 @@
 **Vulnerability:** Common sensitive files (like `.aws`, `.kube`, `.npmrc`) could be accidentally indexed if present in the tree. Furthermore, clicking on external links (if any were added) could leak the directory structure via the HTTP Referer header.
 **Learning:** Default exclude lists must encompass modern toolchains and cloud credentials, as users often run directory indexers in their home or project root directories. HTML templates need explicit policies to prevent accidental data leakage via headers.
 **Prevention:** Maintain an extensive default deny-list for known sensitive files and enforce `no-referrer` globally on generated index pages.
+
+## 2024-07-07 - [Sensitive Data Exposure in Directory Indexing]
+**Vulnerability:** The application was traversing and listing hidden files and directories (those starting with `.`), potentially exposing sensitive information like `.git` histories or `.env` configuration files in the generated HTML index.
+**Learning:** This existed because the traversal and filtering logic did not explicitly account for standard conventions regarding hidden files, defaulting to listing everything not explicitly ignored.
+**Prevention:** Always implement explicit filters for hidden files and directories (e.g., `!file.name.startsWith(".")`) in applications that generate static files or expose directory structures to the public.
