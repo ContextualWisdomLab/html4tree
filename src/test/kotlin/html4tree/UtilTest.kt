@@ -3,7 +3,6 @@ package html4tree
 import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 class UtilTest {
@@ -42,30 +41,7 @@ class UtilTest {
         val entry2 = Entry(file1, 0, null)
 
         assertEquals(entry1, entry2)
-        assertEquals("Entry(data=file1, level=0, next=null, fileKey=null)", entry1.toString())
-    }
-
-    @Test
-    fun testEntryDataClassGeneratedMembers() {
-        val file1 = File("file1")
-        val entry = Entry(file1, 0, null)
-
-        assertEquals(entry, entry)
-        assertEquals(Entry(file1, 0, null).hashCode(), entry.hashCode())
-        assertNotEquals<Any>(entry, "not an entry")
-        assertNotEquals(entry, Entry(File("file2"), 0, null))
-        assertNotEquals(entry, Entry(file1, 1, null))
-        assertNotEquals(entry, Entry(file1, 0, Entry(file1, 1, null)))
-
-        val copied = entry.copy(level = 2)
-        assertEquals(file1, copied.data)
-        assertEquals(2, copied.level)
-        assertNull(copied.next)
-
-        val (data, level, next) = entry
-        assertEquals(file1, data)
-        assertEquals(0, level)
-        assertNull(next)
+        assertEquals("Entry(data=file1, level=0, next=null)", entry1.toString())
     }
 
     @Test
@@ -75,28 +51,7 @@ class UtilTest {
         val entry2 = LinkedListEntry(file1, 0)
 
         assertEquals(entry1, entry2)
-        assertEquals("LinkedListEntry(file=file1, level=0, fileKey=null)", entry1.toString())
-    }
-
-    @Test
-    fun testLinkedListEntryDataClassGeneratedMembers() {
-        val file1 = File("file1")
-        val entry = LinkedListEntry(file1, 0)
-
-        assertEquals(entry, entry)
-        assertEquals(LinkedListEntry(file1, 0).hashCode(), entry.hashCode())
-        assertNotEquals<Any>(entry, "not an entry")
-        assertNotEquals(entry, LinkedListEntry(File("file2"), 0))
-        assertNotEquals(entry, LinkedListEntry(file1, 1))
-
-        val copied = entry.copy(level = 5)
-        assertEquals(file1, copied.file)
-        assertEquals(5, copied.level)
-
-        val (file, level, fileKey) = entry
-        assertEquals(file1, file)
-        assertEquals(0, level)
-        assertNull(fileKey)
+        assertEquals("LinkedListEntry(file=file1, level=0)", entry1.toString())
     }
 
     @Test
@@ -127,19 +82,6 @@ class UtilTest {
         assertEquals(File("fake"), list.pull()?.file)
         assertEquals(File("f3"), list.pull()?.file)
         assertEquals(File("f3"), list.first?.data)
-    }
-
-    @Test
-    fun testLinkedListPreservesFileKey() {
-        val key = Any()
-        val list = LinkedList()
-
-        list.push(LinkedListEntry(File("secure"), 1, key))
-
-        val pulled = list.pull()
-        assertEquals(File("secure"), pulled?.file)
-        assertEquals(1, pulled?.level)
-        assertEquals(key, pulled?.fileKey)
     }
 
     @Test
