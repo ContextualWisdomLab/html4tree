@@ -138,10 +138,9 @@ fun String.escapeHtml(): String {
 }
 
 fun String.urlEncodePath(): String {
-    val bytes = this.toByteArray(Charsets.UTF_8)
-    var encoded: StringBuilder? = null
-    for (i in bytes.indices) {
-        val byte = bytes[i].toInt() and 0xff
+    val encoded = StringBuilder()
+    this.toByteArray(Charsets.UTF_8).forEach {
+        val byte = it.toInt() and 0xff
         val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
                            (byte in 'a'.toInt()..'z'.toInt()) ||
                            (byte in '0'.toInt()..'9'.toInt()) ||
@@ -150,26 +149,18 @@ fun String.urlEncodePath(): String {
                            byte == '_'.toInt() ||
                            byte == '~'.toInt()
         if (isUnreserved) {
-            encoded?.append(byte.toChar())
+            encoded.append(byte.toChar())
         } else {
-            var builder = encoded
-            if (builder == null) {
-                builder = StringBuilder(bytes.size + 16)
-                for (j in 0 until i) {
-                    builder.append((bytes[j].toInt() and 0xff).toChar())
-                }
-                encoded = builder
-            }
             // ⚡ Bolt Performance Optimization: Direct character mapping
             // Avoids multiple string allocations (toString, padStart, toUpperCase) per reserved byte.
-            builder.append('%')
+            encoded.append('%')
             val hex1 = byte ushr 4
             val hex2 = byte and 0xf
-            builder.append(if (hex1 < 10) (hex1 + 48).toChar() else (hex1 + 55).toChar())
-            builder.append(if (hex2 < 10) (hex2 + 48).toChar() else (hex2 + 55).toChar())
+            encoded.append(if (hex1 < 10) (hex1 + 48).toChar() else (hex1 + 55).toChar())
+            encoded.append(if (hex2 < 10) (hex2 + 48).toChar() else (hex2 + 55).toChar())
         }
     }
-    return encoded?.toString() ?: this
+    return encoded.toString()
 }
 
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
