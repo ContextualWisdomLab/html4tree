@@ -9,7 +9,3 @@
 ## 2024-07-26 - Intermediate String Allocations
 **Learning:** Chained `.replace()` calls on strings in Kotlin (e.g. for HTML escaping) allocate an intermediate String at each step, significantly impacting performance and garbage collection on hot paths with many elements.
 **Action:** Replace chained `.replace()` calls with a single-pass loop that iterates over characters once, lazily initializing a `StringBuilder` to append the transformed output.
-
-## 2024-07-31 - GC Overhead from String Padding in Loops
-**Learning:** Using `byte.toString(16).padStart(2, '0').toUpperCase()` for hex encoding inside a loop generates significant GC overhead due to multiple intermediate string allocations per byte.
-**Action:** Use bitwise shifts (`ushr` and `and`) with a pre-allocated array of hex characters (e.g. `val hexChars = "0123456789ABCDEF"`) to map bytes directly to hex characters, and combine it with a lazy `StringBuilder` to minimize allocations.

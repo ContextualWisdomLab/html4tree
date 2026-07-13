@@ -80,14 +80,10 @@ fun String.escapeHtml(): String {
     return sb?.toString() ?: this
 }
 
-// ⚡ Bolt Performance Optimization: Reduce GC overhead in urlEncodePath
 fun String.urlEncodePath(): String {
-    var encoded: StringBuilder? = null
-    val bytes = this.toByteArray(Charsets.UTF_8)
-    val hexChars = "0123456789ABCDEF"
-
-    for (i in bytes.indices) {
-        val byte = bytes[i].toInt() and 0xff
+    val encoded = StringBuilder()
+    this.toByteArray(Charsets.UTF_8).forEach {
+        val byte = it.toInt() and 0xff
         val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
                            (byte in 'a'.toInt()..'z'.toInt()) ||
                            (byte in '0'.toInt()..'9'.toInt()) ||
@@ -96,20 +92,13 @@ fun String.urlEncodePath(): String {
                            byte == '_'.toInt() ||
                            byte == '~'.toInt()
         if (isUnreserved) {
-            encoded?.append(byte.toChar())
+            encoded.append(byte.toChar())
         } else {
-            if (encoded == null) {
-                encoded = StringBuilder(bytes.size + 16)
-                for (j in 0 until i) {
-                    encoded.append(bytes[j].toChar())
-                }
-            }
             encoded.append('%')
-            encoded.append(hexChars[byte ushr 4])
-            encoded.append(hexChars[byte and 0x0F])
+            encoded.append(byte.toString(16).padStart(2, '0').toUpperCase())
         }
     }
-    return encoded?.toString() ?: this
+    return encoded.toString()
 }
 
 fun process_ignore_file(curr_dir: File): Set<String> {
