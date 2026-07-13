@@ -78,3 +78,7 @@
 **Vulnerability:** The application lists all files in a directory, including hidden files (those starting with `.`), which could inadvertently expose sensitive information like `.env`, `.git`, or `.ssh` directories.
 **Learning:** Default directory listing implementations without hidden file filtering can lead to information disclosure vulnerabilities when serving directories containing configuration or sensitive files.
 **Prevention:** Automatically exclude hidden files (files starting with `.`) from the generated directory listing by default.
+## 2023-10-27 - [Information Exposure via Case-Sensitive Matches]
+**Vulnerability:** The `process_ignore_file` routine used case-sensitive matching for sensitive files (like `id_rsa`, `secrets.yml`), allowing case variations (e.g., `ID_RSA`) to bypass filtering and be included in the generated HTML.
+**Learning:** Exact string matching is fragile for file systems that are case-insensitive or for users who create mixed-case variations of sensitive files.
+**Prevention:** Always normalize file names (e.g., using `toLowerCase()`) when matching against exclusion lists, taking care to preserve expected outputs like exact sizes in tests or edge cases (like `.DS_Store`).
