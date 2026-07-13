@@ -44,3 +44,7 @@
 ## 2026-07-13 - Add title attributes for parity with aria-labels
 **Learning:** Relying solely on icons or technical symbols (like `..`) without native tooltips can confuse sighted users who don't use screen readers. `title` attributes matching `aria-label` provide parity.
 **Action:** Add `title` attributes to icon-only links to ensure visual tooltips match screen reader text.
+
+## 2024-08-01 - 네이티브 브라우저 UI의 다크 모드 지원 강제
+**학습:** CSS 미디어 쿼리(`@media (prefers-color-scheme: dark)`)를 통해 다크 모드를 지원하더라도, 브라우저의 네이티브 UI 요소(스크롤바, 기본 폼 컨트롤, 기본 백그라운드 등)는 테마 변경을 인식하지 못해 어두운 테마 환경에서 밝은 스크롤바가 표시되는 등 시각적 불일치를 초래합니다.
+**조치:** 항상 HTML 문서의 `<head>` 영역에 `<meta name="color-scheme" content="light dark">` 메타 태그를 명시적으로 추가하여 브라우저 수준에서 사용자의 시스템 테마(다크 모드 등)를 완전히 상속받아 일관성 있는 네이티브 UI를 렌더링하도록 보장하십시오.
