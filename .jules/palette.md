@@ -44,3 +44,6 @@
 ## 2026-07-13 - Add title attributes for parity with aria-labels
 **Learning:** Relying solely on icons or technical symbols (like `..`) without native tooltips can confuse sighted users who don't use screen readers. `title` attributes matching `aria-label` provide parity.
 **Action:** Add `title` attributes to icon-only links to ensure visual tooltips match screen reader text.
+## 2024-07-13 - 빈 디렉토리 상태의 접근성(Accessibility) 개선
+**Learning:** 정적 파일 서버의 빈 디렉토리 상태는 스크린 리더 사용자에게 컨텐츠 누락으로 오해받을 수 있으며, 시각적으로도 일반 리스트 아이템과 정렬이 맞지 않는 문제가 있었습니다.
+**Action:** 빈 상태를 나타내는 요소에 `role="status"`를 추가하여 스크린 리더가 명확하게 인지할 수 있도록 하고, 아이콘과 flex 레이아웃을 통해 다른 리스트 아이템과 일관된 시각적 흐름을 제공하도록 합니다.
