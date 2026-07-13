@@ -336,6 +336,8 @@ class MainTest {
         assertTrue(htmlContent.contains("padding: 1rem;"))
         assertTrue(htmlContent.contains("transition: background-color"))
         assertTrue(htmlContent.contains("prefers-reduced-motion"))
+        assertTrue(htmlContent.contains("max-width: 800px;"))
+        assertTrue(htmlContent.contains("margin: 0 auto;"))
     }
 
     @Test
@@ -545,6 +547,22 @@ class MainTest {
 
         val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("test.txt"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileHiddenFiles() {
+        // .myhidden/.hiddendir are NOT in the static sensitive-file list,
+        // so this fails if the dynamic hidden-file exclusion is removed.
+        File(tempDir, ".myhidden").createNewFile()
+        File(tempDir, ".hiddendir").mkdir()
+        File(tempDir, ".env").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains(".myhidden"))
+        assertTrue(excluded.contains(".hiddendir"))
+        assertTrue(excluded.contains(".env"))
+        assertFalse(excluded.contains("test.txt"))
     }
 
     @Test

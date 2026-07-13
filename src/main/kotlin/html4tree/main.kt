@@ -140,9 +140,10 @@ fun String.escapeHtml(): String {
 }
 
 fun String.urlEncodePath(): String {
-    val encoded = StringBuilder()
-    this.toByteArray(Charsets.UTF_8).forEach {
-        val byte = it.toInt() and 0xff
+    val bytes = this.toByteArray(Charsets.UTF_8)
+    var encoded: StringBuilder? = null
+    for (i in bytes.indices) {
+        val byte = bytes[i].toInt() and 0xff
         val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
                            (byte in 'a'.toInt()..'z'.toInt()) ||
                            (byte in '0'.toInt()..'9'.toInt()) ||
@@ -151,18 +152,26 @@ fun String.urlEncodePath(): String {
                            byte == '_'.toInt() ||
                            byte == '~'.toInt()
         if (isUnreserved) {
-            encoded.append(byte.toChar())
+            encoded?.append(byte.toChar())
         } else {
+            var builder = encoded
+            if (builder == null) {
+                builder = StringBuilder(bytes.size + 16)
+                for (j in 0 until i) {
+                    builder.append((bytes[j].toInt() and 0xff).toChar())
+                }
+                encoded = builder
+            }
             // ⚡ Bolt Performance Optimization: Direct character mapping
             // Avoids multiple string allocations (toString, padStart, toUpperCase) per reserved byte.
-            encoded.append('%')
+            builder.append('%')
             val hex1 = byte ushr 4
             val hex2 = byte and 0xf
-            encoded.append(if (hex1 < 10) (hex1 + 48).toChar() else (hex1 + 55).toChar())
-            encoded.append(if (hex2 < 10) (hex2 + 48).toChar() else (hex2 + 55).toChar())
+            builder.append(if (hex1 < 10) (hex1 + 48).toChar() else (hex1 + 55).toChar())
+            builder.append(if (hex2 < 10) (hex2 + 48).toChar() else (hex2 + 55).toChar())
         }
     }
-    return encoded.toString()
+    return encoded?.toString() ?: this
 }
 
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
@@ -216,6 +225,13 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
+    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
+    (dirFilesNames ?: curr_dir.list())?.forEach {
+        if (it.startsWith(".")) {
+            files_to_exclude.add(it)
+        }
+    }
+
     return files_to_exclude
 }
 
@@ -241,6 +257,11 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
                 padding: 1rem;
+                color: #1f2328;
+              }
+              main {
+                max-width: 800px;
+                margin: 0 auto;
               }
               ul {
                 list-style-type: none;
