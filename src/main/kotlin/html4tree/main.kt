@@ -1,7 +1,7 @@
 package html4tree
 
 import java.io.File
-import java.security.SecureRandom
+import java.security.MessageDigest
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
@@ -24,15 +24,9 @@ class Html4tree : CliktCommand() {
 
 fun main(args: Array<String>)  = Html4tree().main(args)
 
-private val nonceRandom = SecureRandom()
 
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
 
-fun generate_csp_nonce(): String {
-    val nonceBytes = ByteArray(16)
-    nonceRandom.nextBytes(nonceBytes)
-    return Base64.getEncoder().encodeToString(nonceBytes)
-}
 
 internal fun read_file_identity(file: File): FileIdentity {
     return try {
@@ -249,10 +243,8 @@ fun write_index_file(curr_dir: File, content: String) {
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-    val styleNonce = generate_csp_nonce()
 
-    val css = """
-              <style nonce="${styleNonce}">
+    val cssContent = """
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
@@ -316,7 +308,13 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                 opacity: 0.7;
                 font-style: italic;
               }
-              </style>
+              """
+
+    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+
+    val css = """
+              <style>
+${cssContent}              </style>
               """
 
     val index_top = """<!doctype html>
@@ -325,7 +323,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${styleNonce}'; base-uri 'none'; form-action 'none';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
