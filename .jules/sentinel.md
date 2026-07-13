@@ -73,7 +73,6 @@
 **Learning:** This existed because the traversal and filtering logic did not explicitly account for standard conventions regarding hidden files, defaulting to listing everything not explicitly ignored.
 **Prevention:** Always implement explicit filters for hidden files and directories (e.g., `!file.name.startsWith(".")`) in applications that generate static files or expose directory structures to the public.
 
-
 ## 2024-05-18 - Prevent Sensitive Information Disclosure
 **Vulnerability:** The application lists all files in a directory, including hidden files (those starting with `.`), which could inadvertently expose sensitive information like `.env`, `.git`, or `.ssh` directories.
 **Learning:** Default directory listing implementations without hidden file filtering can lead to information disclosure vulnerabilities when serving directories containing configuration or sensitive files.
