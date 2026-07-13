@@ -178,6 +178,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
+    // ⚡ Bolt Performance Optimization: Cache dirFilesNames to avoid redundant I/O calls
+    val cachedDirFilesNames = dirFilesNames ?: curr_dir.list()
+
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
@@ -198,16 +201,18 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            }
        }
 
-       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
-           val current = it
-           val pathCurrent = java.nio.file.Paths.get(current)
-           for (matcher in ignored_matchers) {
-              if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
-                 break
-              }
+       // ⚡ Bolt Performance Optimization: Avoid iteration if there are no valid patterns
+       if (ignored_matchers.isNotEmpty()) {
+           // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+           cachedDirFilesNames?.forEach {
+               val current = it
+               val pathCurrent = java.nio.file.Paths.get(current)
+               for (matcher in ignored_matchers) {
+                  if (matcher.matches(pathCurrent)) {
+                     files_to_exclude.add(current)
+                     break
+                  }
+               }
            }
        }
     }
@@ -220,7 +225,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
-    (dirFilesNames ?: curr_dir.list())?.forEach {
+    // ⚡ Bolt Performance Optimization: Iterate over cached directory files instead of querying I/O
+    cachedDirFilesNames?.forEach {
         if (it.startsWith(".")) {
             files_to_exclude.add(it)
         }

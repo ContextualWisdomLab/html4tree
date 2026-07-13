@@ -19,4 +19,14 @@ class CoverageTest {
             readOnlyDir.setWritable(true, false)
         }
     }
+
+    @Test
+    fun testProcessIgnoreFileEmptyMatchers() {
+        val tempDir = java.nio.file.Files.createTempDirectory("test_empty_matchers").toFile()
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("\n  \n") // Empty or blank lines to trigger empty matchers
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("index.html"))
+        tempDir.deleteRecursively()
+    }
 }
