@@ -336,6 +336,8 @@ class MainTest {
         assertTrue(htmlContent.contains("padding: 1rem;"))
         assertTrue(htmlContent.contains("transition: background-color"))
         assertTrue(htmlContent.contains("prefers-reduced-motion"))
+        assertTrue(htmlContent.contains("max-width: 800px;"))
+        assertTrue(htmlContent.contains("margin: 0 auto;"))
     }
 
     @Test
