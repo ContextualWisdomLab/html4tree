@@ -350,8 +350,17 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
            if (!fileName.startsWith(".") && fileName !in exclude) {
-               val isLinkedDirectory = Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)
-               if ((isLinkedDirectory || !it.isDirectory()) && !Files.isSymbolicLink(it.toPath())) {
+               var isLinkedDirectory = false
+               var isSymbolicLink = false
+               try {
+                   // ⚡ Bolt Performance Optimization: Replace 3 separate OS stat calls (isDirectory, it.isDirectory(), isSymbolicLink)
+                   // with a single readAttributes call to reduce I/O overhead.
+                   val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                   isLinkedDirectory = attrs.isDirectory
+                   isSymbolicLink = attrs.isSymbolicLink
+               } catch (e: Exception) {
+               }
+               if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
