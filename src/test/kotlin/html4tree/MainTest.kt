@@ -705,4 +705,11 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testCssContent() {
+        kotlin.test.assertNotNull(cssContent)
+        kotlin.test.assertNotNull(styleHash)
+        kotlin.test.assertNotNull(css)
+    }
 }

@@ -13,6 +13,84 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
+
+// ⚡ Bolt Performance Optimization: Extract static CSS and precompute SHA-256 hash
+// Moves expensive cryptographic hash generation and string allocations out of the recursive
+// directory processing loop to be computed exactly once per application run.
+val cssContent = """
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+                padding: 1rem;
+                color: #1f2328;
+              }
+              main {
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              ul {
+                list-style-type: none;
+                padding-left: 0;
+              }
+              a.dir-link {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                width: 100%;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+              }
+              .icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                text-align: center;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0969da;
+                border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0969da;
+                outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background-color: #0d1117;
+                  color: #c9d1d9;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
+              }
+              .empty-dir {
+                padding: 0.5rem;
+                opacity: 0.7;
+                font-style: italic;
+              }
+              """
+
+val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+
+val css = """
+              <style>
+${cssContent}              </style>
+              """
+
+
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
     val topDir: String by argument(help="Top directory to crawl")
@@ -178,6 +256,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
+    // ⚡ Bolt Performance Optimization: 캐싱을 통해 O(N) 중복 디렉토리 목록(filesystem call) 호출 방지
+    val dirListing = dirFilesNames ?: curr_dir.list()
+
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
@@ -199,8 +280,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
+       dirListing?.forEach {
            val current = it
            val pathCurrent = java.nio.file.Paths.get(current)
            for (matcher in ignored_matchers) {
@@ -220,7 +300,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
-    (dirFilesNames ?: curr_dir.list())?.forEach {
+    dirListing?.forEach {
         if (it.startsWith(".")) {
             files_to_exclude.add(it)
         }
@@ -244,78 +324,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
-    val cssContent = """
-              body {
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                line-height: 1.5;
-                padding: 1rem;
-                color: #1f2328;
-              }
-              main {
-                max-width: 800px;
-                margin: 0 auto;
-              }
-              ul {
-                list-style-type: none;
-                padding-left: 0;
-              }
-              a.dir-link {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                width: 100%;
-                overflow-wrap: anywhere;
-                box-sizing: border-box;
-              }
-              .icon {
-                flex-shrink: 0;
-                width: 1.25rem;
-                text-align: center;
-              }
-              a {
-                padding: 0.5rem;
-                text-decoration: none;
-                color: #0969da;
-                border-radius: 4px;
-                transition: background-color 0.2s ease, outline-color 0.2s ease;
-              }
-              a:hover, a:focus-visible {
-                background-color: #f6f8fa;
-                text-decoration: underline;
-                outline: 2px solid #0969da;
-                outline-offset: -2px;
-              }
-              @media (prefers-reduced-motion: reduce) {
-                a {
-                  transition: none;
-                }
-              }
-              @media (prefers-color-scheme: dark) {
-                body {
-                  background-color: #0d1117;
-                  color: #c9d1d9;
-                }
-                a {
-                  color: #58a6ff;
-                }
-                a:hover, a:focus-visible {
-                  background-color: #161b22;
-                  outline-color: #58a6ff;
-                }
-              }
-              .empty-dir {
-                padding: 0.5rem;
-                opacity: 0.7;
-                font-style: italic;
-              }
-              """
 
-    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
 
-    val css = """
-              <style>
-${cssContent}              </style>
-              """
+
 
     val index_top = """<!doctype html>
 <html lang="ko">
