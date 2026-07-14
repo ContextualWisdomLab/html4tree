@@ -94,6 +94,8 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
+        assertTrue(htmlContent.contains("&#128194;"))
+        assertTrue(htmlContent.contains("aria-hidden=\"true\""))
         assertTrue(htmlContent.contains("role=\"list\""))
     }
 
@@ -335,6 +337,8 @@ class MainTest {
         assertTrue(htmlContent.contains("a.dir-link"))
         assertTrue(htmlContent.contains("class=\"dir-link\""))
         assertTrue(htmlContent.contains(".empty-dir"))
+        assertTrue(htmlContent.contains("display: flex;"))
+        assertTrue(htmlContent.contains("align-items: flex-start;"))
         assertTrue(htmlContent.contains("prefers-color-scheme: dark"))
         assertTrue(htmlContent.contains("font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;"))
         assertTrue(htmlContent.contains("line-height: 1.5;"))
