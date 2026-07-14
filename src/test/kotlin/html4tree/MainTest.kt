@@ -571,6 +571,30 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileSensitiveExtensions() {
+        File(tempDir, "secret.pem").createNewFile()
+        File(tempDir, "key.KEY").createNewFile() // test case-insensitivity
+        File(tempDir, "cert.p12").createNewFile()
+        File(tempDir, "cert.pfx").createNewFile()
+        File(tempDir, "app.keystore").createNewFile()
+        File(tempDir, "backup.bak").createNewFile()
+        File(tempDir, "vim.swp").createNewFile()
+        File(tempDir, "emacs~").createNewFile()
+        File(tempDir, "normal.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("secret.pem"))
+        assertTrue(excluded.contains("key.KEY"))
+        assertTrue(excluded.contains("cert.p12"))
+        assertTrue(excluded.contains("cert.pfx"))
+        assertTrue(excluded.contains("app.keystore"))
+        assertTrue(excluded.contains("backup.bak"))
+        assertTrue(excluded.contains("vim.swp"))
+        assertTrue(excluded.contains("emacs~"))
+        assertFalse(excluded.contains("normal.txt"))
+    }
+
+    @Test
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()

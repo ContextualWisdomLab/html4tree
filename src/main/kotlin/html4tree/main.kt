@@ -219,9 +219,18 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
-    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
+    // 보안 향상: .env, .git 등 숨김 파일과 인증 키, 백업 파일 등 민감한 정보가 포함될 수 있는 파일을 동적으로 제외하여 정보 노출(Information Exposure) 방지
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.startsWith(".")) {
+        val lowerName = it.toLowerCase()
+        if (it.startsWith(".") ||
+            lowerName.endsWith(".pem") ||
+            lowerName.endsWith(".key") ||
+            lowerName.endsWith(".p12") ||
+            lowerName.endsWith(".pfx") ||
+            lowerName.endsWith(".keystore") ||
+            lowerName.endsWith(".bak") ||
+            lowerName.endsWith(".swp") ||
+            it.endsWith("~")) {
             files_to_exclude.add(it)
         }
     }
