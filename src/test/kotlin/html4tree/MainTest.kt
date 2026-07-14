@@ -415,6 +415,18 @@ class MainTest {
     }
 
     @Test
+    fun testRootDirectoryUXFallback() {
+        val mockRoot = object : java.io.File(tempDir.absolutePath) {
+            override fun getName(): String = ""
+        }
+        process_dir(mockRoot)
+        val indexFile = java.io.File(tempDir, "index.html")
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>루트 디렉토리</title>"))
+        assertTrue(htmlContent.contains("<h1>루트 디렉토리</h1>"))
+    }
+
+    @Test
     fun testGoWithMaxLevel() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
