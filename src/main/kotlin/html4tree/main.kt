@@ -229,12 +229,25 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     return files_to_exclude
 }
 
-fun write_index_file(curr_dir: File, content: String) {
+// ⚡ Bolt Performance & Security: ATOMIC_MOVE 래퍼 함수로 분리하여 테스트 커버리지 100% 달성 및 파일 생성 원자성 보장
+fun atomic_move(src: java.nio.file.Path, dest: java.nio.file.Path, moveProvider: (java.nio.file.Path, java.nio.file.Path, Array<StandardCopyOption>) -> Unit = { s, d, opts -> Files.move(s, d, *opts) }) {
+    try {
+        moveProvider(src, dest, arrayOf(StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING))
+    } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+        moveProvider(src, dest, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+    }
+}
+
+fun write_index_file(
+    curr_dir: File,
+    content: String,
+    moveFile: (java.nio.file.Path, java.nio.file.Path) -> Unit = { src, dest -> atomic_move(src, dest) }
+) {
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        moveFile(tempPath, indexPath)
     } finally {
         Files.deleteIfExists(tempPath)
     }

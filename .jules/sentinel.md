@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-14 - [HIGH] 정적 파일 쓰기 중 Race Condition(경쟁 상태) 및 원자성 부족
+**Vulnerability:** 파일 쓰기 시 임시 파일(`tempPath`)에서 최종 대상(`indexPath`)으로 파일을 이동할 때 원자적 이동(ATOMIC_MOVE)을 사용하지 않아, 다중 프로세스나 쓰레드 환경에서 파일 교체 도중 불완전한 상태의 `index.html`이 노출되는 취약점이 있었습니다.
+**Learning:** 로컬 파일 시스템에서 기존 파일을 덮어쓰거나 이동할 때는 애플리케이션의 동작 중단이나 권한 문제로 인해 손상된 파일이 남을 수 있습니다.
+**Prevention:** `Files.move` 수행 시 `StandardCopyOption.ATOMIC_MOVE` 옵션을 우선 사용하고, 파일 시스템에서 이를 지원하지 않을 때(AtomicMoveNotSupportedException 발생 시)에만 기존 방식(`REPLACE_EXISTING`)으로 폴백하는 원자적 래퍼(Wrapper) 함수를 만들어 적용해야 합니다.
