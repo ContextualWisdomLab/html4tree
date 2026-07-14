@@ -422,8 +422,8 @@ class MainTest {
         process_dir(mockRoot)
         val indexFile = java.io.File(tempDir, "index.html")
         val htmlContent = indexFile.readText()
-        assertTrue(htmlContent.contains("<title>/</title>"))
-        assertTrue(htmlContent.contains("<h1>/</h1>"))
+        assertTrue(htmlContent.contains("<title>루트 디렉토리</title>"))
+        assertTrue(htmlContent.contains("<h1>루트 디렉토리</h1>"))
     }
 
     @Test
