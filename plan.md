@@ -1,3 +1,0 @@
-1. **문제 파악**: CI 실패의 원인은 이전 커밋에서 `test_ux.kt` 파일을 남긴 것이 문제였습니다. `rm test_ux.kt plan.md`를 통해 삭제하였으나, `test_ux.kt`가 삭제된 사실이 반영되지 않거나, 다른 테스트에서 `&#128194;`에 대한 검증을 누락하여 발생한 것으로 추측됩니다. 또한 모델 평가가 멈춘 것으로 보아 테스트 커버리지 또는 잔여 파일 문제일 수 있습니다. (현재 100% 명령어 커버리지는 확인되었습니다).
-2. **해결 방안**: 테스트 코드(`src/test/kotlin/html4tree/MainTest.kt`)에 새로 추가한 `aria-hidden="true"`와 `&#128194;` 아이콘이 포함되었는지 확인하는 Assert 구문을 추가하여 확실하게 검증하고, 변경사항을 커밋합니다.
-3. **코드 수정**: `MainTest.kt`의 `testEmptyDirHasSpecialMessage` (또는 유사한 테스트)에서 `assertTrue(htmlContent.contains("&#128194;"))` 및 `assertTrue(htmlContent.contains("aria-hidden=\"true\""))` 검증 추가.
