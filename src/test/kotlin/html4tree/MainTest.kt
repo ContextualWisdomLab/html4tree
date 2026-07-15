@@ -95,6 +95,8 @@ class MainTest {
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
         assertTrue(htmlContent.contains("role=\"list\""))
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
     }
 
     @Test
@@ -308,6 +310,8 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
         assertTrue(htmlContent.contains("<meta name=\"color-scheme\" content=\"light dark\">"))
         assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
         assertTrue(htmlContent.contains("role=\"list\""))
