@@ -19,4 +19,14 @@ class CoverageTest {
             readOnlyDir.setWritable(true, false)
         }
     }
+
+    @Test
+    fun testCssProperties() {
+        val cssCont = cssContent
+        val style = styleHash
+        val cssProp = css
+        assertTrue(cssCont.isNotEmpty())
+        assertTrue(style.isNotEmpty())
+        assertTrue(cssProp.isNotEmpty())
+    }
 }
