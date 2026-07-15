@@ -405,7 +405,11 @@ class MainTest {
 
             go(tempDir.absolutePath, -1)
 
-            assertTrue(File(tempDir, "index.html").exists())
+            val indexFile = File(tempDir, "index.html")
+            assertTrue(indexFile.exists())
+            val htmlContent = indexFile.readText()
+            assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+            assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
 
             val subdirIndex = File(subdir, "index.html")
             assertTrue(subdirIndex.exists())
@@ -427,7 +431,12 @@ class MainTest {
 
         go(tempDir.absolutePath, 0)
 
-        assertTrue(File(tempDir, "index.html").exists())
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
+
         assertFalse(File(subdir, "index.html").exists())
         assertFalse(File(subsubdir, "index.html").exists())
     }
@@ -442,7 +451,12 @@ class MainTest {
 
         go(tempDir.absolutePath, -1)
 
-        assertTrue(File(tempDir, "index.html").exists())
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
+
         assertTrue(File(subdir, "index.html").exists())
         assertFalse(File(gitDir, "index.html").exists())
     }
@@ -470,7 +484,12 @@ class MainTest {
 
             go(tempDir.absolutePath, -1)
 
-            assertTrue(File(tempDir, "index.html").exists())
+            val indexFile = File(tempDir, "index.html")
+            assertTrue(indexFile.exists())
+            val htmlContent = indexFile.readText()
+            assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+            assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
+
             assertTrue(File(unreadableDir, "index.html").exists())
         } finally {
             unreadableDir.setReadable(true, false)
@@ -492,7 +511,12 @@ class MainTest {
         val cli = Html4tree()
         cli.parse(arrayOf(tempDir.absolutePath))
         main(arrayOf(tempDir.absolutePath))
-        assertTrue(File(tempDir, "index.html").exists())
+
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
     }
 
     @Test(expected = IllegalArgumentException::class)
