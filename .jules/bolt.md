@@ -43,3 +43,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2026-07-15 - [Optimize List Sorting using inline extension]
+**Learning:** `sortWith(compareBy({it}))`를 사용하면 요소 0, 1개인 리스트에서도 매번 새로운 Comparator 객체가 생성되고 이를 반환하는 과정에서 오버헤드가 발생합니다.
+**Action:** 요소 개수가 적을 확률이 높거나 잦은 정렬이 필요한 경우, `sortBy`와 같은 inline 확장 함수를 사용하여 불필요한 Comparator 생성을 피하고 GC 부하를 줄일 수 있습니다.

@@ -343,7 +343,7 @@ ${cssContent}              </style>
 
         val filesList = dirFiles ?: curr_dir.listFiles()
         val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
-        dir_files.sortWith(compareBy ({it.name}) )
+        dir_files.sortBy { it.name }
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
