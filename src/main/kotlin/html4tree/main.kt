@@ -216,12 +216,17 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        files_to_exclude.add("index.html")
 
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa", "secrets.yml", "secrets.json", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
-    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
+    // 보안 향상: 숨김 파일 및 흔히 쓰이는 인증키(.pem, .key), 데이터베이스(.sqlite, .db) 확장자를 동적으로 제외하여 중요 정보 노출 방지
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.startsWith(".")) {
+        val lowerCaseName = it.toLowerCase()
+        if (it.startsWith(".") ||
+            lowerCaseName.endsWith(".pem") ||
+            lowerCaseName.endsWith(".key") ||
+            lowerCaseName.endsWith(".sqlite") ||
+            lowerCaseName.endsWith(".db")) {
             files_to_exclude.add(it)
         }
     }
