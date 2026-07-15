@@ -259,7 +259,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                 list-style-type: none;
                 padding-left: 0;
               }
-              a.dir-link {
+              .dir-link {
                 display: flex;
                 align-items: flex-start;
                 gap: 0.5rem;
@@ -370,7 +370,7 @@ ${cssContent}              </style>
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div class="empty-dir dir-link"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
 

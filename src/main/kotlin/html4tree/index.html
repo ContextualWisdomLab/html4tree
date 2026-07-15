@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light dark">
+        <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-uoHVDDy5WaEjIL3vS3FkYwm8O3W+iPEhMfz8Tkytd4o='; base-uri 'none'; form-action 'none';">
+        <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
+        <meta name="referrer" content="no-referrer">
+        <title>html4tree</title>
+
+              <style>
+
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+                padding: 1rem;
+                color: #1f2328;
+              }
+              main {
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              ul {
+                list-style-type: none;
+                padding-left: 0;
+              }
+              a.dir-link {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                width: 100%;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+              }
+              .icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                text-align: center;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0969da;
+                border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0969da;
+                outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background-color: #0d1117;
+                  color: #c9d1d9;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
+              }
+              .empty-dir {
+                padding: 0.5rem;
+                opacity: 0.7;
+                font-style: italic;
+              }
+                            </style>
+
+     </head>
+     <body>
+       <main>
+         <h1>html4tree</h1>
+         <nav aria-label="디렉토리 목록">
+         <ul role="list">
+            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
+          <li><a class="dir-link" href="./main.kt" aria-label="main.kt 파일" title="main.kt 파일"><span class="icon" aria-hidden="true">&#128196;</span> <span>main.kt</span></a></li>
+          <li><a class="dir-link" href="./util.kt" aria-label="util.kt 파일" title="util.kt 파일"><span class="icon" aria-hidden="true">&#128196;</span> <span>util.kt</span></a></li>
+
+         </ul>
+         </nav>
+       </main>
+    </body>
+</html>
