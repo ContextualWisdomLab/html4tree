@@ -13,7 +13,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
-val CSS_CONTENT = """
+private val CSS_CONTENT = """
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
@@ -79,9 +79,9 @@ val CSS_CONTENT = """
               }
               """
 
-val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
+private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 
-val CSS = """
+private val CSS = """
               <style>
 ${CSS_CONTENT}              </style>
               """
