@@ -95,6 +95,8 @@ class MainTest {
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
         assertTrue(htmlContent.contains("role=\"list\""))
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
     }
 
     @Test
@@ -308,6 +310,8 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
         assertTrue(htmlContent.contains("<meta name=\"color-scheme\" content=\"light dark\">"))
         assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
         assertTrue(htmlContent.contains("role=\"list\""))
@@ -401,7 +405,11 @@ class MainTest {
 
             go(tempDir.absolutePath, -1)
 
-            assertTrue(File(tempDir, "index.html").exists())
+            val indexFile = File(tempDir, "index.html")
+            assertTrue(indexFile.exists())
+            val htmlContent = indexFile.readText()
+            assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+            assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
 
             val subdirIndex = File(subdir, "index.html")
             assertTrue(subdirIndex.exists())
@@ -423,7 +431,12 @@ class MainTest {
 
         go(tempDir.absolutePath, 0)
 
-        assertTrue(File(tempDir, "index.html").exists())
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
+
         assertFalse(File(subdir, "index.html").exists())
         assertFalse(File(subsubdir, "index.html").exists())
     }
@@ -438,7 +451,12 @@ class MainTest {
 
         go(tempDir.absolutePath, -1)
 
-        assertTrue(File(tempDir, "index.html").exists())
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
+
         assertTrue(File(subdir, "index.html").exists())
         assertFalse(File(gitDir, "index.html").exists())
     }
@@ -466,7 +484,12 @@ class MainTest {
 
             go(tempDir.absolutePath, -1)
 
-            assertTrue(File(tempDir, "index.html").exists())
+            val indexFile = File(tempDir, "index.html")
+            assertTrue(indexFile.exists())
+            val htmlContent = indexFile.readText()
+            assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+            assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
+
             assertTrue(File(unreadableDir, "index.html").exists())
         } finally {
             unreadableDir.setReadable(true, false)
@@ -488,7 +511,12 @@ class MainTest {
         val cli = Html4tree()
         cli.parse(arrayOf(tempDir.absolutePath))
         main(arrayOf(tempDir.absolutePath))
-        assertTrue(File(tempDir, "index.html").exists())
+
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${tempDir.name.escapeHtml()}</h1>"))
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -518,6 +546,21 @@ class MainTest {
     fun testProcessDirItEqualsCurrDir() {
         File(tempDir, "tempDir").mkdir()
         process_dir(tempDir)
+    }
+
+    @Test
+    fun testProcessDirEmptyNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName(): String = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        val expectedFallback = fakeRoot.absolutePath.escapeHtml()
+        assertTrue(htmlContent.contains("<title>$expectedFallback</title>"))
+        assertTrue(htmlContent.contains("<h1>$expectedFallback</h1>"))
     }
 
     @Test(expected = IllegalArgumentException::class)
