@@ -30,6 +30,22 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        var fallbackCalled = false
+        write_index_file(tempDir, "content") { source, target, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                throw java.nio.file.AtomicMoveNotSupportedException(source.toString(), target.toString(), "Mocked exception")
+            }
+            fallbackCalled = true
+            java.nio.file.Files.move(source, target, *options)
+        }
+        assertTrue(fallbackCalled, "Fallback to REPLACE_EXISTING should be called")
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals("content", indexFile.readText())
+    }
+
+    @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
