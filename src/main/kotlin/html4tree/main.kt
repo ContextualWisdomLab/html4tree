@@ -13,80 +13,6 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
-private val CSS_CONTENT = """
-              body {
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                line-height: 1.5;
-                padding: 1rem;
-                color: #1f2328;
-              }
-              main {
-                max-width: 800px;
-                margin: 0 auto;
-              }
-              ul {
-                list-style-type: none;
-                padding-left: 0;
-              }
-              a.dir-link {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                width: 100%;
-                overflow-wrap: anywhere;
-                box-sizing: border-box;
-              }
-              .icon {
-                flex-shrink: 0;
-                width: 1.25rem;
-                text-align: center;
-              }
-              a {
-                padding: 0.5rem;
-                text-decoration: none;
-                color: #0969da;
-                border-radius: 4px;
-                transition: background-color 0.2s ease, outline-color 0.2s ease;
-              }
-              a:hover, a:focus-visible {
-                background-color: #f6f8fa;
-                text-decoration: underline;
-                outline: 2px solid #0969da;
-                outline-offset: -2px;
-              }
-              @media (prefers-reduced-motion: reduce) {
-                a {
-                  transition: none;
-                }
-              }
-              @media (prefers-color-scheme: dark) {
-                body {
-                  background-color: #0d1117;
-                  color: #c9d1d9;
-                }
-                a {
-                  color: #58a6ff;
-                }
-                a:hover, a:focus-visible {
-                  background-color: #161b22;
-                  outline-color: #58a6ff;
-                }
-              }
-              .empty-dir {
-                padding: 0.5rem;
-                opacity: 0.7;
-                font-style: italic;
-              }
-              """
-
-private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
-
-private val CSS = """
-              <style>
-${CSS_CONTENT}              </style>
-              """
-
-
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
     val topDir: String by argument(help="Top directory to crawl")
@@ -318,6 +244,79 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
+    val cssContent = """
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+                padding: 1rem;
+                color: #1f2328;
+              }
+              main {
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              ul {
+                list-style-type: none;
+                padding-left: 0;
+              }
+              a.dir-link {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                width: 100%;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+              }
+              .icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                text-align: center;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0969da;
+                border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0969da;
+                outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background-color: #0d1117;
+                  color: #c9d1d9;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
+              }
+              .empty-dir {
+                padding: 0.5rem;
+                opacity: 0.7;
+                font-style: italic;
+              }
+              """
+
+    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+
+    val css = """
+              <style>
+${cssContent}              </style>
+              """
+
     val index_top = """<!doctype html>
 <html lang="ko">
      <head>
@@ -325,11 +324,11 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="color-scheme" content="light dark">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${STYLE_HASH}'; base-uri 'none'; form-action 'none';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
-        ${CSS}
+        ${css}
      </head>
      <body>
        <main>
@@ -344,7 +343,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 
         val filesList = dirFiles ?: curr_dir.listFiles()
         val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
-        dir_files.sortWith(compareBy ({it.name}) )
+        dir_files.sortBy { it.name }
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
