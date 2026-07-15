@@ -281,6 +281,18 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileDynamicExclusion() {
+        val fileNames = arrayOf("test.pem", "test.KEY", "mydb.sqlite", "app.DB", "safe.txt", ".hidden")
+        val excluded = process_ignore_file(tempDir, fileNames)
+        assertTrue(excluded.contains("test.pem"))
+        assertTrue(excluded.contains("test.KEY"))
+        assertTrue(excluded.contains("mydb.sqlite"))
+        assertTrue(excluded.contains("app.DB"))
+        assertTrue(excluded.contains(".hidden"))
+        assertFalse(excluded.contains("safe.txt"))
+    }
+
+    @Test
     fun testProcessIgnoreFileInvalidRegex() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("[\n*.log")
