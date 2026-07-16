@@ -384,6 +384,21 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirWithEmptyNameFallback() {
+        val tempDirFallback = Files.createTempDirectory("test-fallback").toFile()
+        val fakeRoot = object : File(tempDirFallback, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"))
+    }
+
+    @Test
     fun testGoWithSymlink() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
