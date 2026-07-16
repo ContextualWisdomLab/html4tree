@@ -204,12 +204,16 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            val list = dirFilesNames ?: curr_dir.list()
            list?.forEach {
                val current = it
-               val pathCurrent = java.nio.file.Paths.get(current)
-               for (matcher in ignored_matchers) {
-                  if (matcher.matches(pathCurrent)) {
-                     files_to_exclude.add(current)
-                     break
-                  }
+               try {
+                   val pathCurrent = java.nio.file.Paths.get(current)
+                   for (matcher in ignored_matchers) {
+                      if (matcher.matches(pathCurrent)) {
+                         files_to_exclude.add(current)
+                         break
+                      }
+                   }
+               } catch (e: Exception) {
+                   // 보안 향상: 개별 파일명(예: 널 바이트 포함)으로 인한 예외 발생 시 해당 파일 검사만 건너뛰고 나머지 파일 검사는 계속 진행합니다. (Fail Closed 방지)
                }
            }
         }
