@@ -34,7 +34,7 @@
 ## 2024-08-01 - URL 인코딩 빌더 지연 생성
 **학습:** URL 인코딩이 필요 없는 안전한 경로 문자열에서도 항상 `StringBuilder`를 생성하면 hot path에서 불필요한 할당이 발생합니다.
 **조치:** 예약 바이트를 처음 만났을 때만 `StringBuilder`를 만들고, 그 전까지는 원본 문자열을 그대로 반환하는 지연 생성 패턴을 사용합니다.
-## $(date +%Y-%m-%d) - Optimize OS stat calls in file listing
+## 2026-07-16 - Optimize OS stat calls in file listing
 **Learning:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
 **Action:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
@@ -43,6 +43,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
-## $(date +%Y-%m-%d) - 루프/재귀 내부의 비용이 큰 정적 리소스 및 암호화 해시 연산 추출
+## 2026-07-16 - 루프/재귀 내부의 비용이 큰 정적 리소스 및 암호화 해시 연산 추출
 **학습:** 디렉토리 순회를 처리하는 `process_dir`와 같이 반복적으로 호출되는 함수 내부에서 정적 문자열 리소스(`cssContent`, `css`)를 매번 할당하고, 더군다나 비용이 큰 SHA-256 암호화 해시 연산(`styleHash`)을 반복 계산하는 것은 심각한 성능 저하와 불필요한 가비지 컬렉션(GC) 압력을 유발합니다.
 **조치:** 변경되지 않는 정적 문자열 리소스와 단 한 번만 계산하면 되는 비용이 큰 암호화 해시 연산의 경우, 함수 내부가 아닌 파일 최상단 프로퍼티(Top-level properties)로 추출하여 전역적으로 한 번만 초기화하고 계산되도록 최적화해야 합니다. 추출된 속성은 암시적 getter가 생성되므로 JaCoCo 100% 커버리지를 위해 테스트에서 명시적으로 접근하는 검증을 추가해야 합니다.
