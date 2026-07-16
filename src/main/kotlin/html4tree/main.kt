@@ -327,6 +327,8 @@ ${cssContent}              </style>
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
+        <!-- 보안 향상: 검색 엔진이 디렉토리 구조 및 파일 목록을 색인화하지 못하도록 방지 (정보 노출 방지) -->
+        <meta name="robots" content="noindex, nofollow">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>
