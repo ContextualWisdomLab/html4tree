@@ -181,35 +181,40 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
-       val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
+    // 보안 향상: TOCTOU(Time-of-Check to Time-of-Use) 취약점이나 파일 읽기 중 발생하는 예기치 못한 Exception으로 인해 전체 크롤러가 중단(DoS)되는 것을 방지합니다. (Fail Securely)
+    try {
+        if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
+           val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
-           for ((lineIndex, it) in lines.withIndex()) {
-               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-               if (lineIndex >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: java.util.regex.PatternSyntaxException) {
+           ignore_file.useLines { lines ->
+               for ((lineIndex, it) in lines.withIndex()) {
+                   // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+                   if (lineIndex >= 1000) break
+                   val pattern = it.trim()
+                   if (pattern.isNotEmpty() && pattern.length <= 100) {
+                       try {
+                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                       } catch (_: java.util.regex.PatternSyntaxException) {
+                       }
                    }
                }
            }
-       }
 
-       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
-           val current = it
-           val pathCurrent = java.nio.file.Paths.get(current)
-           for (matcher in ignored_matchers) {
-              if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
-                 break
-              }
+           // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+           val list = dirFilesNames ?: curr_dir.list()
+           list?.forEach {
+               val current = it
+               val pathCurrent = java.nio.file.Paths.get(current)
+               for (matcher in ignored_matchers) {
+                  if (matcher.matches(pathCurrent)) {
+                     files_to_exclude.add(current)
+                     break
+                  }
+               }
            }
-       }
+        }
+    } catch (e: Exception) {
+        // 보안 향상: IO 예외가 발생하더라도 안전하게 무시하고 다음 프로세스를 진행합니다 (Fail Securely)
     }
 
     if ("index.html" !in files_to_exclude)
