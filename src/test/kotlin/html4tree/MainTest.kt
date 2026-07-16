@@ -671,6 +671,24 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileUnreadableException() {
+        val unreadableFile = File(tempDir, ".html4ignore")
+        unreadableFile.writeText("*.ignore")
+        unreadableFile.setReadable(false)
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("index.html"))
+        unreadableFile.setReadable(true)
+    }
+
+    @Test
+    fun testProcessIgnoreFileRegularFileCheck() {
+        val nonRegularFile = File(tempDir, ".html4ignore")
+        nonRegularFile.mkdir()
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
     fun testUrlEncodePathFallback() {
         // Just calling urlEncodePath directly on a string that isn't modified
         val str = "abc"

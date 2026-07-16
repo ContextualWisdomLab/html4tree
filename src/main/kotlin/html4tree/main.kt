@@ -183,41 +183,44 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
     try {
         val path = ignore_file.toPath()
-        val channel = java.nio.channels.FileChannel.open(path, java.nio.file.StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
-        try {
-            val size = channel.size()
-            if (size <= 1048576) {
-                val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
-                val scanner = java.util.Scanner(java.nio.channels.Channels.newInputStream(channel), "UTF-8")
-                var lineIndex = 0
-                while (scanner.hasNextLine() && lineIndex < 1000) {
-                    val pattern = scanner.nextLine().trim()
-                    if (pattern.isNotEmpty() && pattern.length <= 100) {
-                        try {
-                            ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                        } catch (_: java.util.regex.PatternSyntaxException) {
+        // 🛡️ Sentinel: Enforce non-blocking open, check if regular file, and no-follow links
+        if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+            val channel = java.nio.channels.FileChannel.open(path, java.nio.file.StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
+            try {
+                val size = channel.size()
+                if (size <= 1048576) {
+                    val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
+                    val scanner = java.util.Scanner(java.nio.channels.Channels.newInputStream(channel), "UTF-8")
+                    var lineIndex = 0
+                    while (scanner.hasNextLine() && lineIndex < 1000) {
+                        val pattern = scanner.nextLine().trim()
+                        if (pattern.isNotEmpty() && pattern.length <= 100) {
+                            try {
+                                ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                            } catch (_: java.util.regex.PatternSyntaxException) {
+                            }
                         }
+                        lineIndex++
                     }
-                    lineIndex++
-                }
 
-                // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-                val list = dirFilesNames ?: curr_dir.list()
-                if (list != null) {
-                    list.forEach { item ->
-                        val current = item
-                        val pathCurrent = java.nio.file.Paths.get(current)
-                        for (matcher in ignored_matchers) {
-                            if (matcher.matches(pathCurrent)) {
-                                files_to_exclude.add(current)
-                                break
+                    // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+                    val list = dirFilesNames ?: curr_dir.list()
+                    if (list != null) {
+                        list.forEach { item ->
+                            val current = item
+                            val pathCurrent = java.nio.file.Paths.get(current)
+                            for (matcher in ignored_matchers) {
+                                if (matcher.matches(pathCurrent)) {
+                                    files_to_exclude.add(current)
+                                    break
+                                }
                             }
                         }
                     }
                 }
+            } finally {
+                channel.close()
             }
-        } finally {
-            channel.close()
         }
     } catch (_: java.lang.Exception) {
         // Fall through to default exclusions
