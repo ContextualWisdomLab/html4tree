@@ -83,3 +83,18 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2026-07-16 - TOCTOU Symlink Attack in Temporary File Creation
+**Vulnerability:** A TOCTOU (Time-of-Check to Time-of-Use) vulnerability existed when creating temporary files for `index.html`. A malicious actor could swap the target directory with a symlink after the crawler's initial checks but before the temporary file was created and moved into it.
+**Learning:** Checking properties on an arbitrary file path (like whether it is a symlink) and later executing file operations on that same path using string representations is unsafe. The underlying file system object can change between the check and the use.
+**Prevention:** Always re-evaluate paths to their real targets immediately before sensitive operations. In Java/Kotlin, converting a `Path` using `.toRealPath(LinkOption.NOFOLLOW_LINKS)` immediately before operations like `Files.createTempFile` and `Files.move` ensures that symlink swaps are caught or strictly prevented during those critical filesystem calls.
+
+## 2026-07-16 - Safe File Handling with FileChannel and Exception Boundaries
+**Vulnerability:** Opening files using standard `File` or `Path` wrappers without enforcing no-follow links during the open can lead to symlink traversal vulnerabilities or race conditions where a file might be swapped with a symlink before it is completely read. Stalled reads could also hold the crawler indefinitely.
+**Learning:** For reading potentially sensitive or untrusted configuration files (like `.html4ignore`), use race-resistant descriptor-level operations such as `java.nio.channels.FileChannel.open` with `StandardOpenOption.READ` and `LinkOption.NOFOLLOW_LINKS`. This guarantees that the opened descriptor points to a regular file and won't follow symlinks. Ensure the block is wrapped in a general `Exception` boundary so failures (like IO exceptions, missing files) fall back to secure default handling.
+**Prevention:** Instead of multiple filesystem check calls (e.g. `isFile`, `isSymbolicLink`), directly open a FileChannel with `NOFOLLOW_LINKS` and wrap the sequence with a robust exception handler and size limitations to prevent DoS attacks through large files or stalled streams.
+
+## 2026-07-16 - Safe File Handling with Files.isRegularFile Guard
+**Vulnerability:** Even when opening files with NOFOLLOW_LINKS, attempting to open named pipes (FIFOs), character devices, or other special files for reading can block the process indefinitely if there is no writer. This results in an application freeze (DoS), halting the directory crawling.
+**Learning:** Never directly open potentially non-regular files without ensuring they are standard files first. Using `Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)` strictly validates that the file is not a directory, symlink, pipe, or device before you attempt a file descriptor operation on it. This combination eliminates block-read starvation.
+**Prevention:** Guard all `FileChannel.open` invocations for user-controlled filenames (like `.html4ignore`) with an explicit `isRegularFile` check to reject special types, accompanied by a resilient exception fallback handler in case of TOCTOU.

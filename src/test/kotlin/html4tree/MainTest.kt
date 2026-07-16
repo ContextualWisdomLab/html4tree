@@ -109,6 +109,10 @@ class MainTest {
         val hiddenFile = File(tempDir, ".hidden_file.txt")
         hiddenFile.createNewFile()
 
+        // Also create a file that starts with a dot but is processed in the loop branches
+        val dotIgnoredFile = File(tempDir, ".ignored")
+        dotIgnoredFile.createNewFile()
+
         val hiddenDir = File(tempDir, ".hidden_dir")
         hiddenDir.mkdir()
         val fileInHiddenDir = File(hiddenDir, "file_in_hidden_dir.txt")
@@ -384,6 +388,21 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirWithEmptyNameFallback() {
+        val tempDirFallback = Files.createTempDirectory("test-fallback").toFile()
+        val fakeRoot = object : File(tempDirFallback, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"))
+    }
+
+    @Test
     fun testGoWithSymlink() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
@@ -555,6 +574,20 @@ class MainTest {
     }
 
     @Test
+    fun testGoWithDirectoryExclusion() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("subdirToIgnore")
+        val subdir = File(tempDir, "subdirToIgnore")
+        subdir.mkdir()
+        File(tempDir, "test.txt").createNewFile()
+        go(tempDir.absolutePath, -1)
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertFalse(htmlContent.contains("subdirToIgnore"))
+    }
+
+    @Test
     fun testProcessIgnoreFileHiddenFiles() {
         // .myhidden/.hiddendir are NOT in the static sensitive-file list,
         // so this fails if the dynamic hidden-file exclusion is removed.
@@ -620,6 +653,55 @@ class MainTest {
         File(tempDir, "test.txt").createNewFile()
 
         // Should ignore the symlink and NOT parse it
+        val excluded = process_ignore_file(tempDir, null)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileFallbackGenericException() {
+        // Create an invalid path that throws a generic exception (e.g. InvalidPathException if mapped in channel open)
+        val badDir = object : File(tempDir, "baddir") {
+            override fun toPath(): java.nio.file.Path {
+                throw RuntimeException("Simulated exception")
+            }
+        }
+        val excluded = process_ignore_file(badDir, null)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileUnreadableException() {
+        val unreadableFile = File(tempDir, ".html4ignore")
+        unreadableFile.writeText("*.ignore")
+        unreadableFile.setReadable(false)
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("index.html"))
+        unreadableFile.setReadable(true)
+    }
+
+    @Test
+    fun testProcessIgnoreFileRegularFileCheck() {
+        val nonRegularFile = File(tempDir, ".html4ignore")
+        nonRegularFile.mkdir()
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testUrlEncodePathFallback() {
+        // Just calling urlEncodePath directly on a string that isn't modified
+        val str = "abc"
+        assertEquals("abc", str.urlEncodePath())
+    }
+
+    @Test
+    fun testProcessIgnoreFileFallbackIOException() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.mkdir()
+        File(tempDir, "test.txt").createNewFile()
+
+        // Should fall back to default exclusions gracefully
         val excluded = process_ignore_file(tempDir, null)
         assertFalse(excluded.contains("test.txt"))
         assertTrue(excluded.contains("index.html"))

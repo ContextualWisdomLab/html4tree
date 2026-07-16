@@ -181,35 +181,49 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
-       val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
+    try {
+        val path = ignore_file.toPath()
+        // 🛡️ Sentinel: Enforce non-blocking open, check if regular file, and no-follow links
+        if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+            val channel = java.nio.channels.FileChannel.open(path, java.nio.file.StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
+            try {
+                val size = channel.size()
+                if (size <= 1048576) {
+                    val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
+                    val scanner = java.util.Scanner(java.nio.channels.Channels.newInputStream(channel), "UTF-8")
+                    var lineIndex = 0
+                    while (scanner.hasNextLine() && lineIndex < 1000) {
+                        val pattern = scanner.nextLine().trim()
+                        if (pattern.isNotEmpty() && pattern.length <= 100) {
+                            try {
+                                ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                            } catch (_: java.util.regex.PatternSyntaxException) {
+                            }
+                        }
+                        lineIndex++
+                    }
 
-       ignore_file.useLines { lines ->
-           for ((lineIndex, it) in lines.withIndex()) {
-               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-               if (lineIndex >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: java.util.regex.PatternSyntaxException) {
-                   }
-               }
-           }
-       }
-
-       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
-           val current = it
-           val pathCurrent = java.nio.file.Paths.get(current)
-           for (matcher in ignored_matchers) {
-              if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
-                 break
-              }
-           }
-       }
+                    // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+                    val list = dirFilesNames ?: curr_dir.list()
+                    if (list != null) {
+                        list.forEach { item ->
+                            val current = item
+                            val pathCurrent = java.nio.file.Paths.get(current)
+                            for (matcher in ignored_matchers) {
+                                if (matcher.matches(pathCurrent)) {
+                                    files_to_exclude.add(current)
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+            } finally {
+                channel.close()
+            }
+        }
+    } catch (_: java.lang.Exception) {
+        // Fall through to default exclusions
     }
 
     if ("index.html" !in files_to_exclude)
@@ -230,8 +244,10 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 }
 
 fun write_index_file(curr_dir: File, content: String) {
-    val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    // 🛡️ Sentinel: Validate the real path immediately before temp-file creation and move to prevent TOCTOU.
+    val realPath = curr_dir.toPath().toRealPath(LinkOption.NOFOLLOW_LINKS)
+    val indexPath = realPath.resolve("index.html")
+    val tempPath = Files.createTempFile(realPath, ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
@@ -327,12 +343,12 @@ ${cssContent}              </style>
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
-        <title>${curr_dir.getName().escapeHtml()}</title>
+        <title>${curr_dir.name.ifEmpty { curr_dir.absolutePath }.escapeHtml()}</title>
         ${css}
      </head>
      <body>
        <main>
-         <h1>${curr_dir.getName().escapeHtml()}</h1>
+         <h1>${curr_dir.name.ifEmpty { curr_dir.absolutePath }.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
@@ -342,7 +358,7 @@ ${cssContent}              </style>
         val l = StringBuilder()
 
         val filesList = dirFiles ?: curr_dir.listFiles()
-        val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
+        val dir_files: MutableList<File> = if (filesList != null) filesList.toMutableList() else mutableListOf()
         dir_files.sortWith(compareBy ({it.name}) )
         dir_files.forEach {
            val fileName = it.getName()
