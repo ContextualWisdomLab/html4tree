@@ -17,6 +17,14 @@ import kotlin.test.assertTrue
 class MainTest {
     private lateinit var tempDir: File
 
+    @Test
+    fun testCssProperties() {
+        // top-level properties의 getter 커버리지 확보
+        assertTrue(cssContent.isNotEmpty(), "cssContent should not be empty")
+        assertTrue(styleHash.startsWith("sha256-"), "styleHash should start with sha256-")
+        assertTrue(css.contains(cssContent), "css should contain cssContent")
+    }
+
     @Before
     fun setup() {
         tempDir = Files.createTempDirectory("html4tree-test-").toFile()
