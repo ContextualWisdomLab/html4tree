@@ -26,28 +26,30 @@
 **학습:** 하드코딩된 인라인 색상(예: `color: #666`)은 CSS 미디어 쿼리를 우회하며 `!important` 없이는 쉽게 재정의할 수 없기 때문에 다크 모드에서 적응하지 못하고, 어두운 배경에서 텍스트 가독성 문제를 일으킵니다.
 **조치:** 어두운 텍스트에 하드코딩된 16진수 값 대신 `opacity: 0.7`을 사용하여 테마 색상을 동적으로 상속받고 모든 색상 구성표에서 가독성을 보장하십시오.
 
-## 2024-07-12 - Prevent icon misalignment on long file names
-**Learning:** Very long file names in a fluid layout without explicit flexbox wrapping can cause text to wrap below preceding inline icons, breaking the visual hierarchy and alignment.
-**Action:** Always wrap file/directory listings in a flex container with `align-items: flex-start` and isolate icons with `flex-shrink: 0` alongside text content wrapped in a `<span style="overflow-wrap: anywhere;">` (or a global `overflow-wrap` on the container) to ensure text wraps cleanly next to fixed-width icons on mobile devices.
+## 2024-07-12 - 긴 파일 이름에서의 아이콘 오정렬 방지
+**학습:** 유동적 레이아웃에서 명시적인 flexbox 래핑 없이 매우 긴 파일 이름은 앞선 인라인 아이콘 아래로 텍스트가 줄바꿈되어 시각적 계층 및 정렬을 깨뜨릴 수 있습니다.
+**조치:** 모바일 장치에서 텍스트가 고정 너비 아이콘 옆으로 깔끔하게 줄바꿈되도록 항상 파일/디렉토리 목록을 `align-items: flex-start`가 있는 flex 컨테이너에 감싸고 `<span style="overflow-wrap: anywhere;">`(또는 컨테이너의 전역 `overflow-wrap`)에 감싸진 텍스트 콘텐츠 옆에 `flex-shrink: 0`으로 아이콘을 분리하십시오.
 
 ## 2024-08-01 - 파일 아이콘 메타포
 **학습:** 일반 파일을 나타낼 때 방향 지시 아이콘(우측 삼각형 등)을 사용하면 폴더나 확장 가능한 요소로 오해할 수 있어 시각적인 모호함을 초래합니다. 문서나 페이지 형태의 아이콘이 파일이라는 것을 직관적으로 알 수 있게 해줍니다.
 **조치:** 일반 파일 옆에 표시되는 장식용 아이콘을 우측 삼각형 등에서 페이지 아이콘(예: `&#128196;`)으로 교체하여 시각적 메타포를 일관성 있게 유지하십시오.
 
-## 2024-05-24 - [a 태그에 부드러운 트랜지션 추가 및 사용자의 모션 설정 존중]
-**Learning:** CSS 트랜지션(`transition: all`)을 추가하면 의도치 않은 애니메이션과 성능 문제를 일으킬 수 있습니다. 또한, 애니메이션은 전정 운동 장애가 있는 사용자에게 문제를 유발할 수 있습니다.
-**Action:** CSS 트랜지션을 추가할 때 `transition: all` 대신 속성(`background-color`, `outline-color` 등)을 명시적으로 지정하십시오. 접근성을 위해 항상 `@media (prefers-reduced-motion: reduce)` 오버라이드를 포함하여 `transition: none`으로 설정하십시오.
+## 2024-05-24 - a 태그에 부드러운 트랜지션 추가 및 사용자의 모션 설정 존중
+**학습:** CSS 트랜지션(`transition: all`)을 추가하면 의도치 않은 애니메이션과 성능 문제를 일으킬 수 있습니다. 또한, 애니메이션은 전정 운동 장애가 있는 사용자에게 문제를 유발할 수 있습니다.
+**조치:** CSS 트랜지션을 추가할 때 `transition: all` 대신 속성(`background-color`, `outline-color` 등)을 명시적으로 지정하십시오. 접근성을 위해 항상 `@media (prefers-reduced-motion: reduce)` 오버라이드를 포함하여 `transition: none`으로 설정하십시오.
 
 ## 2024-07-10 - 다크 모드 지원 및 지역화 일관성 확보
-**Learning:** `html4tree` CLI로 생성되는 정적 HTML에서 사용자는 네이티브 다크 모드를 기대하며(접근성, 가독성 문제), `<nav>` 레이블("Directory listing")이 다른 UI와 다르게 영문으로 되어 있어 스크린 리더 환경 등에서 지역화(Localization) 일관성을 해칩니다.
-**Action:** `prefers-color-scheme: dark` 미디어 쿼리를 CSS에 추가하여 네이티브 다크 모드를 지원하고, `<nav aria-label="Directory listing">`을 `<nav aria-label="디렉토리 목록">`으로 수정하여 UI를 한국어로 통일했습니다.
-## 2026-07-13 - Add title attributes for parity with aria-labels
-**Learning:** Relying solely on icons or technical symbols (like `..`) without native tooltips can confuse sighted users who don't use screen readers. `title` attributes matching `aria-label` provide parity.
-**Action:** Add `title` attributes to icon-only links to ensure visual tooltips match screen reader text.
+**학습:** `html4tree` CLI로 생성되는 정적 HTML에서 사용자는 네이티브 다크 모드를 기대하며(접근성, 가독성 문제), `<nav>` 레이블("Directory listing")이 다른 UI와 다르게 영문으로 되어 있어 스크린 리더 환경 등에서 지역화(Localization) 일관성을 해칩니다.
+**조치:** `prefers-color-scheme: dark` 미디어 쿼리를 CSS에 추가하여 네이티브 다크 모드를 지원하고, `<nav aria-label="Directory listing">`을 `<nav aria-label="디렉토리 목록">`으로 수정하여 UI를 한국어로 통일했습니다.
+
+## 2026-07-13 - aria-labels와 동일성을 위한 title 속성 추가
+**학습:** 네이티브 툴팁 없이 아이콘이나 기술적인 기호(예: `..`)에만 의존하면 스크린 리더를 사용하지 않는 시력이 있는 사용자에게 혼란을 줄 수 있습니다. `aria-label`과 일치하는 `title` 속성은 동일성을 제공합니다.
+**조치:** 아이콘 전용 링크에 `title` 속성을 추가하여 시각적 툴팁이 스크린 리더 텍스트와 일치하도록 보장하십시오.
 
 ## 2024-08-01 - 네이티브 브라우저 UI의 다크 모드 지원 강제
 **학습:** CSS 미디어 쿼리(`@media (prefers-color-scheme: dark)`)를 통해 다크 모드를 지원하더라도, 브라우저의 네이티브 UI 요소(스크롤바, 기본 폼 컨트롤, 기본 백그라운드 등)는 테마 변경을 인식하지 못해 어두운 테마 환경에서 밝은 스크롤바가 표시되는 등 시각적 불일치를 초래합니다.
 **조치:** 항상 HTML 문서의 `<head>` 영역에 `<meta name="color-scheme" content="light dark">` 메타 태그를 명시적으로 추가하여 브라우저 수준에서 사용자의 시스템 테마(다크 모드 등)를 완전히 상속받아 일관성 있는 네이티브 UI를 렌더링하도록 보장하십시오.
+
 ## 2024-05-24 - 빈 디렉토리 UI 시각적 일관성 강화
-**Learning:** 빈 디렉토리 상태와 같이 콘텐츠가 없는 "빈 상태(empty state)"에서도 주변 요소(디렉토리 목록, 파일 목록 등)와 레이아웃(flexbox, 간격 등) 및 시각적 요소(아이콘 등)의 일관성을 유지하면, 사용자가 오류 상황이 아니라 의도된 빈 상태임을 더 쉽게 인지할 수 있습니다.
-**Action:** 데이터가 없는 UI 컴포넌트를 설계할 때는 항상 주변 요소의 디자인 패턴(아이콘 배치, CSS 레이아웃 등)을 반영하여 일관된 경험을 제공하도록 구현할 것.
+**학습:** 빈 디렉토리 상태와 같이 콘텐츠가 없는 "빈 상태(empty state)"에서도 주변 요소(디렉토리 목록, 파일 목록 등)와 레이아웃(flexbox, 간격 등) 및 시각적 요소(아이콘 등)의 일관성을 유지하면, 사용자가 오류 상황이 아니라 의도된 빈 상태임을 더 쉽게 인지할 수 있습니다.
+**조치:** 데이터가 없는 UI 컴포넌트를 설계할 때는 항상 주변 요소의 디자인 패턴(아이콘 배치, CSS 레이아웃 등)을 반영하여 일관된 경험을 제공하도록 구현할 것.
