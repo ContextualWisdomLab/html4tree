@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2026-07-16 - TOCTOU Symlink Attack in Temporary File Creation
+**Vulnerability:** A TOCTOU (Time-of-Check to Time-of-Use) vulnerability existed when creating temporary files for `index.html`. A malicious actor could swap the target directory with a symlink after the crawler's initial checks but before the temporary file was created and moved into it.
+**Learning:** Checking properties on an arbitrary file path (like whether it is a symlink) and later executing file operations on that same path using string representations is unsafe. The underlying file system object can change between the check and the use.
+**Prevention:** Always re-evaluate paths to their real targets immediately before sensitive operations. In Java/Kotlin, converting a `Path` using `.toRealPath(LinkOption.NOFOLLOW_LINKS)` immediately before operations like `Files.createTempFile` and `Files.move` ensures that symlink swaps are caught or strictly prevented during those critical filesystem calls.
