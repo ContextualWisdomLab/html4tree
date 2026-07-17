@@ -6,6 +6,13 @@ import kotlin.test.assertTrue
 
 class CoverageTest {
     @Test
+    fun testTopLevelProperties() {
+        assertTrue(cssContent.contains("body {"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+    }
+
+    @Test
     fun testProcessDirWriteException() {
         val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
         val readOnlyDir = File(tempDir, "readonly")
