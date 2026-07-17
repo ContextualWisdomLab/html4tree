@@ -34,7 +34,7 @@
 ## 2024-08-01 - URL 인코딩 빌더 지연 생성
 **학습:** URL 인코딩이 필요 없는 안전한 경로 문자열에서도 항상 `StringBuilder`를 생성하면 hot path에서 불필요한 할당이 발생합니다.
 **조치:** 예약 바이트를 처음 만났을 때만 `StringBuilder`를 만들고, 그 전까지는 원본 문자열을 그대로 반환하는 지연 생성 패턴을 사용합니다.
-## $(date +%Y-%m-%d) - Optimize OS stat calls in file listing
+## 2025-01-24 - Optimize OS stat calls in file listing
 **Learning:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
 **Action:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
@@ -43,3 +43,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2025-01-24 - 반복적인 재귀 호출 내 정적 변수 할당 병목
+**학습:** 디렉토리 트리를 순회하는 `process_dir` 함수처럼 자주 호출되는 재귀 함수 내부에서 정적 문자열(`cssContent`)과 암호화 해시 연산(`styleHash`)을 선언하고 평가하면, 호출될 때마다 불필요한 할당과 계산 오버헤드가 발생합니다.
+**조치:** 여러 번 평가될 필요가 없는 정적 문자열 및 비용이 큰 연산은 파일의 최상위(top-level) 속성으로 추출하여 전역적으로 한 번만 계산되도록 최적화합니다. 이때 Kotlin의 최상위 속성은 암묵적 getter를 생성하므로, 테스트 커버리지 100%를 유지하기 위해 테스트 코드에 해당 속성을 명시적으로 접근하고 검증하는 코드를 추가해야 합니다.
