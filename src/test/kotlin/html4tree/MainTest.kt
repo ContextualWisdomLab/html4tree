@@ -444,6 +444,33 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        val content = "atomic fallback content"
+
+        var atomicMoveAttempted = false
+        var fallbackExecuted = false
+
+        val mockFilesMove: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> java.nio.file.Path = { source, target, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                atomicMoveAttempted = true
+                throw java.nio.file.AtomicMoveNotSupportedException(source.toString(), target.toString(), "Mocked ATOMIC_MOVE not supported")
+            } else {
+                fallbackExecuted = true
+                java.nio.file.Files.move(source, target, *options)
+            }
+        }
+
+        write_index_file(tempDir, content, mockFilesMove)
+
+        assertTrue(atomicMoveAttempted, "ATOMIC_MOVE should have been attempted")
+        assertTrue(fallbackExecuted, "Fallback to normal move should have been executed")
+
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals(content, indexFile.readText())
+    }
+
+    @Test
     fun testProcessDirHandlesNonDirectoryWithoutThrowing() {
         val notADirectory = File(tempDir, "not-a-directory")
         notADirectory.writeText("content")
