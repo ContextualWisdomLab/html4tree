@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-17 - [html4tree] 원자적 파일 이동을 통한 보안 및 안정성 강화
+**Vulnerability:** 기존 `write_index_file`은 임시 파일을 `REPLACE_EXISTING`만 사용하여 대상 위치로 이동시켰습니다. 이는 파일 교체 중 불완전한 상태(부분 읽기)가 노출되거나, 교체 직전 대상 경로가 악의적인 심볼릭 링크로 변경되는 TOCTOU(Time-of-Check to Time-of-Use) 공격에 취약할 수 있습니다.
+**Learning:** 파일 교체 작업에서 원자성(Atomicity)을 보장하는 것은 데이터 손상 방지 및 동시성 관련 보안 문제를 예방하는 핵심 요소입니다. Java/Kotlin에서 파일 시스템이 지원하는 경우 `StandardCopyOption.ATOMIC_MOVE`를 사용하면 이러한 위험을 줄일 수 있습니다.
+**Prevention:** 정적 파일이나 구성 파일을 작성할 때는 임시 파일을 먼저 작성한 후, `StandardCopyOption.ATOMIC_MOVE`와 `REPLACE_EXISTING`을 함께 사용하여 대상 파일로 이동시킵니다. 대상 파일 시스템에서 원자적 이동을 지원하지 않는 경우(`AtomicMoveNotSupportedException` 발생)에 대비해 `REPLACE_EXISTING`만 사용하는 안전한 폴백(fallback) 메커니즘을 구현하십시오.
