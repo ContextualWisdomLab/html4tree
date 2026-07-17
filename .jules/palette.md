@@ -48,3 +48,6 @@
 ## 2024-08-01 - 네이티브 브라우저 UI의 다크 모드 지원 강제
 **학습:** CSS 미디어 쿼리(`@media (prefers-color-scheme: dark)`)를 통해 다크 모드를 지원하더라도, 브라우저의 네이티브 UI 요소(스크롤바, 기본 폼 컨트롤, 기본 백그라운드 등)는 테마 변경을 인식하지 못해 어두운 테마 환경에서 밝은 스크롤바가 표시되는 등 시각적 불일치를 초래합니다.
 **조치:** 항상 HTML 문서의 `<head>` 영역에 `<meta name="color-scheme" content="light dark">` 메타 태그를 명시적으로 추가하여 브라우저 수준에서 사용자의 시스템 테마(다크 모드 등)를 완전히 상속받아 일관성 있는 네이티브 UI를 렌더링하도록 보장하십시오.
+## 2024-07-17 - Add ARIA status role to empty directory state
+**Learning:** Decorative or simple empty state messages in a list view don't naturally get announced properly by screen readers when navigating structure. Wrapping empty state messages with a `role="status"` ARIA attribute is necessary to ensure screen readers inform users correctly when the directory content list contains no functional items.
+**Action:** Next time empty states are encountered, ensure they are not visually silent to assistive technologies, adding `role="status"` (or similar live region attributes) so their content changes or static state are surfaced.
