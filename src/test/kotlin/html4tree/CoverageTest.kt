@@ -19,4 +19,15 @@ class CoverageTest {
             readOnlyDir.setWritable(true, false)
         }
     }
+
+    @Test
+    fun testCssContentProperties() {
+        val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
+        process_dir(tempDir)
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        val content = indexFile.readText()
+        assertTrue(content.contains("sha256-"))
+        assertTrue(content.contains("<style>"))
+    }
 }
