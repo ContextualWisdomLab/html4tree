@@ -705,4 +705,21 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testProcessDirRootFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+            override fun getAbsolutePath() = "/absolute/path/to/root"
+        }
+        fakeRoot.mkdir()
+
+        process_dir(fakeRoot)
+
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val content = indexFile.readText()
+        assertTrue(content.contains("<title>/absolute/path/to/root</title>"))
+        assertTrue(content.contains("<h1>/absolute/path/to/root</h1>"))
+    }
 }
