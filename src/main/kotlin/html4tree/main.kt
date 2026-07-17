@@ -39,7 +39,6 @@ internal fun read_file_identity(file: File): FileIdentity {
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
-    require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
     // 보안 수정: symlink 검사를 우회하는 canonicalFile 대신 absoluteFile을 사용
     // canonicalFile은 symlink를 대상 경로로 해석하여 이어지는 NOFOLLOW_LINKS 검사를 무력화합니다.
     val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
@@ -219,10 +218,19 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
-    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
+    val sensitiveExtensions = listOf(".pem", ".key", ".sqlite", ".log", ".bak", ".db", ".sql")
+
+    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목) 및 민감한 확장자(.pem, .key 등)를 기본적으로 제외 (정보 노출 방지)
     (dirFilesNames ?: curr_dir.list())?.forEach {
         if (it.startsWith(".")) {
             files_to_exclude.add(it)
+        } else {
+            for (ext in sensitiveExtensions) {
+                if (it.endsWith(ext, ignoreCase = true)) {
+                    files_to_exclude.add(it)
+                    break
+                }
+            }
         }
     }
 
