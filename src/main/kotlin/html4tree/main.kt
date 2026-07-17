@@ -220,9 +220,19 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
+    // 보안 향상: 민감한 확장자(.pem, .db 등)를 동적으로 검사하여 노출되지 않도록 제외
+    val sensitiveExtensions = listOf(".pem", ".key", ".keystore", ".truststore", ".sqlite", ".db", ".bak", ".log", ".pcap", ".sql")
     (dirFilesNames ?: curr_dir.list())?.forEach {
         if (it.startsWith(".")) {
             files_to_exclude.add(it)
+        } else {
+            val lowerCaseName = it.toLowerCase()
+            for (ext in sensitiveExtensions) {
+                if (lowerCaseName.endsWith(ext)) {
+                    files_to_exclude.add(it)
+                    break
+                }
+            }
         }
     }
 
