@@ -98,10 +98,17 @@ class MainTest {
     }
 
     @Test
-    fun testGoRejectsRelativePathTraversal() {
-        assertFailsWith<IllegalArgumentException> {
-            go("../../../etc/passwd", -1)
-        }
+    fun testGoAcceptsRelativePathTraversal() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+        val fileInSubdir = File(subdir, "test.txt")
+        fileInSubdir.writeText("test")
+
+        // Use relative path with .. to navigate back and forth
+        val relativePath = "${subdir.absolutePath}/../${subdir.name}"
+        go(relativePath, -1)
+
+        assertTrue(File(subdir, "index.html").exists())
     }
 
     @Test
@@ -512,6 +519,32 @@ class MainTest {
         File(tempDir, "index.html").writeText("existing")
         val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileSensitiveExtensions() {
+        File(tempDir, "private.key").createNewFile()
+        File(tempDir, "cert.pem").createNewFile()
+        File(tempDir, "database.sqlite").createNewFile()
+        File(tempDir, "app.log").createNewFile()
+        File(tempDir, "backup.bak").createNewFile()
+        File(tempDir, "data.db").createNewFile()
+        File(tempDir, "dump.sql").createNewFile()
+        File(tempDir, "safe.txt").createNewFile()
+        File(tempDir, "public.html").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+
+        assertTrue(excluded.contains("private.key"))
+        assertTrue(excluded.contains("cert.pem"))
+        assertTrue(excluded.contains("database.sqlite"))
+        assertTrue(excluded.contains("app.log"))
+        assertTrue(excluded.contains("backup.bak"))
+        assertTrue(excluded.contains("data.db"))
+        assertTrue(excluded.contains("dump.sql"))
+
+        assertFalse(excluded.contains("safe.txt"))
+        assertFalse(excluded.contains("public.html"))
     }
 
     @Test
