@@ -22,6 +22,13 @@ class MainTest {
         tempDir = Files.createTempDirectory("html4tree-test-").toFile()
     }
 
+    @Test
+    fun testTopLevelProperties() {
+        assertTrue(cssContent.contains("font-family:"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+    }
+
     @After
     fun teardown() {
         if (tempDir.exists()) {
