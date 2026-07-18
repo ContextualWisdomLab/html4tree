@@ -63,23 +63,28 @@
 **Learning:** 큐에 넣기 전(`listFiles`)에 한 번 검사했다고 해서, 큐에서 빼내어 처리(`process_dir`)하는 시점에도 파일 시스템 상태가 동일할 것이라고 가정(Implicit Trust)하면 안 됩니다.
 **Prevention:** 큐에 넣는 시점(`Time-of-Check`)에 파일의 고유 식별자(`BasicFileAttributes.fileKey()`)를 캡처해두고, 큐에서 꺼내어 실제로 처리하는 시점(`Time-of-Use`)에 현재 파일의 `fileKey()`를 다시 읽어 두 값이 일치하는지 재검증(Re-verify)해야 합니다.
 
-## 2024-05-25 - Information Exposure via Default Inclusion and Referrer
-**Vulnerability:** Common sensitive files (like `.aws`, `.kube`, `.npmrc`) could be accidentally indexed if present in the tree. Furthermore, clicking on external links (if any were added) could leak the directory structure via the HTTP Referer header.
-**Learning:** Default exclude lists must encompass modern toolchains and cloud credentials, as users often run directory indexers in their home or project root directories. HTML templates need explicit policies to prevent accidental data leakage via headers.
-**Prevention:** Maintain an extensive default deny-list for known sensitive files and enforce `no-referrer` globally on generated index pages.
+## 2024-05-25 - 기본 포함 및 Referrer를 통한 정보 노출 (Information Exposure)
+**Vulnerability:** `.aws`, `.kube`, `.npmrc`와 같은 일반적인 민감한 파일이 트리에 존재할 경우 실수로 인덱싱될 수 있습니다. 또한, 추가된 외부 링크를 클릭할 경우 HTTP Referer 헤더를 통해 디렉토리 구조가 유출될 수 있습니다.
+**Learning:** 사용자가 홈 디렉토리나 프로젝트 루트에서 디렉토리 인덱서를 실행하는 경우가 많으므로, 기본 제외 목록은 현대적인 툴체인과 클라우드 자격 증명을 포함해야 합니다. HTML 템플릿에는 헤더를 통한 우발적인 데이터 유출을 방지하기 위한 명시적인 정책이 필요합니다.
+**Prevention:** 알려진 민감한 파일에 대해 광범위한 기본 거부 목록을 유지하고 생성된 인덱스 페이지에서 전역적으로 `no-referrer`를 강제하십시오.
 
-## 2024-07-07 - [Sensitive Data Exposure in Directory Indexing]
-**Vulnerability:** The application was traversing and listing hidden files and directories (those starting with `.`), potentially exposing sensitive information like `.git` histories or `.env` configuration files in the generated HTML index.
-**Learning:** This existed because the traversal and filtering logic did not explicitly account for standard conventions regarding hidden files, defaulting to listing everything not explicitly ignored.
-**Prevention:** Always implement explicit filters for hidden files and directories (e.g., `!file.name.startsWith(".")`) in applications that generate static files or expose directory structures to the public.
+## 2024-07-07 - [디렉토리 인덱싱에서 민감한 데이터 노출]
+**Vulnerability:** 애플리케이션이 숨김 파일 및 디렉토리(`. `로 시작하는 파일)를 탐색하고 나열하여, 생성된 HTML 인덱스에서 `.git` 기록이나 `.env` 설정 파일과 같은 민감한 정보가 노출될 가능성이 있었습니다.
+**Learning:** 이는 탐색 및 필터링 로직이 명시적으로 무시되지 않은 모든 것을 나열하는 것을 기본값으로 하여, 숨김 파일에 대한 표준 규칙을 고려하지 않았기 때문에 발생했습니다.
+**Prevention:** 정적 파일을 생성하거나 디렉토리 구조를 대중에게 노출하는 애플리케이션에서는 항상 숨김 파일 및 디렉토리에 대한 명시적인 필터(예: `!file.name.startsWith(".")`)를 구현하십시오.
 
 
-## 2024-05-18 - Prevent Sensitive Information Disclosure
-**Vulnerability:** The application lists all files in a directory, including hidden files (those starting with `.`), which could inadvertently expose sensitive information like `.env`, `.git`, or `.ssh` directories.
-**Learning:** Default directory listing implementations without hidden file filtering can lead to information disclosure vulnerabilities when serving directories containing configuration or sensitive files.
-**Prevention:** Automatically exclude hidden files (files starting with `.`) from the generated directory listing by default.
+## 2024-05-18 - 민감한 정보 유출 방지
+**Vulnerability:** 애플리케이션이 숨김 파일(`. `로 시작하는 파일)을 포함하여 디렉토리의 모든 파일을 나열하므로, `.env`, `.git` 또는 `.ssh` 디렉토리와 같은 민감한 정보가 의도치 않게 노출될 수 있습니다.
+**Learning:** 숨김 파일 필터링이 없는 기본 디렉토리 나열 구현은 설정 또는 민감한 파일이 포함된 디렉토리를 제공할 때 정보 유출 취약점을 유발할 수 있습니다.
+**Prevention:** 생성된 디렉토리 목록에서 기본적으로 숨김 파일(`. `로 시작하는 파일)을 자동으로 제외하십시오.
 
 ## 2024-07-13 - [MEDIUM] 정적 리소스용 CSP 생성 방식(Nonce 대신 해시) 관련 보안 강화
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-13 - [ATOMIC_MOVE 지원 안 됨 예외로 인한 파일 쓰기 오류 및 DoS 완화]
+**Vulnerability:** `Files.move`에서 `StandardCopyOption.ATOMIC_MOVE`만을 사용할 경우, 특정 파일 시스템 환경(또는 권한 문제)에서는 `AtomicMoveNotSupportedException`이 발생하여 렌더링된 파일 저장이 실패하거나 크롤링이 중단될 수 있습니다.
+**Learning:** 원자적 파일 이동(Atomic Move)은 TOCTOU 파일 덮어쓰기를 피할 수 있는 좋은 보안 조치이지만, 모든 파일 시스템이나 마운트에서 지원되는 것은 아닙니다. 지원되지 않는 환경에서 실패 시 우회(Fallback) 조치를 마련하지 않으면 예상치 못한 서비스 거부(DoS) 상태에 빠지거나 데이터 무결성이 깨질 수 있습니다.
+**Prevention:** 파일 이동 로직을 구성할 때, `AtomicMoveNotSupportedException`을 우아하게 잡아내고(try-catch) `StandardCopyOption.REPLACE_EXISTING`으로 우회하는 폴백 메커니즘을 함께 사용하십시오.

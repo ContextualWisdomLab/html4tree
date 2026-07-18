@@ -8,6 +8,9 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -361,6 +364,20 @@ class MainTest {
         assertEquals("keep", File(indexDir, "occupant.txt").readText())
         val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
         assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+    }
+
+    @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        var atomicMoveAttempted = false
+        val customMoveFile = { source: Path, target: Path ->
+            atomicMoveAttempted = true
+            throw AtomicMoveNotSupportedException(source.toString(), target.toString(), "Mocked exception")
+        }
+
+        write_index_file(tempDir, "atomic move content", customMoveFile)
+
+        assertTrue(atomicMoveAttempted)
+        assertEquals("atomic move content", File(tempDir, "index.html").readText())
     }
 
     @Test
