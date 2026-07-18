@@ -95,6 +95,7 @@ class MainTest {
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
         assertTrue(htmlContent.contains("role=\"list\""))
+        assertTrue(htmlContent.contains("role=\"status\""))
     }
 
     @Test
