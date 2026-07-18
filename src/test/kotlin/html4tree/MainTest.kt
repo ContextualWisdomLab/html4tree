@@ -346,6 +346,21 @@ class MainTest {
     }
 
     @Test
+    fun testEmptyDirectoryNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        val expectedTitleAndH1 = fakeRoot.absolutePath.escapeHtml()
+        assertTrue(htmlContent.contains("<title>$expectedTitleAndH1</title>"))
+        assertTrue(htmlContent.contains("<h1>$expectedTitleAndH1</h1>"))
+    }
+
+    @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the
         // exception path through write_index_file's finally block.
