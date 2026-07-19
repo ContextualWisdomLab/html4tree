@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-16 - [MEDIUM] 원자적 파일 쓰기를 통한 불완전한 상태 노출 완화
+**Vulnerability:** 파일 교체 시 `ATOMIC_MOVE` 옵션을 사용하지 않으면, `index.html` 파일이 생성되거나 교체되는 도중에 사용자가 접근할 경우 파일이 비어있거나 불완전한 상태로 읽힐 수 있습니다 (경쟁 조건 발생).
+**Learning:** 파일 교체 작업은 원자적(Atomic)이어야 합니다. 특히 임시 파일에서 최종 파일로 변경할 때 파일 시스템의 `ATOMIC_MOVE` 복사 옵션을 사용하고, 지원되지 않을 경우 안전하게 대체 옵션으로 폴백해야 한다는 점을 배웠습니다.
+**Prevention:** `Files.move`를 사용할 때 `StandardCopyOption.ATOMIC_MOVE`를 기본 시도 옵션으로 사용하고, `AtomicMoveNotSupportedException`이 발생할 경우 `StandardCopyOption.REPLACE_EXISTING`으로 우아하게(gracefully) 처리하도록 코드를 구성하십시오.
