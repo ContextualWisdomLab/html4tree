@@ -454,6 +454,23 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirEmptyNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+
+        process_dir(fakeRoot)
+
+        val generatedIndex = File(fakeRoot, "index.html")
+        assertTrue(generatedIndex.exists(), "index.html should be generated for fake root directory")
+
+        val htmlContent = generatedIndex.readText()
+        assertTrue(htmlContent.contains("<title>${fakeRoot.absolutePath}</title>"), "title should fallback to absolute path")
+        assertTrue(htmlContent.contains("<h1>${fakeRoot.absolutePath}</h1>"), "h1 should fallback to absolute path")
+    }
+
+    @Test
     fun testGoWithUnreadableDir() {
         val unreadableDir = File(tempDir, "unreadable")
         unreadableDir.mkdir()
