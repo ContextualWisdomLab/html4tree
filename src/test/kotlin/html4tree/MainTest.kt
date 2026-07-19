@@ -476,6 +476,14 @@ class MainTest {
     }
 
     @Test
+    fun testTopLevelProperties() {
+        assertTrue(cssContent.contains("font-family: system-ui"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+        assertTrue(css.contains(cssContent))
+    }
+
+    @Test
     fun testCliParsing() {
         val cli = Html4tree()
         cli.parse(arrayOf("--max-level", "2", tempDir.absolutePath))
