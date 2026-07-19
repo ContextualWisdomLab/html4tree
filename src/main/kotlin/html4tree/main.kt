@@ -325,6 +325,8 @@ ${cssContent}              </style>
         <meta name="color-scheme" content="light dark">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
+        <!-- 보안 향상: 검색엔진의 무분별한 디렉토리 인덱싱 방지 (정보 노출 방지) -->
+        <meta name="robots" content="noindex, nofollow">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
