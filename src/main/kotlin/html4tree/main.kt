@@ -362,7 +362,15 @@ ${cssContent}              </style>
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
+                  val icon = if (isLinkedDirectory) {
+                      var isEmpty = false
+                      try {
+                          val stream = java.nio.file.Files.newDirectoryStream(it.toPath())
+                          try { isEmpty = !stream.iterator().hasNext() } finally { stream.close() }
+                      } catch (e: Exception) {
+                      }
+                      if (isEmpty) "&#128194;" else "&#128193;"
+                  } else { "&#128196;" }
                   l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
