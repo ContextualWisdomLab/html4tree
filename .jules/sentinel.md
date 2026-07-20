@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-20 - [html4tree] 원자적 이동(Atomic Move)을 통한 Race Condition 방지
+**Vulnerability:** 파일 저장 시 쓰기 작업이 진행 중이거나 임시 파일에서 최종 파일로 교체되는 동안 다른 프로세스가 파일을 읽으면 불완전한 내용을 읽게 될 위험(Race Condition)이 존재함.
+**Learning:** `Files.move`는 원자성을 보장하지 않을 수 있으며, 이는 `REPLACE_EXISTING` 플래그만 사용할 경우 파일 시스템에 따라 부분적으로만 작성된 파일이 노출될 수 있음을 배움.
+**Prevention:** `Files.move`에 `StandardCopyOption.ATOMIC_MOVE` 옵션을 우선적으로 적용하고, 파일 시스템에서 지원하지 않는 경우 예외(`AtomicMoveNotSupportedException`)를 잡아 `REPLACE_EXISTING`으로 폴백(fallback)하여 데이터를 보다 안전하게 저장함.
