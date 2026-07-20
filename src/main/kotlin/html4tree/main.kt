@@ -229,12 +229,24 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     return files_to_exclude
 }
 
-fun write_index_file(curr_dir: File, content: String) {
+// 보안 향상: 임시 파일에서 최종 파일로 교체할 때 원자적 이동(Atomic Move)을 우선 사용하여,
+// 다른 프로세스가 불완전한 상태의 index.html을 읽는 것(Race Condition)을 방지합니다. (Atomicity)
+fun write_index_file(
+    curr_dir: File,
+    content: String,
+    moveOp: (java.nio.file.Path, java.nio.file.Path) -> Unit = { src, dst ->
+        Files.move(src, dst, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+    }
+) {
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        try {
+            moveOp(tempPath, indexPath)
+        } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+            Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        }
     } finally {
         Files.deleteIfExists(tempPath)
     }
