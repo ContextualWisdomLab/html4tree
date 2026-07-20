@@ -93,7 +93,7 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
-        assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
+        assertTrue(htmlContent.contains("<div class=\"empty-dir\"><span class=\"icon\" aria-hidden=\"true\">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div>"))
         assertTrue(htmlContent.contains("role=\"list\""))
     }
 
