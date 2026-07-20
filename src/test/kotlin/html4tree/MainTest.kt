@@ -506,6 +506,24 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirEmptyDirNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        try {
+            process_dir(fakeRoot)
+            val indexFile = File(fakeRoot, "index.html")
+            assertTrue(indexFile.exists())
+            val content = indexFile.readText()
+            assertTrue(content.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"))
+            assertTrue(content.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"))
+        } finally {
+            fakeRoot.deleteRecursively()
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFileWithIndexHtml() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index.html")
