@@ -677,6 +677,15 @@ class MainTest {
     }
 
     @Test
+    fun testTopLevelCssPropertiesCoverage() {
+        // These assertions ensure the implicit getters for top-level properties
+        // (cssContent, styleHash, css) are covered by JaCoCo.
+        assertTrue(cssContent.contains("body {"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+    }
+
+    @Test
     fun testToctouSymlinkSwapRejection() {
         val subdir = File(tempDir, "toctou_test_dir")
         subdir.mkdir()
