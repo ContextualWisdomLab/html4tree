@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-05-24 - [Information Exposure 방지를 위한 검색 엔진 인덱싱 제한]
+**Vulnerability:** 공개적으로 호스팅될 가능성이 있는 디렉토리 인덱싱 HTML 페이지에 검색 엔진 크롤러를 제어하는 보안 헤더/메타 태그가 누락되어 민감한 파일 경로 및 정보가 무분별하게 노출될 위험이 존재함.
+**Learning:** 웹 서버 설정에 의존하지 않고 생성되는 정적 HTML 자체에 기본적인 방어 기제(defense in depth)를 마련해야 함.
+**Prevention:** 모든 생성되는 HTML `<head>`에 `<meta name="robots" content="noindex, nofollow">`를 추가하여, 우발적인 퍼블릭 접근 시에도 검색 엔진 인덱싱을 통한 Information Exposure를 방지함.
