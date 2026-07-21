@@ -310,12 +310,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
               }
               """
 
-    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+    val exactStyleContent = cssContent.trimIndent()
+    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(exactStyleContent.toByteArray(Charsets.UTF_8)))
 
-    val css = """
-              <style>
-${cssContent}              </style>
-              """
+    val css = """<style>${exactStyleContent}</style>"""
 
     val displayDirName = curr_dir.getName().ifEmpty { curr_dir.absolutePath }
     val index_top = """<!doctype html>
