@@ -83,3 +83,15 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+## 2026-07-21 - Fix CSP hash mismatch in style tag
+**Vulnerability:** The Content-Security-Policy style-src hash didn't match the actual inline style content because the Kotlin template added newlines and spaces around the injected CSS content inside the <style> tag.
+**Learning:** The browser hashes the exact text inside the <style> and </style> tags. When using string interpolation in Kotlin multiline strings, any surrounding whitespace inside the tags alters the final output, rendering the CSP hash invalid and blocking the style.
+**Prevention:** When injecting content into a <style> or <script> tag for CSP, ensure the exact string passed to the hashing function matches the innerHTML of the tag perfectly, without any implicit padding or whitespace.
+## 2026-07-21 - 심볼릭 링크를 통한 부모/조상 디렉토리 경로 탐색 취약점 완화
+**Vulnerability:** 디렉토리 크롤러가 현재 경로의 심볼릭 링크만 확인()하기 때문에, 중간 경로(조상 디렉토리)에 포함된 심볼릭 링크를 거쳐서 허용되지 않은 외부 디렉토리로 순회하고 인덱스를 생성할 수 있는 취약점()과 임시 파일 스왑 TOCTOU()이 발견되었습니다.
+**Learning:** 파일 경로의 마지막 컴포넌트만 심볼릭 링크를 검사하는 것은 불충분합니다. 절대 경로 상의 조상 디렉토리 중 하나라도 심볼릭 링크라면 샌드박스를 벗어날 위험이 있으므로, 해당 경로에 파일을 쓰는 것을 차단해야 하며, 임시 파일 생성 및 쓰기에도  옵션을 적용해 스왑 공격을 방어해야 합니다.
+**Prevention:** 경로 정규화 후 루프를 통해 조상 디렉토리 중 심볼릭 링크가 있는지 확인하는 로직을 추가하고, 파일 시스템 IO 오퍼레이션()에도 링크 추적을 제한하십시오.
+## 2026-07-21 - 심볼릭 링크를 통한 조상 디렉토리 탐색 취약점(vuln-0002) 완화
+**Vulnerability:** 디렉토리 크롤러가 마지막 경로의 심볼릭 링크만 확인하기 때문에, 조상 디렉토리에 위치한 심볼릭 링크를 거쳐서 허용되지 않은 외부 디렉토리로 순회하고 인덱스를 생성할 수 있는 취약점이 발견되었습니다.
+**Learning:** 파일 경로의 마지막 컴포넌트만 심볼릭 링크를 검사하는 것은 불충분합니다. 절대 경로 상의 조상 디렉토리 중 하나라도 심볼릭 링크라면 샌드박스를 벗어날 위험이 있으므로 탐색을 차단해야 하며, 임시 파일 쓰기에도 NOFOLLOW_LINKS 옵션을 적용해 스왑 레이스 컨디션을 방어해야 합니다.
+**Prevention:** 경로 정규화 후 루프를 통해 조상 디렉토리 중 심볼릭 링크가 있는지 확인하는 로직을 추가하고, 파일 시스템 IO 오퍼레이션(Files.write 등)에도 링크 추적을 제한하는 옵션을 추가하십시오.

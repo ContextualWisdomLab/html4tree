@@ -532,6 +532,41 @@ class MainTest {
     }
 
     @Test
+    fun testSymlinkedAncestorRejection() {
+        val subdir = File(tempDir, "real_dir")
+        subdir.mkdir()
+        val symlinkDir = File(tempDir, "symlink_dir")
+        try {
+            Files.createSymbolicLink(symlinkDir.toPath(), subdir.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+        val targetInSymlink = File(symlinkDir, "target_dir")
+        targetInSymlink.mkdir()
+
+        process_dir(targetInSymlink)
+        val indexFile = File(targetInSymlink, "index.html")
+        assertFalse(indexFile.exists(), "Should not write index file when ancestor is a symlink")
+    }
+
+    @Test
+    fun testCspHashMatch() {
+        val tempDir2 = File(tempDir, "cspDir")
+        tempDir2.mkdir()
+        process_dir(tempDir2)
+        val indexFile = File(tempDir2, "index.html")
+        val content = indexFile.readText()
+        val hashRegex = Regex("style-src '([^']+)'")
+        val match = hashRegex.find(content)
+        val actualHash = match?.groupValues?.get(1)
+        val styleContentRegex = Regex("<style>([\\s\\S]*?)</style>")
+        val styleMatch = styleContentRegex.find(content)
+        val styleContent = styleMatch?.groupValues?.get(1)
+        val expectedHash = "sha256-" + java.util.Base64.getEncoder().encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(styleContent!!.toByteArray(Charsets.UTF_8)))
+        assertEquals(expectedHash, actualHash)
+    }
+
+    @Test
     fun testUrlEncodePathReservedHexCoverage() {
         // Need characters that produce hex digit > 9 to hit the `else` branch of `if (hex1 < 10)` and `if (hex2 < 10)`.
         // The byte for '가' (EA B0 80) is useful here.

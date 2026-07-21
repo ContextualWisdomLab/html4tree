@@ -37,6 +37,17 @@ internal fun read_file_identity(file: File): FileIdentity {
     }
 }
 
+fun has_symlink_ancestor(file: File): Boolean {
+    var path = file.toPath().toAbsolutePath().normalize()
+    while (path != null) {
+        if (Files.isSymbolicLink(path)) {
+            return true
+        }
+        path = path.parent
+    }
+    return false
+}
+
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
     require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
@@ -94,7 +105,7 @@ internal fun crawl_directories(
             dirFiles?.forEach {
                 // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls (isDirectory/isSymbolicLink)
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
+                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it) && !has_symlink_ancestor(it)) {
                     val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
                     ll.push(childEntry)
                 }
@@ -230,10 +241,13 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 }
 
 fun write_index_file(curr_dir: File, content: String) {
+    if (has_symlink_ancestor(curr_dir)) {
+        return
+    }
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
-        Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
+        Files.write(tempPath, content.toByteArray(Charsets.UTF_8), LinkOption.NOFOLLOW_LINKS)
         Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
     } finally {
         Files.deleteIfExists(tempPath)
@@ -313,8 +327,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
 
     val css = """
-              <style>
-${cssContent}              </style>
+              <style>${cssContent}</style>
               """
 
     val index_top = """<!doctype html>
