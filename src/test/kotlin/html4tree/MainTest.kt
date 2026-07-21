@@ -530,8 +530,8 @@ class MainTest {
         val indexFile = File(fakeRoot, "index.html")
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
-        assertTrue(htmlContent.contains("<title>${fakeRoot.absolutePath}</title>"))
-        assertTrue(htmlContent.contains("<h1>${fakeRoot.absolutePath}</h1>"))
+        assertTrue(htmlContent.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"))
     }
 
     @Test(expected = IllegalArgumentException::class)
