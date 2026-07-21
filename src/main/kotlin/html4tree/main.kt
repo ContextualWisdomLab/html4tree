@@ -24,6 +24,90 @@ class Html4tree : CliktCommand() {
 
 fun main(args: Array<String>)  = Html4tree().main(args)
 
+// ⚡ Bolt Performance Optimization: Hoisted invariant static strings and expensive computations (SHA-256)
+// out of frequently called functions to prevent redundant allocations and processing overhead on every directory traversal.
+private val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+
+private val cssContent = """
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+                padding: 1rem;
+                color: #1f2328;
+              }
+              main {
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              ul {
+                list-style-type: none;
+                padding-left: 0;
+              }
+              a.dir-link {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                width: 100%;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+              }
+              .icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                text-align: center;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0969da;
+                border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0969da;
+                outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background-color: #0d1117;
+                  color: #c9d1d9;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
+              }
+              .empty-dir {
+                padding: 0.5rem;
+                opacity: 0.7;
+                font-style: italic;
+              }
+              """
+
+private val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+
+private val css = """
+              <style>
+${cssContent}              </style>
+              """
+
+private val index_bottom="""
+         </ul>
+         </nav>
+       </main>
+    </body>
+</html>
+"""
 
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
 
@@ -216,7 +300,6 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        files_to_exclude.add("index.html")
 
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
@@ -243,79 +326,6 @@ fun write_index_file(curr_dir: File, content: String) {
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-
-    val cssContent = """
-              body {
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                line-height: 1.5;
-                padding: 1rem;
-                color: #1f2328;
-              }
-              main {
-                max-width: 800px;
-                margin: 0 auto;
-              }
-              ul {
-                list-style-type: none;
-                padding-left: 0;
-              }
-              a.dir-link {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                width: 100%;
-                overflow-wrap: anywhere;
-                box-sizing: border-box;
-              }
-              .icon {
-                flex-shrink: 0;
-                width: 1.25rem;
-                text-align: center;
-              }
-              a {
-                padding: 0.5rem;
-                text-decoration: none;
-                color: #0969da;
-                border-radius: 4px;
-                transition: background-color 0.2s ease, outline-color 0.2s ease;
-              }
-              a:hover, a:focus-visible {
-                background-color: #f6f8fa;
-                text-decoration: underline;
-                outline: 2px solid #0969da;
-                outline-offset: -2px;
-              }
-              @media (prefers-reduced-motion: reduce) {
-                a {
-                  transition: none;
-                }
-              }
-              @media (prefers-color-scheme: dark) {
-                body {
-                  background-color: #0d1117;
-                  color: #c9d1d9;
-                }
-                a {
-                  color: #58a6ff;
-                }
-                a:hover, a:focus-visible {
-                  background-color: #161b22;
-                  outline-color: #58a6ff;
-                }
-              }
-              .empty-dir {
-                padding: 0.5rem;
-                opacity: 0.7;
-                font-style: italic;
-              }
-              """
-
-    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
-
-    val css = """
-              <style>
-${cssContent}              </style>
-              """
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -376,14 +386,6 @@ ${cssContent}              </style>
 
         return l.toString();
      } 
-
-   val index_bottom="""
-         </ul>
-         </nav>
-       </main>
-    </body>
-</html>
-"""
 
    try {
        write_index_file(curr_dir, index_top+index_middle()+index_bottom)
