@@ -345,6 +345,26 @@ class MainTest {
         assertTrue(htmlContent.contains("margin: 0 auto;"))
     }
 
+
+    @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        val testContent = "atomic move test"
+        val fallbackTriggered = java.util.concurrent.atomic.AtomicBoolean(false)
+        val mockMove: (java.nio.file.Path, java.nio.file.Path, Array<java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                fallbackTriggered.set(true)
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked exception")
+            } else {
+                java.nio.file.Files.move(src, dest, *options)
+            }
+        }
+        write_index_file(tempDir, testContent, mockMove)
+        assertTrue(fallbackTriggered.get(), "AtomicMoveNotSupportedException should be caught and fallback triggered")
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals(testContent, indexFile.readText())
+    }
+
     @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the

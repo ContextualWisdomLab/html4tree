@@ -63,23 +63,29 @@
 **Learning:** 큐에 넣기 전(`listFiles`)에 한 번 검사했다고 해서, 큐에서 빼내어 처리(`process_dir`)하는 시점에도 파일 시스템 상태가 동일할 것이라고 가정(Implicit Trust)하면 안 됩니다.
 **Prevention:** 큐에 넣는 시점(`Time-of-Check`)에 파일의 고유 식별자(`BasicFileAttributes.fileKey()`)를 캡처해두고, 큐에서 꺼내어 실제로 처리하는 시점(`Time-of-Use`)에 현재 파일의 `fileKey()`를 다시 읽어 두 값이 일치하는지 재검증(Re-verify)해야 합니다.
 
-## 2024-05-25 - Information Exposure via Default Inclusion and Referrer
-**Vulnerability:** Common sensitive files (like `.aws`, `.kube`, `.npmrc`) could be accidentally indexed if present in the tree. Furthermore, clicking on external links (if any were added) could leak the directory structure via the HTTP Referer header.
-**Learning:** Default exclude lists must encompass modern toolchains and cloud credentials, as users often run directory indexers in their home or project root directories. HTML templates need explicit policies to prevent accidental data leakage via headers.
-**Prevention:** Maintain an extensive default deny-list for known sensitive files and enforce `no-referrer` globally on generated index pages.
+## 2024-05-25 - 기본 포함 및 리퍼러를 통한 정보 노출
+**Vulnerability:** `.aws`, `.kube`, `.npmrc` 같은 일반적인 민감한 파일들이 트리에 존재할 경우 실수로 색인화될 수 있습니다. 또한, 추가된 외부 링크를 클릭할 때 HTTP Referer 헤더를 통해 디렉토리 구조가 유출될 수 있습니다.
+**Learning:** 사용자들은 종종 홈 디렉토리나 프로젝트 루트에서 디렉토리 색인 도구를 실행하기 때문에, 기본 제외 목록은 최신 도구 체인과 클라우드 자격 증명을 포함해야 합니다. HTML 템플릿은 헤더를 통한 우발적인 데이터 유출을 방지하기 위해 명시적인 정책이 필요합니다.
+**Prevention:** 알려진 민감한 파일들에 대한 광범위한 기본 거부 목록을 유지하고, 생성된 인덱스 페이지에서 전역적으로 `no-referrer`를 강제하십시오.
 
-## 2024-07-07 - [Sensitive Data Exposure in Directory Indexing]
-**Vulnerability:** The application was traversing and listing hidden files and directories (those starting with `.`), potentially exposing sensitive information like `.git` histories or `.env` configuration files in the generated HTML index.
-**Learning:** This existed because the traversal and filtering logic did not explicitly account for standard conventions regarding hidden files, defaulting to listing everything not explicitly ignored.
-**Prevention:** Always implement explicit filters for hidden files and directories (e.g., `!file.name.startsWith(".")`) in applications that generate static files or expose directory structures to the public.
+## 2024-07-07 - [디렉토리 색인 시 민감한 데이터 노출]
+**Vulnerability:** 애플리케이션이 숨김 파일과 디렉토리(`. `로 시작하는 파일)를 순회하고 나열하여, 생성된 HTML 인덱스에서 `.git` 히스토리나 `.env` 설정 파일과 같은 민감한 정보가 노출될 위험이 있었습니다.
+**Learning:** 이는 순회 및 필터링 로직이 숨김 파일에 대한 표준 규칙을 명시적으로 고려하지 않고, 명시적으로 무시되지 않은 모든 항목을 기본적으로 나열했기 때문에 발생했습니다.
+**Prevention:** 정적 파일을 생성하거나 디렉토리 구조를 대중에게 노출하는 애플리케이션에서는 숨김 파일과 디렉토리에 대한 명시적인 필터(예: `!file.name.startsWith(".")`)를 항상 구현하십시오.
 
 
-## 2024-05-18 - Prevent Sensitive Information Disclosure
-**Vulnerability:** The application lists all files in a directory, including hidden files (those starting with `.`), which could inadvertently expose sensitive information like `.env`, `.git`, or `.ssh` directories.
-**Learning:** Default directory listing implementations without hidden file filtering can lead to information disclosure vulnerabilities when serving directories containing configuration or sensitive files.
-**Prevention:** Automatically exclude hidden files (files starting with `.`) from the generated directory listing by default.
+## 2024-05-18 - 민감한 정보 유출 방지
+**Vulnerability:** 애플리케이션이 숨김 파일(`. `로 시작하는 파일)을 포함하여 디렉토리 내의 모든 파일을 나열하므로, `.env`, `.git` 또는 `.ssh` 디렉토리와 같은 민감한 정보가 실수로 노출될 수 있습니다.
+**Learning:** 숨김 파일 필터링이 없는 기본 디렉토리 나열 구현은 설정 또는 민감한 파일이 포함된 디렉토리를 제공할 때 정보 노출 취약점으로 이어질 수 있습니다.
+**Prevention:** 생성된 디렉토리 목록에서 기본적으로 숨김 파일(`. `로 시작하는 파일)을 자동으로 제외하십시오.
 
 ## 2024-07-13 - [MEDIUM] 정적 리소스용 CSP 생성 방식(Nonce 대신 해시) 관련 보안 강화
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+
+## 2024-07-20 - [html4tree] index.html 교체 중 Race Condition 취약점 수정 (Atomic Move)
+**Vulnerability:** 파일 덮어쓰기 과정에서의 Race Condition (TOCTOU). 기존의 `Files.move`는 `StandardCopyOption.REPLACE_EXISTING`만 사용하여, 파일 교체 작업이 원자적(Atomic)이지 않을 경우 부분적으로 작성되거나 손상된 파일이 노출될 수 있는 동시성 이슈가 있었습니다.
+**Learning:** 시스템의 정적 HTML 파일을 자동 생성 및 덮어쓰기 하는 유틸리티는, 파일 시스템 I/O 작업 중 발생할 수 있는 Race Condition에 주의해야 합니다. 특히 여러 프로세스가 동시에 동일한 디렉토리에 접근하거나 파일을 읽을 때 원자적(Atomic) 작업이 보장되지 않으면 보안성 및 안정성 문제가 발생합니다.
+**Prevention:** 파일을 교체할 때 `StandardCopyOption.ATOMIC_MOVE`를 시도하여 교체 작업이 원자적으로 수행되도록 합니다. 만약 파일 시스템이나 운영체제가 이를 지원하지 않아 `AtomicMoveNotSupportedException`이 발생할 경우, 기존의 `REPLACE_EXISTING` 방식으로 안전하게 폴백(Fallback)하도록 설계하십시오.
