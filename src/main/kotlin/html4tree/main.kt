@@ -313,8 +313,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
 
     val css = """
-              <style>
-${cssContent}              </style>
+              <style>${cssContent}</style>
               """
 
     val index_top = """<!doctype html>
