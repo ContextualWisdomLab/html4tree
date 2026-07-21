@@ -346,6 +346,13 @@ class MainTest {
     }
 
     @Test
+    fun testTopLevelPropertiesCoverage() {
+        assertTrue(cssContent.contains("font-family"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+    }
+
+    @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the
         // exception path through write_index_file's finally block.
