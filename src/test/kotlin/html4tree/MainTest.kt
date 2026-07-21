@@ -532,6 +532,24 @@ class MainTest {
     }
 
     @Test
+    fun testSymlinkedAncestorRejection() {
+        val subdir = File(tempDir, "real_dir")
+        subdir.mkdir()
+        val symlinkDir = File(tempDir, "symlink_dir")
+        try {
+            Files.createSymbolicLink(symlinkDir.toPath(), subdir.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+        val targetInSymlink = File(symlinkDir, "target_dir")
+        targetInSymlink.mkdir()
+
+        process_dir(targetInSymlink)
+        val indexFile = File(targetInSymlink, "index.html")
+        assertFalse(indexFile.exists(), "Should not write index file when ancestor is a symlink")
+    }
+
+    @Test
     fun testCspHashMatch() {
         val tempDir2 = File(tempDir, "cspDir")
         tempDir2.mkdir()
