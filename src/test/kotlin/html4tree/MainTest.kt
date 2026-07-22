@@ -705,4 +705,17 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        val testFile = File(tempDir, "testWriteIndexDir")
+        testFile.mkdir()
+
+        write_index_file(testFile, "content") { source, target ->
+            throw java.nio.file.AtomicMoveNotSupportedException(source.toString(), target.toString(), "Mocked")
+        }
+        val indexFile = File(testFile, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals("content", indexFile.readText())
+    }
 }
