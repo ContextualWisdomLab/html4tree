@@ -323,6 +323,7 @@ ${cssContent}              </style>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="color-scheme" content="light dark">
+        <meta name="robots" content="noindex, nofollow">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
