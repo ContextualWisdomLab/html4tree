@@ -30,6 +30,14 @@ class MainTest {
     }
 
     @Test
+    fun testExtractedPropertiesCoverage() {
+        assertTrue(cssContent.isNotEmpty())
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+        assertTrue(index_bottom.contains("</html>"))
+    }
+
+    @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
