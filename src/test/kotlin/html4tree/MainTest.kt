@@ -322,7 +322,7 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
-        assertTrue(htmlContent.contains("&#128193;"))
+        assertTrue(htmlContent.contains("&#128194;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
         val hashMatch = Regex("""style-src '(sha256-[A-Za-z0-9+/=]+)'""").find(htmlContent)?.groupValues?.get(1)
