@@ -360,9 +360,20 @@ ${cssContent}              </style>
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
+                  var isEmptyDir = false
+                  if (isLinkedDirectory) {
+                      var stream: java.nio.file.DirectoryStream<java.nio.file.Path>? = null
+                      try {
+                          stream = Files.newDirectoryStream(it.toPath())
+                          isEmptyDir = !stream.iterator().hasNext()
+                      } catch (e: Exception) {
+                      } finally {
+                          stream?.close()
+                      }
+                  }
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
+                  val icon = if (isLinkedDirectory) { if (isEmptyDir) "&#128194;" else "&#128193;" } else { "&#128196;" }
                   l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
