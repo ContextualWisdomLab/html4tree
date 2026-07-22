@@ -34,7 +34,7 @@
 ## 2024-08-01 - URL 인코딩 빌더 지연 생성
 **학습:** URL 인코딩이 필요 없는 안전한 경로 문자열에서도 항상 `StringBuilder`를 생성하면 hot path에서 불필요한 할당이 발생합니다.
 **조치:** 예약 바이트를 처음 만났을 때만 `StringBuilder`를 만들고, 그 전까지는 원본 문자열을 그대로 반환하는 지연 생성 패턴을 사용합니다.
-## $(date +%Y-%m-%d) - Optimize OS stat calls in file listing
+## 2026-07-22 - Optimize OS stat calls in file listing
 **Learning:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
 **Action:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
@@ -43,3 +43,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2026-07-22 - 반복적인 정적 속성 및 해시 계산 추출
+**학습:** 디렉토리 트리를 순회하면서 `process_dir` 함수 내부에서 고정된 CSS 문자열을 할당하고 SHA-256 해시를 매번 다시 계산하는 것은, 처리해야 할 디렉토리가 많을 경우 불필요한 메모리 할당(O(N)) 및 CPU 연산을 유발하는 성능 병목이었습니다.
+**조치:** `cssContent`, `styleHash`, `css`, `index_bottom` 변수들을 파일 최상단(top-level) 프로퍼티로 추출하여 애플리케이션 실행당 정확히 한 번만 초기화 및 계산되도록 최적화했습니다. 또한 100% 테스트 커버리지를 유지하기 위해 `MainTest.kt`에 이들에 대한 명시적인 접근 및 검증을 추가했습니다.
