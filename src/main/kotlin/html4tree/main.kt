@@ -13,6 +13,79 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
+val cssContent = """
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+                padding: 1rem;
+                color: #1f2328;
+              }
+              main {
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              ul {
+                list-style-type: none;
+                padding-left: 0;
+              }
+              a.dir-link {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+                width: 100%;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+              }
+              .icon {
+                flex-shrink: 0;
+                width: 1.25rem;
+                text-align: center;
+              }
+              a {
+                padding: 0.5rem;
+                text-decoration: none;
+                color: #0969da;
+                border-radius: 4px;
+                transition: background-color 0.2s ease, outline-color 0.2s ease;
+              }
+              a:hover, a:focus-visible {
+                background-color: #f6f8fa;
+                text-decoration: underline;
+                outline: 2px solid #0969da;
+                outline-offset: -2px;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                a {
+                  transition: none;
+                }
+              }
+              @media (prefers-color-scheme: dark) {
+                body {
+                  background-color: #0d1117;
+                  color: #c9d1d9;
+                }
+                a {
+                  color: #58a6ff;
+                }
+                a:hover, a:focus-visible {
+                  background-color: #161b22;
+                  outline-color: #58a6ff;
+                }
+              }
+              .empty-dir {
+                padding: 0.5rem;
+                opacity: 0.7;
+                font-style: italic;
+              }
+              """
+
+val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+
+val css = """
+              <style>
+${cssContent}              </style>
+              """
+
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
     val topDir: String by argument(help="Top directory to crawl")
@@ -243,79 +316,6 @@ fun write_index_file(curr_dir: File, content: String) {
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-
-    val cssContent = """
-              body {
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                line-height: 1.5;
-                padding: 1rem;
-                color: #1f2328;
-              }
-              main {
-                max-width: 800px;
-                margin: 0 auto;
-              }
-              ul {
-                list-style-type: none;
-                padding-left: 0;
-              }
-              a.dir-link {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                width: 100%;
-                overflow-wrap: anywhere;
-                box-sizing: border-box;
-              }
-              .icon {
-                flex-shrink: 0;
-                width: 1.25rem;
-                text-align: center;
-              }
-              a {
-                padding: 0.5rem;
-                text-decoration: none;
-                color: #0969da;
-                border-radius: 4px;
-                transition: background-color 0.2s ease, outline-color 0.2s ease;
-              }
-              a:hover, a:focus-visible {
-                background-color: #f6f8fa;
-                text-decoration: underline;
-                outline: 2px solid #0969da;
-                outline-offset: -2px;
-              }
-              @media (prefers-reduced-motion: reduce) {
-                a {
-                  transition: none;
-                }
-              }
-              @media (prefers-color-scheme: dark) {
-                body {
-                  background-color: #0d1117;
-                  color: #c9d1d9;
-                }
-                a {
-                  color: #58a6ff;
-                }
-                a:hover, a:focus-visible {
-                  background-color: #161b22;
-                  outline-color: #58a6ff;
-                }
-              }
-              .empty-dir {
-                padding: 0.5rem;
-                opacity: 0.7;
-                font-style: italic;
-              }
-              """
-
-    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
-
-    val css = """
-              <style>
-${cssContent}              </style>
-              """
 
     val index_top = """<!doctype html>
 <html lang="ko">

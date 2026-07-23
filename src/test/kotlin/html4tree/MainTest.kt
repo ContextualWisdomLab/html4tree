@@ -11,6 +11,7 @@ import java.nio.file.Files
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -704,5 +705,14 @@ class MainTest {
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
+    }
+
+    @Test
+    fun testTopLevelCssProperties() {
+        assertNotNull(cssContent)
+        assertNotNull(styleHash)
+        assertNotNull(css)
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains(cssContent))
     }
 }
