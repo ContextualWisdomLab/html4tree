@@ -705,4 +705,33 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+
+    @Test
+    fun testProcessIgnoreFileThrowsExceptionOnNewDirectoryStream() {
+        val dir = File(tempDir, "errorDir")
+        dir.mkdir()
+        File(dir, ".html4ignore").writeText("*.txt")
+        try {
+            Assume.assumeTrue(dir.setReadable(false, false))
+            val excluded = process_ignore_file(dir, null)
+            assertTrue(excluded.contains("index.html"))
+        } finally {
+            dir.setReadable(true, false)
+        }
+    }
+
+    @Test
+    fun testProcessIgnoreFileUnreadableDirectory() {
+        val unreadableDir = File(tempDir, "unreadable")
+        unreadableDir.mkdir()
+        try {
+            Assume.assumeTrue(unreadableDir.setReadable(false, false))
+            val excluded = process_ignore_file(unreadableDir, null)
+            assertTrue(excluded.contains("index.html"))
+        } finally {
+            unreadableDir.setReadable(true, false)
+        }
+    }
+
 }
