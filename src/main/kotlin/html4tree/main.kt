@@ -307,6 +307,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                 padding: 0.5rem;
                 opacity: 0.7;
                 font-style: italic;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
               }
               """
 
@@ -360,9 +363,21 @@ ${cssContent}              </style>
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
+                  var isEmptyDir = false
+                  if (isLinkedDirectory) {
+                      try {
+                          val stream = Files.newDirectoryStream(it.toPath())
+                          try {
+                              isEmptyDir = !stream.iterator().hasNext()
+                          } finally {
+                              stream.close()
+                          }
+                      } catch (e: Exception) {
+                      }
+                  }
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
+                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { if (isEmptyDir) "빈 디렉토리" else "디렉토리" } else { "파일" }}".escapeHtml()
+                  val icon = if (isLinkedDirectory) { if (isEmptyDir) "&#128194;" else "&#128193;" } else { "&#128196;" }
                   l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
@@ -370,7 +385,7 @@ ${cssContent}              </style>
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div class="empty-dir"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
 
