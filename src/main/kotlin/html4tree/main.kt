@@ -199,15 +199,38 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
-           val current = it
-           val pathCurrent = java.nio.file.Paths.get(current)
-           for (matcher in ignored_matchers) {
-              if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
-                 break
-              }
+       if (dirFilesNames != null) {
+           dirFilesNames.forEach {
+               val current = it
+               val pathCurrent = java.nio.file.Paths.get(current)
+               for (matcher in ignored_matchers) {
+                  if (matcher.matches(pathCurrent)) {
+                     files_to_exclude.add(current)
+                     break
+                  }
+               }
+           }
+       } else {
+           try {
+               val stream = java.nio.file.Files.newDirectoryStream(curr_dir.toPath())
+               try {
+                   val iterator = stream.iterator()
+                   while (iterator.hasNext()) {
+                       val path = iterator.next()
+                       val current = path.fileName.toString()
+                       val pathCurrent = java.nio.file.Paths.get(current)
+                       for (matcher in ignored_matchers) {
+                          if (matcher.matches(pathCurrent)) {
+                             files_to_exclude.add(current)
+                             break
+                          }
+                       }
+                   }
+               } finally {
+                   stream.close()
+               }
+           } catch (e: Exception) {
+               // Ignore access denied exceptions
            }
        }
     }
@@ -220,9 +243,29 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
-    (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.startsWith(".")) {
-            files_to_exclude.add(it)
+    if (dirFilesNames != null) {
+        dirFilesNames.forEach {
+            if (it.startsWith(".")) {
+                files_to_exclude.add(it)
+            }
+        }
+    } else {
+        try {
+            val stream = java.nio.file.Files.newDirectoryStream(curr_dir.toPath())
+            try {
+                val iterator = stream.iterator()
+                while (iterator.hasNext()) {
+                    val path = iterator.next()
+                    val current = path.fileName.toString()
+                    if (current.startsWith(".")) {
+                        files_to_exclude.add(current)
+                    }
+                }
+            } finally {
+                stream.close()
+            }
+        } catch (e: Exception) {
+            // Ignore access denied exceptions
         }
     }
 
