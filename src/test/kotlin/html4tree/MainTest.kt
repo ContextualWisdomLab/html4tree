@@ -94,6 +94,7 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
+        assertTrue(htmlContent.contains("&#128194;"))
         assertTrue(htmlContent.contains("role=\"list\""))
     }
 
@@ -298,6 +299,9 @@ class MainTest {
     fun testProcessDir() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
+        File(subdir, "child.txt").createNewFile()
+        val emptydir = File(tempDir, "emptydir")
+        emptydir.mkdir()
         File(tempDir, "file1.txt").createNewFile()
         File(tempDir, "test.ignore").createNewFile()
         File(tempDir, ".html4ignore").writeText("*.ignore")
@@ -320,9 +324,13 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"file1.txt 파일\""))
         assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
+        assertTrue(htmlContent.contains("aria-label=\"emptydir 빈 디렉토리\""))
+        assertTrue(htmlContent.contains("title=\"emptydir 빈 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
+        assertTrue(htmlContent.contains("emptydir/"))
         assertTrue(htmlContent.contains("&#128193;"))
+        assertTrue(htmlContent.contains("&#128194;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
         val hashMatch = Regex("""style-src '(sha256-[A-Za-z0-9+/=]+)'""").find(htmlContent)?.groupValues?.get(1)
