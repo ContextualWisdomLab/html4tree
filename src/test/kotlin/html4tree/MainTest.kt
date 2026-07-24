@@ -346,6 +346,21 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        var fallbackCalled = false
+        val moveFileMock: (java.nio.file.Path, java.nio.file.Path, Array<java.nio.file.StandardCopyOption>) -> java.nio.file.Path = { source, target, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                throw java.nio.file.AtomicMoveNotSupportedException(source.toString(), target.toString(), "Mock unsupported")
+            }
+            fallbackCalled = true
+            java.nio.file.Files.move(source, target, *options)
+        }
+        write_index_file(tempDir, "fallback content", moveFileMock)
+        assertTrue(fallbackCalled, "Fallback to REPLACE_EXISTING should be called")
+        assertTrue(File(tempDir, "index.html").readText().contains("fallback content"))
+    }
+
+    @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the
         // exception path through write_index_file's finally block.
