@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-24 - [html4tree] CSP Hash Calculation Mismatch Vulnerability
+**Vulnerability:** CSP(Content-Security-Policy) 해시 계산 시 `trimIndent()` 누락에 의한 해시 불일치.
+**Learning:** `cssContent` 문자열 리터럴에 존재하는 불필요한 들여쓰기(Indent)가 그대로 해시 계산(`MessageDigest`)에 반영되지만, 실제 브라우저가 파싱할 때나 `<style>` 태그에 삽입될 때는 주변 공백, 개행 문자가 예상과 달라 CSP 검증이 실패하는 문제가 발생했습니다. (보안 정책 적용 실패 위험)
+**Prevention:** 정적으로 생성된 컨텐츠의 해시를 CSP로 사용할 경우, `<style>` 내 삽입될 정확한 inner text와 해시 계산 문자열이 완벽하게 일치하도록 `.trimIndent()`를 사용하고 불필요한 공백과 줄바꿈을 제거하여 무결성 검증 기능을 보장해야 합니다.
