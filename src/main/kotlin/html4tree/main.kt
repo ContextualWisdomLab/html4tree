@@ -240,11 +240,8 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
-    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-
-    val cssContent = """
+private object StaticContent {
+    const val cssContent = """
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
@@ -310,12 +307,27 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
               }
               """
 
+    @JvmField
     val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
 
+    @JvmField
     val css = """
               <style>
 ${cssContent}              </style>
               """
+
+    const val index_bottom="""
+         </ul>
+         </nav>
+       </main>
+    </body>
+</html>
+"""
+}
+
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -324,11 +336,11 @@ ${cssContent}              </style>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="color-scheme" content="light dark">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${StaticContent.styleHash}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
-        ${css}
+        ${StaticContent.css}
      </head>
      <body>
        <main>
@@ -377,16 +389,8 @@ ${cssContent}              </style>
         return l.toString();
      } 
 
-   val index_bottom="""
-         </ul>
-         </nav>
-       </main>
-    </body>
-</html>
-"""
-
    try {
-       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+       write_index_file(curr_dir, index_top+index_middle()+StaticContent.index_bottom)
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
