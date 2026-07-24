@@ -240,7 +240,7 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null, newDirectoryStream: (java.nio.file.Path) -> java.nio.file.DirectoryStream<java.nio.file.Path> = { Files.newDirectoryStream(it) }){
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
@@ -360,9 +360,21 @@ ${cssContent}              </style>
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
+                  var isEmptyDir = false
+                  if (isLinkedDirectory) {
+                      try {
+                          val stream = newDirectoryStream(it.toPath())
+                          try {
+                              isEmptyDir = !stream.iterator().hasNext()
+                          } finally {
+                              stream.close()
+                          }
+                      } catch (e: Exception) {
+                      }
+                  }
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
+                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { if (isEmptyDir) "빈 디렉토리" else "디렉토리" } else { "파일" }}".escapeHtml()
+                  val icon = if (isLinkedDirectory) { if (isEmptyDir) "&#128194;" else "&#128193;" } else { "&#128196;" }
                   l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
