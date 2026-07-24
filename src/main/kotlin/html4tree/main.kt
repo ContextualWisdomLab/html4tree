@@ -229,12 +229,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     return files_to_exclude
 }
 
-fun write_index_file(curr_dir: File, content: String) {
+fun write_index_file(
+    curr_dir: File,
+    content: String,
+    moveFile: (java.nio.file.Path, java.nio.file.Path, Array<StandardCopyOption>) -> java.nio.file.Path = { source, target, options -> Files.move(source, target, *options) }
+) {
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        try {
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE))
+        } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+        }
     } finally {
         Files.deleteIfExists(tempPath)
     }
