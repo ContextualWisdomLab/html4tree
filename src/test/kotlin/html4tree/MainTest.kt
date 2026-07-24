@@ -87,6 +87,18 @@ class MainTest {
     }
 
     @Test
+    fun testEmptyDirectoryIcon() {
+        val emptyDir = File(tempDir, "empty_subdir")
+        emptyDir.mkdir()
+        go(tempDir.absolutePath, 0)
+        val indexFile = File(tempDir, "index.html")
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("&#128194;"))
+        assertTrue(htmlContent.contains("aria-label=\"empty_subdir 빈 디렉토리\""))
+        assertTrue(htmlContent.contains("title=\"empty_subdir 빈 디렉토리\""))
+    }
+
+    @Test
     fun testGoEmptyDir() {
         go(tempDir.absolutePath, -1)
         val indexFile = File(tempDir, "index.html")
@@ -298,6 +310,7 @@ class MainTest {
     fun testProcessDir() {
         val subdir = File(tempDir, "subdir")
         subdir.mkdir()
+        File(subdir, "some_file.txt").createNewFile()
         File(tempDir, "file1.txt").createNewFile()
         File(tempDir, "test.ignore").createNewFile()
         File(tempDir, ".html4ignore").writeText("*.ignore")

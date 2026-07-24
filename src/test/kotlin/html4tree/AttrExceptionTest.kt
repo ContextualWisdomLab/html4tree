@@ -21,4 +21,20 @@ class AttrExceptionTest {
             tempDir.deleteRecursively()
         }
     }
+
+    @Test
+    fun testExceptionInNewDirectoryStream() {
+        val tempDir = Files.createTempDirectory("stream_test").toFile()
+        try {
+            val subDir = File(tempDir, "subdir")
+            subDir.mkdir()
+            process_dir(tempDir, setOf(), arrayOf(subDir)) { _ ->
+                throw java.io.IOException("Mock exception")
+            }
+            val indexHtml = File(tempDir, "index.html")
+            assertTrue(indexHtml.exists())
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
 }
