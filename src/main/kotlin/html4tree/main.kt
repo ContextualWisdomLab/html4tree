@@ -5,6 +5,8 @@ import java.security.MessageDigest
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.CopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
@@ -229,12 +231,22 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     return files_to_exclude
 }
 
-fun write_index_file(curr_dir: File, content: String) {
+fun write_index_file(
+    curr_dir: File,
+    content: String,
+    moveFile: (java.nio.file.Path, java.nio.file.Path, Array<out CopyOption>) -> java.nio.file.Path = { src, dest, options -> Files.move(src, dest, *options) }
+) {
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        // 보안 향상: 파일 교체 시 원자적 이동(ATOMIC_MOVE)을 시도하여
+        // 불완전한 파일이 읽히거나 교체 과정에서 발생할 수 있는 경쟁 조건(Race Condition)을 방지합니다.
+        try {
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE))
+        } catch (e: AtomicMoveNotSupportedException) {
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+        }
     } finally {
         Files.deleteIfExists(tempPath)
     }
