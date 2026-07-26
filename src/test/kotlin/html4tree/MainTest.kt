@@ -506,6 +506,18 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirWithEmptyNameRootFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName(): String = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexContent = File(fakeRoot, "index.html").readText()
+        assertTrue(indexContent.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"), "Should contain fallback title")
+        assertTrue(indexContent.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"), "Should contain fallback h1")
+    }
+
+    @Test
     fun testProcessIgnoreFileWithIndexHtml() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("index.html")
