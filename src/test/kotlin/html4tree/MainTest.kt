@@ -346,6 +346,60 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        var atomicMoveAttempted = false
+        var fallbackMoveAttempted = false
+
+        write_index_file(
+            curr_dir = tempDir,
+            content = "content",
+            moveAtomic = { src, dest ->
+                atomicMoveAttempted = true
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked")
+            },
+            moveFallback = { src, dest ->
+                fallbackMoveAttempted = true
+                Files.move(src, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        )
+
+        assertTrue(atomicMoveAttempted)
+        assertTrue(fallbackMoveAttempted)
+        assertTrue(File(tempDir, "index.html").exists())
+    }
+
+    @Test
+    fun testWriteIndexFileDefaultLambdas() {
+        val testDir = File(tempDir, "testWriteIndexFileDefault")
+        testDir.mkdir()
+        val expectedContent = "default-lambda-content"
+        write_index_file(testDir, expectedContent)
+        val indexFile = File(testDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals(expectedContent, indexFile.readText())
+    }
+
+    @Test
+    fun testWriteIndexFileDefaultFallbackLambda() {
+        var atomicMoveAttempted = false
+        val testDir = File(tempDir, "testWriteIndexFileDefaultFallback")
+        testDir.mkdir()
+
+        write_index_file(
+            curr_dir = testDir,
+            content = "fallback-content",
+            moveAtomic = { src, dest ->
+                atomicMoveAttempted = true
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked")
+            }
+        )
+        assertTrue(atomicMoveAttempted)
+        val indexFile = File(testDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals("fallback-content", indexFile.readText())
+    }
+
+    @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the
         // exception path through write_index_file's finally block.
