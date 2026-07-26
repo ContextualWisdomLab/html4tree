@@ -19,4 +19,11 @@ class CoverageTest {
             readOnlyDir.setWritable(true, false)
         }
     }
+
+    @Test
+    fun testTopLevelProperties() {
+        assertTrue(cssContent.contains("body"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+    }
 }
