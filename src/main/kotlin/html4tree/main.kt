@@ -192,7 +192,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                if (pattern.isNotEmpty() && pattern.length <= 100) {
                    try {
                        ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: java.util.regex.PatternSyntaxException) {
+                   } catch (_: IllegalArgumentException) {
                    }
                }
            }
