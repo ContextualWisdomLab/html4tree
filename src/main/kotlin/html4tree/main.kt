@@ -240,11 +240,9 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
-    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-
-    val cssContent = """
+// ⚡ Bolt Performance Optimization: 정적 CSS 및 비용이 큰 SHA-256 해싱 계산을 최상위(top-level)
+// 프로퍼티로 이동하여 매 디렉토리 순회마다 재계산하지 않고 애플리케이션 실행 시 단 한 번만 계산하도록 최적화합니다.
+val cssContent = """
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
@@ -310,12 +308,16 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
               }
               """
 
-    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
 
-    val css = """
+val css = """
               <style>
 ${cssContent}              </style>
               """
+
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
     val index_top = """<!doctype html>
 <html lang="ko">
