@@ -520,6 +520,25 @@ class MainTest {
         process_dir(tempDir)
     }
 
+    @Test
+    fun testProcessDirEmptyNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+
+        process_dir(fakeRoot)
+
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists(), "index.html should be created")
+
+        val content = indexFile.readText()
+        val expectedFallback = fakeRoot.absolutePath.escapeHtml()
+
+        assertTrue(content.contains("<title>$expectedFallback</title>"), "Title should use absolutePath as fallback")
+        assertTrue(content.contains("<h1>$expectedFallback</h1>"), "H1 should use absolutePath as fallback")
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun testGoBlankDir() {
         go("   ", -1)
