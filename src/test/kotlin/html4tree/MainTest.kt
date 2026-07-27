@@ -677,6 +677,17 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveNotSupportedFallback() {
+        val content = "atomic move test"
+        write_index_file(tempDir, content) { src, dst ->
+            throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dst.toString(), "not supported")
+        }
+        val indexPath = File(tempDir, "index.html")
+        assertTrue(indexPath.exists())
+        assertEquals(content, indexPath.readText())
+    }
+
+    @Test
     fun testToctouSymlinkSwapRejection() {
         val subdir = File(tempDir, "toctou_test_dir")
         subdir.mkdir()
