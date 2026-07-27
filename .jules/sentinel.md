@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2026-07-27 - [html4tree] CSP Hash Mismatch due to Kotlin Multiline Strings
+**Vulnerability:** 브라우저가 CSP(Content-Security-Policy) 해시를 계산할 때, 인라인 스크립트와 스타일의 정확한 텍스트에 기반합니다. Kotlin의 다중 줄 문자열 내의 불필요한 공백과 줄바꿈으로 인해 생성된 해시와 브라우저가 계산한 해시가 불일치하여, 결과적으로 스타일 적용이 실패하거나 보안 정책 우회 가능성이 생깁니다.
+**Learning:** 정적 생성 도구에서 CSP를 위해 콘텐츠 해시를 계산할 때는, 인젝트된 콘텐츠 주변의 암묵적 여백이나 들여쓰기가 결과 해시를 무효화할 수 있음을 인지해야 합니다.
+**Prevention:** 콘텐츠 문자열에 `.trimIndent()`를 적용하여 해싱 전에 포맷을 정리하고, 암묵적 여백 없이(예: `<style>${exactStyleContent}</style>`) HTML에 인젝트하여 완전한 해시 일치를 보장하십시오.
