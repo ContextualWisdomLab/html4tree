@@ -361,6 +361,17 @@ class MainTest {
         assertEquals("keep", File(indexDir, "occupant.txt").readText())
         val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
         assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+
+        // test fallback on AtomicMoveNotSupportedException
+        indexDir.deleteRecursively() // remove the directory to allow successful write
+        var fallbackCalled = false
+        val mockMoveAtomic: (java.nio.file.Path, java.nio.file.Path) -> Unit = { _, _ ->
+            fallbackCalled = true
+            throw java.nio.file.AtomicMoveNotSupportedException("source", "target", "Not supported")
+        }
+        write_index_file(tempDir, "content2", mockMoveAtomic)
+        assertTrue(fallbackCalled, "fallback should be called when AtomicMoveNotSupportedException is thrown")
+        assertEquals("content2", File(tempDir, "index.html").readText())
     }
 
     @Test
