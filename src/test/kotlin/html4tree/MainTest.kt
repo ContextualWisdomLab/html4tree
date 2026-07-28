@@ -705,4 +705,11 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testTopLevelCssProperties() {
+        assertTrue(cssContent.contains("body {"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+    }
 }
