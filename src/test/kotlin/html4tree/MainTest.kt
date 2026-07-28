@@ -322,7 +322,7 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
-        assertTrue(htmlContent.contains("&#128193;"))
+        assertTrue(htmlContent.contains("&#128194;"))
         assertFalse(htmlContent.contains("test.ignore"))
         assertTrue(htmlContent.contains("Content-Security-Policy"))
         val hashMatch = Regex("""style-src '(sha256-[A-Za-z0-9+/=]+)'""").find(htmlContent)?.groupValues?.get(1)
@@ -412,6 +412,21 @@ class MainTest {
         } finally {
             targetDir.deleteRecursively()
         }
+    }
+
+    @Test
+    fun testProcessDirEmptyDirIcon() {
+        val emptyDir = File(tempDir, "empty_dir")
+        emptyDir.mkdir()
+        val notEmptyDir = File(tempDir, "not_empty_dir")
+        notEmptyDir.mkdir()
+        File(notEmptyDir, "file.txt").writeText("hello")
+
+        go(tempDir.absolutePath, 0)
+
+        val htmlContent = File(tempDir, "index.html").readText()
+        assertTrue(htmlContent.contains("&#128194;</span> <span>empty_dir</span>"))
+        assertTrue(htmlContent.contains("&#128193;</span> <span>not_empty_dir</span>"))
     }
 
     @Test
