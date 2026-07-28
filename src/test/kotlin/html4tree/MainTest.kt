@@ -504,6 +504,16 @@ class MainTest {
             go(File("/").absolutePath, -1)
         }
     }
+    @Test
+    fun testProcessDirRootFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") { override fun getName() = "" }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val html = File(fakeRoot, "index.html").readText()
+        assertTrue(html.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"))
+        assertTrue(html.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"))
+    }
+
 
     @Test
     fun testProcessIgnoreFileWithIndexHtml() {
