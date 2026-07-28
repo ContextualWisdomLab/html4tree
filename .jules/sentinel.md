@@ -1,3 +1,8 @@
+## 2026-07-28 - [html4tree] 검색 엔진 연동 정보 노출 방지
+**Vulnerability:** 공개 웹 서버에서 생성된 HTML 페이지를 호스팅할 때, 검색 엔진 크롤러가 민감한 디렉토리 구조 및 파일 목록을 인덱싱하여 정보 노출(Information Exposure)이 발생할 수 있습니다.
+**Learning:** 정적 HTML 생성 도구는 호스팅 환경을 통제할 수 없으므로, 기본적으로 검색 엔진 크롤러의 접근을 차단하여 의도치 않은 정보 유출을 예방하는 것이 "Secure by Default" 원칙에 부합합니다.
+**Prevention:** 생성된 모든 HTML 페이지의 `<head>` 태그 내에 `<meta name="robots" content="noindex, nofollow">`를 추가하여 검색 엔진의 자동 색인 및 링크 추적을 방지하십시오.
+
 ## 2024-06-21 - [html4tree] 자동 생성된 HTML 내 파일명 미정제
 **Vulnerability:** 악의적인 파일/디렉토리 이름을 통한 XSS
 **Learning:** 로컬 파일 시스템에서 정적 HTML 페이지를 자동 생성하는 도구는 종종 로컬 파일 경로를 암묵적으로 신뢰하여 입력값 정제(Sanitization)를 간과합니다. 생성된 페이지가 호스팅되거나 공유될 경우, 공격자는 `<script>alert(1)</script>`와 같은 이름의 파일을 생성하여 사용자가 생성된 인덱스를 볼 때 임의의 자바스크립트를 실행할 수 있습니다.

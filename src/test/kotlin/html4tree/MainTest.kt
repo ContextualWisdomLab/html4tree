@@ -330,6 +330,7 @@ class MainTest {
         assertTrue(htmlContent.contains("default-src 'none'; style-src '${hashMatch}'"))
         assertTrue(htmlContent.contains("base-uri 'none'; form-action 'none';"))
         assertFalse(htmlContent.contains("unsafe-inline"))
+        assertTrue(htmlContent.contains("<meta name=\"robots\" content=\"noindex, nofollow\">"))
         assertFalse(htmlContent.contains("style=\""))
         assertFalse(htmlContent.contains("nonce=\""))
         assertTrue(htmlContent.contains("a.dir-link"))
