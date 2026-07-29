@@ -370,7 +370,7 @@ ${cssContent}              </style>
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir">이 디렉토리는 비어 있습니다.</div></li>""")
+            l.append("""          <li><div class="empty-dir" role="status">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 
