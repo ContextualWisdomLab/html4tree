@@ -346,6 +346,17 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        val indexFile = File(tempDir, "index.html")
+        val content = "atomic fallback content"
+        write_index_file(tempDir, content, moveOp = { src, dest ->
+            throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked exception")
+        })
+        assertTrue(indexFile.exists(), "Index file should exist after fallback move")
+        assertEquals(content, indexFile.readText())
+    }
+
+    @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the
         // exception path through write_index_file's finally block.

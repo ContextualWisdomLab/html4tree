@@ -63,18 +63,18 @@
 **Learning:** 큐에 넣기 전(`listFiles`)에 한 번 검사했다고 해서, 큐에서 빼내어 처리(`process_dir`)하는 시점에도 파일 시스템 상태가 동일할 것이라고 가정(Implicit Trust)하면 안 됩니다.
 **Prevention:** 큐에 넣는 시점(`Time-of-Check`)에 파일의 고유 식별자(`BasicFileAttributes.fileKey()`)를 캡처해두고, 큐에서 꺼내어 실제로 처리하는 시점(`Time-of-Use`)에 현재 파일의 `fileKey()`를 다시 읽어 두 값이 일치하는지 재검증(Re-verify)해야 합니다.
 
-## 2024-05-25 - Information Exposure via Default Inclusion and Referrer
+## 2024-05-25 - 기본 포함 및 리퍼러(Referrer)를 통한 정보 노출
 **Vulnerability:** Common sensitive files (like `.aws`, `.kube`, `.npmrc`) could be accidentally indexed if present in the tree. Furthermore, clicking on external links (if any were added) could leak the directory structure via the HTTP Referer header.
 **Learning:** Default exclude lists must encompass modern toolchains and cloud credentials, as users often run directory indexers in their home or project root directories. HTML templates need explicit policies to prevent accidental data leakage via headers.
 **Prevention:** Maintain an extensive default deny-list for known sensitive files and enforce `no-referrer` globally on generated index pages.
 
-## 2024-07-07 - [Sensitive Data Exposure in Directory Indexing]
+## 2024-07-07 - [디렉토리 색인 시 민감한 데이터 노출]
 **Vulnerability:** The application was traversing and listing hidden files and directories (those starting with `.`), potentially exposing sensitive information like `.git` histories or `.env` configuration files in the generated HTML index.
 **Learning:** This existed because the traversal and filtering logic did not explicitly account for standard conventions regarding hidden files, defaulting to listing everything not explicitly ignored.
 **Prevention:** Always implement explicit filters for hidden files and directories (e.g., `!file.name.startsWith(".")`) in applications that generate static files or expose directory structures to the public.
 
 
-## 2024-05-18 - Prevent Sensitive Information Disclosure
+## 2024-05-18 - 민감한 정보 노출 방지
 **Vulnerability:** The application lists all files in a directory, including hidden files (those starting with `.`), which could inadvertently expose sensitive information like `.env`, `.git`, or `.ssh` directories.
 **Learning:** Default directory listing implementations without hidden file filtering can lead to information disclosure vulnerabilities when serving directories containing configuration or sensitive files.
 **Prevention:** Automatically exclude hidden files (files starting with `.`) from the generated directory listing by default.
@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-14 - [html4tree] TOCTOU 파일 교체 취약점 완화 (Atomic Move)
+**Vulnerability:** `index.html` 파일을 생성할 때 임시 파일(`tempPath`)을 생성하고 대상을 교체하는 과정에서 `Files.move(..., REPLACE_EXISTING)`을 사용하면, 교체 직전 대상 경로가 심볼릭 링크나 다른 파일로 변경되는 TOCTOU 취약점이 발생할 수 있습니다.
+**Learning:** 파일 교체 작업은 최대한 원자적으로(atomic) 수행되어야 중간 과정에서의 파일 시스템 조작을 방지할 수 있습니다.
+**Prevention:** `Files.move` 호출 시 `StandardCopyOption.ATOMIC_MOVE` 옵션을 사용하여 원자성을 보장하도록 시도하고, 파일 시스템에서 지원하지 않을 경우에 대비하여 `AtomicMoveNotSupportedException`을 잡아(catch) `REPLACE_EXISTING`으로 우아하게 폴백(fallback)하도록 구현해야 합니다. 테스트 커버리지를 위해서는 I/O 작업을 함수형 매개변수로 분리하여 예외를 주입할 수 있습니다.
