@@ -82,3 +82,8 @@
 **Vulnerability:** The `process_ignore_file` routine used case-sensitive matching for sensitive files (like `id_rsa`, `secrets.yml`), allowing case variations (e.g., `ID_RSA`) to bypass filtering and be included in the generated HTML.
 **Learning:** Exact string matching is fragile for file systems that are case-insensitive or for users who create mixed-case variations of sensitive files.
 **Prevention:** Always normalize file names (e.g., using `toLowerCase()`) when matching against exclusion lists, taking care to preserve expected outputs like exact sizes in tests or edge cases (like `.DS_Store`).
+
+## 2024-07-13 - [MEDIUM] 정적 리소스용 CSP 생성 방식(Nonce 대신 해시) 관련 보안 강화
+**Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
+**Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
+**Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
