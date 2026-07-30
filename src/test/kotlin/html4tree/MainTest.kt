@@ -364,6 +364,24 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveNotSupportedException() {
+        val dir = File(tempDir, "atomic_dir")
+        dir.mkdir()
+
+        var exceptionThrown = false
+        write_index_file(dir, "content", moveAction = { src, dst, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                exceptionThrown = true
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dst.toString(), "mocked")
+            }
+            java.nio.file.Files.move(src, dst, *options)
+        })
+
+        assertTrue(exceptionThrown, "AtomicMoveNotSupportedException should have been thrown")
+        assertEquals("content", File(dir, "index.html").readText())
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")

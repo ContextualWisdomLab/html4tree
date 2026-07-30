@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-25 - [html4tree] 원자적 파일 교체(Atomic Move) 실패 처리
+**Vulnerability:** 파일 교체 시 원자적 쓰기(Atomic Move) 지원 여부를 확인하지 않고 무조건 `REPLACE_EXISTING`으로 교체하여 발생할 수 있는 Race Condition (TOCTOU 등) 및 파일 손상 이슈 방지.
+**Learning:** `Files.move` 시 `StandardCopyOption.ATOMIC_MOVE`를 사용하면 파일 업데이트의 원자성을 보장하여 동시 접근으로 인한 파일 손상 및 악의적인 심볼릭 링크 스왑을 방지할 수 있습니다. 그러나 일부 파일 시스템(예: 다른 파티션 간 이동)에서는 이를 지원하지 않으므로, `AtomicMoveNotSupportedException`이 발생할 경우 `REPLACE_EXISTING`만으로 롤백(Fallback)하는 방어적 로직이 필요합니다.
+**Prevention:** `index.html` 파일을 갱신할 때 임시 파일을 먼저 작성하고 대상 위치로 원자적 이동(Atomic Move)을 시도하며, 예외 발생 시 일반적인 교체 옵션으로 복구되도록 처리해야 합니다. (Defense-in-depth)
