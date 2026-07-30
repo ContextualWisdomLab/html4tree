@@ -93,6 +93,7 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertTrue(htmlContent.contains("<meta name=\"robots\" content=\"noindex, nofollow\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
         assertTrue(htmlContent.contains("role=\"list\""))
     }
@@ -309,6 +310,7 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("<meta name=\"color-scheme\" content=\"light dark\">"))
+        assertTrue(htmlContent.contains("<meta name=\"robots\" content=\"noindex, nofollow\">"))
         assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
         assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("<main>"))
@@ -381,6 +383,7 @@ class MainTest {
         assertTrue(indexFile.exists())
         assertFalse(Files.isSymbolicLink(indexFile.toPath()))
         assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+        assertTrue(indexFile.readText().contains("<meta name=\"robots\" content=\"noindex, nofollow\">"))
     }
 
     @Test
