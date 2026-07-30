@@ -520,6 +520,13 @@ class MainTest {
         process_dir(tempDir)
     }
 
+    @Test
+    fun testTopLevelProperties() {
+        assertTrue(cssContent.contains("body {"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun testGoBlankDir() {
         go("   ", -1)
