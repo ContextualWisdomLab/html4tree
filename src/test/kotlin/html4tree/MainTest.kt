@@ -7,7 +7,9 @@ import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -426,6 +428,22 @@ class MainTest {
         assertTrue(File(tempDir, "index.html").exists())
         assertFalse(File(subdir, "index.html").exists())
         assertFalse(File(subsubdir, "index.html").exists())
+    }
+
+    @Test
+    fun testWriteIndexFileAtomicMoveNotSupported() {
+        val content = "test content"
+        var fallbackCalled = false
+        write_index_file(tempDir, content) { src, dest, options ->
+            if (options.contains(StandardCopyOption.ATOMIC_MOVE)) {
+                throw AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked exception")
+            } else {
+                fallbackCalled = true
+                Files.move(src, dest, *options)
+            }
+        }
+        assertTrue(fallbackCalled, "Fallback to REPLACE_EXISTING should have been called")
+        assertEquals(content, File(tempDir, "index.html").readText())
     }
 
     @Test
