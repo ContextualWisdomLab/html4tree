@@ -240,11 +240,8 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
-    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-
-    val cssContent = """
+// ⚡ Bolt Performance Optimization: 디렉토리 순회 시마다 발생하는 정적 문자열 할당과 무거운 SHA-256 해시 연산을 방지하기 위해 파일 최상위 속성으로 추출합니다.
+internal val cssContent = """
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
@@ -310,12 +307,16 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
               }
               """
 
-    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+internal val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
 
-    val css = """
+internal val css = """
               <style>
 ${cssContent}              </style>
               """
+
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
     val index_top = """<!doctype html>
 <html lang="ko">

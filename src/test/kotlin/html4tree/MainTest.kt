@@ -30,6 +30,14 @@ class MainTest {
     }
 
     @Test
+    fun testCssTopLevelPropertiesCoverage() {
+        assertTrue(cssContent.contains("font-family:"))
+        assertTrue(styleHash.startsWith("sha256-"))
+        assertTrue(css.contains("<style>"))
+        assertTrue(css.contains(cssContent))
+    }
+
+    @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
