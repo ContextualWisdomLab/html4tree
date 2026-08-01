@@ -43,3 +43,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2026-08-01 - Hoist invariant string and computation
+**Learning:** Re-evaluating static strings and expensive SHA-256 hashes inside highly repeated functions like `process_dir` causes redundant memory allocations and severe performance degradation, especially during deep directory crawling.
+**Action:** Hoist invariant variables (like CSS content and its corresponding SHA-256 hash) to top-level `private val` constants to ensure they are calculated exactly once. Use `private val` instead of just `val` to avoid generating public getters, preventing accidental drops in Jacoco line coverage metrics.
