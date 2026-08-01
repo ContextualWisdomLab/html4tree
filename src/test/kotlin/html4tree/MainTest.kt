@@ -705,4 +705,18 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        var fallbackCalled = false
+        write_index_file(tempDir, "content") { src, dest, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked exception")
+            }
+            fallbackCalled = true
+            java.nio.file.Files.move(src, dest, *options)
+        }
+        assertTrue(fallbackCalled, "Fallback to regular move should be called on AtomicMoveNotSupportedException")
+        assertTrue(File(tempDir, "index.html").exists())
+    }
 }

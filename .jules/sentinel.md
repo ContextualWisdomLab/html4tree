@@ -83,3 +83,8 @@
 **Vulnerability:** 정적 HTML 생성 도구에서 매번 다른 Nonce를 동적으로 생성하여 CSP에 적용하는 것은, 캐싱 효율을 저하시킬 뿐만 아니라 정적 배포 환경(예: GitHub Pages 등)에서 올바른 보안 정책 수립을 방해할 수 있는 안티 패턴입니다.
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
+
+## 2024-07-25 - [html4tree] 원자적 파일 조작(Atomic File Operations)을 통한 TOCTOU 완화
+**Vulnerability:** index.html 생성 시 임시 파일 덮어쓰기 도중 경합 조건(Race Condition)으로 인한 불완전한 상태 노출.
+**Learning:** 파일 교체 시 단순 `REPLACE_EXISTING`을 사용하면 덮어쓰는 찰나에 파일을 읽는 프로세스가 불완전하거나 손상된 데이터를 볼 수 있는 TOCTOU(Time-of-Check to Time-of-Use) 문제가 발생할 수 있습니다. 특히 정적 파일 생성기에서는 일관성이 중요합니다.
+**Prevention:** `Files.move` 시 `StandardCopyOption.ATOMIC_MOVE`를 시도하여 교체가 원자적으로 이루어지도록 보장하고, 파일 시스템 지원이 없는 경우에만(`AtomicMoveNotSupportedException`) 일반 교체로 우아하게 대체(Fallback)하십시오.

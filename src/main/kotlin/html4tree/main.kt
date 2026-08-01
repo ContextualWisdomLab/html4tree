@@ -6,6 +6,9 @@ import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.CopyOption
+import java.nio.file.Path
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
@@ -229,12 +232,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     return files_to_exclude
 }
 
-fun write_index_file(curr_dir: File, content: String) {
+fun write_index_file(
+    curr_dir: File,
+    content: String,
+    moveFile: (Path, Path, Array<out CopyOption>) -> Path = { src, dest, options -> Files.move(src, dest, *options) }
+) {
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        try {
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE))
+        } catch (e: AtomicMoveNotSupportedException) {
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+        }
     } finally {
         Files.deleteIfExists(tempPath)
     }
