@@ -50,6 +50,13 @@ class MainTest {
     }
 
     @Test
+    fun testTopLevelCssProperties() {
+        assertTrue(globalCssContent.contains("body {"))
+        assertTrue(globalStyleHash.startsWith("sha256-"))
+        assertTrue(globalCss.contains("<style>"))
+    }
+
+    @Test
     fun testHelp() {
         val outContent = ByteArrayOutputStream()
         val originalOut = System.out
