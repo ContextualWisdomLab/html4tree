@@ -444,6 +444,18 @@ class MainTest {
     }
 
     @Test
+    fun testEmptyDirNameFallbackToAbsolutePath() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexHtml = File(fakeRoot, "index.html").readText()
+        assertTrue(indexHtml.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"), "Title should use absolute path when name is empty")
+        assertTrue(indexHtml.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"), "H1 should use absolute path when name is empty")
+    }
+
+    @Test
     fun testProcessDirHandlesNonDirectoryWithoutThrowing() {
         val notADirectory = File(tempDir, "not-a-directory")
         notADirectory.writeText("content")
