@@ -27,19 +27,18 @@
 **학습:** 디렉토리 목록(`list()` 또는 `listFiles()`)을 단순히 필터링하여 `Set`에 추가하는 경우처럼 특정 순서가 필요하지 않은 작업에서 `.sorted()`를 호출하면 불필요한 O(N log N) 오버헤드가 발생합니다.
 **조치:** `Set`과 같은 순서에 무관한 자료구조에 요소를 추가하기 위한 필터링 작업에서는 디렉토리 목록에서 `.sorted()` 호출을 제거하여 성능을 최적화합니다.
 
-## 2024-05-18 - [디렉토리 목록 캐싱을 통한 I/O 오버헤드 최적화]
-**Learning:** `process_dir` 및 `process_ignore_file`과 같은 함수에서 동일한 디렉토리에 대해 `listFiles()` 또는 `list()`를 반복적으로 호출하면, 파일 시스템 I/O로 인한 불필요한 성능 저하가 발생합니다.
-**Action:** 디렉토리를 순회할 때 상위 루프에서 `listFiles()`를 한 번만 호출하여 캐싱한 후, 결과를 인자로 전달(예: `dirFiles` 배열)하여 중복된 파일 시스템 호출을 제거해야 합니다.
+## 2024-05-18 - 디렉토리 목록 캐싱을 통한 I/O 오버헤드 최적화
+**학습:** `process_dir` 및 `process_ignore_file`과 같은 함수에서 동일한 디렉토리에 대해 `listFiles()` 또는 `list()`를 반복적으로 호출하면, 파일 시스템 I/O로 인한 불필요한 성능 저하가 발생합니다.
+**조치:** 디렉토리를 순회할 때 상위 루프에서 `listFiles()`를 한 번만 호출하여 캐싱한 후, 결과를 인자로 전달(예: `dirFiles` 배열)하여 중복된 파일 시스템 호출을 제거해야 합니다.
 
 ## 2024-08-01 - URL 인코딩 빌더 지연 생성
 **학습:** URL 인코딩이 필요 없는 안전한 경로 문자열에서도 항상 `StringBuilder`를 생성하면 hot path에서 불필요한 할당이 발생합니다.
 **조치:** 예약 바이트를 처음 만났을 때만 `StringBuilder`를 만들고, 그 전까지는 원본 문자열을 그대로 반환하는 지연 생성 패턴을 사용합니다.
-## $(date +%Y-%m-%d) - Optimize OS stat calls in file listing
-**Learning:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
-**Action:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
+
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
-## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
-**학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
-**조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+
+## 2025-01-25 - 정적 속성을 파일 레벨로 추출하여 재계산 오버헤드 방지
+**학습:** 재귀적인 파일 시스템 탐색에서 `process_dir` 내부에 위치한 고정 문자열(CSS)이나 비용이 큰 연산(SHA-256 해시)은 디렉토리마다 불필요하게 반복 계산되어 성능 저하를 초래합니다.
+**조치:** 이들을 Kotlin 파일의 최상위 레벨 속성(Top-level properties)으로 이동시켜 애플리케이션 시작 시 한 번만 계산되도록 최적화합니다. 이때 JaCoCo 커버리지 100%를 유지하기 위해 암시적 getter에 대한 명시적인 테스트를 추가해야 합니다.
