@@ -520,6 +520,18 @@ class MainTest {
         process_dir(tempDir)
     }
 
+    @Test
+    fun testProcessDirWithRootLikeDirectory() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexHtml = File(fakeRoot, "index.html").readText()
+        assertTrue(indexHtml.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"))
+        assertTrue(indexHtml.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun testGoBlankDir() {
         go("   ", -1)
