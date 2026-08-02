@@ -346,6 +346,26 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        var atomicAttempted = false
+        var fallbackAttempted = false
+
+        write_index_file(tempDir, "atomic fallback content") { src, dest, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                atomicAttempted = true
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Atomic move not supported in test")
+            } else {
+                fallbackAttempted = true
+                java.nio.file.Files.move(src, dest, *options)
+            }
+        }
+
+        assertTrue(atomicAttempted, "Should have attempted ATOMIC_MOVE")
+        assertTrue(fallbackAttempted, "Should have attempted fallback after ATOMIC_MOVE failed")
+        assertEquals("atomic fallback content", File(tempDir, "index.html").readText())
+    }
+
+    @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the
         // exception path through write_index_file's finally block.
