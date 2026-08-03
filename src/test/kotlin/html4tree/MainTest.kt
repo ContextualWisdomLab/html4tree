@@ -445,6 +445,40 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveFallback() {
+        val dir = File(tempDir, "fallback")
+        dir.mkdir()
+        var fallbackCalled = false
+        write_index_file(
+            dir,
+            "content",
+            moveAtomic = { _, _ -> throw java.nio.file.AtomicMoveNotSupportedException("src", "dst", "not supported") },
+            moveFallback = { src, dst ->
+                fallbackCalled = true
+                java.nio.file.Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        )
+        assertTrue(fallbackCalled)
+        assertEquals("content", File(dir, "index.html").readText())
+    }
+
+    @Test
+    fun testWriteIndexFileAtomicMoveSuccess() {
+        val dir = File(tempDir, "success")
+        dir.mkdir()
+        var fallbackCalled = false
+        write_index_file(
+            dir,
+            "content",
+            moveFallback = { _, _ ->
+                fallbackCalled = true
+            }
+        )
+        assertFalse(fallbackCalled)
+        assertEquals("content", File(dir, "index.html").readText())
+    }
+
+    @Test
     fun testProcessDirHandlesNonDirectoryWithoutThrowing() {
         val notADirectory = File(tempDir, "not-a-directory")
         notADirectory.writeText("content")
