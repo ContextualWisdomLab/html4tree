@@ -154,8 +154,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { mockAttributes(isDir = true) },
             readIdentity = { FileIdentity("after-swap", true) }
         )
 
@@ -176,8 +175,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { mockAttributes(isDir = true) },
             readIdentity = { FileIdentity(null, false) }
         )
 
@@ -200,8 +198,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { file -> if (file == root) arrayOf(child) else emptyArray() },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { mockAttributes(isDir = true) },
             readIdentity = { file ->
                 val key = file.absolutePath
                 val callCount = callsByPath.getOrDefault(key, 0)
@@ -239,8 +236,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            isDirectory = { it == directoryEntry },
-            isSymbolicLink = { false },
+            readAttributes = { file -> mockAttributes(isDir = file == directoryEntry) },
             readIdentity = { FileIdentity("directory-key", true) }
         )
 
@@ -527,6 +523,16 @@ class MainTest {
     }
 
     @Test
+    fun testCrawlDirectoriesReadAttributesExceptionCoverage() {
+        val ll = LinkedList()
+        val entry = LinkedListEntry(File(tempDir, "does-not-exist"), 0)
+        ll.push(entry)
+        crawl_directories(ll, -1)
+        // Ensure it doesn't crash and pulls the entry
+        assertNull(ll.pull())
+    }
+
+    @Test
     fun testCliParsing() {
         val cli = Html4tree()
         cli.parse(arrayOf("--max-level", "2", tempDir.absolutePath))
@@ -748,12 +754,25 @@ class MainTest {
                 listed = true
                 emptyArray()
             },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { mockAttributes(isDir = true) },
             readIdentity = { FileIdentity("current-key", true) }
         )
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
+    }
+
+    private fun mockAttributes(isDir: Boolean): java.nio.file.attribute.BasicFileAttributes {
+        return object : java.nio.file.attribute.BasicFileAttributes {
+            override fun lastModifiedTime() = java.nio.file.attribute.FileTime.fromMillis(0)
+            override fun lastAccessTime() = java.nio.file.attribute.FileTime.fromMillis(0)
+            override fun creationTime() = java.nio.file.attribute.FileTime.fromMillis(0)
+            override fun isRegularFile() = !isDir
+            override fun isDirectory() = isDir
+            override fun isSymbolicLink() = false
+            override fun isOther() = false
+            override fun size() = 0L
+            override fun fileKey() = "mock-key"
+        }
     }
 }
