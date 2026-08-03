@@ -463,6 +463,19 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicMoveDefaultFallback() {
+        val dir = File(tempDir, "default-fallback")
+        dir.mkdir()
+        write_index_file(
+            dir,
+            "content",
+            moveAtomic = { _, _ -> throw java.nio.file.AtomicMoveNotSupportedException("src", "dst", "not supported") }
+            // Omitting moveFallback to trigger the default implementation
+        )
+        assertEquals("content", File(dir, "index.html").readText())
+    }
+
+    @Test
     fun testWriteIndexFileAtomicMoveSuccess() {
         val dir = File(tempDir, "success")
         dir.mkdir()
@@ -470,6 +483,9 @@ class MainTest {
         write_index_file(
             dir,
             "content",
+            moveAtomic = { src, dst ->
+                java.nio.file.Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            },
             moveFallback = { _, _ ->
                 fallbackCalled = true
             }
