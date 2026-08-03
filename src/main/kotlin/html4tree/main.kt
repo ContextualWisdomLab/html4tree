@@ -240,11 +240,7 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
-    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-
-    val cssContent = """
+val cssContent = """
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
@@ -319,6 +315,11 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
               <style>
 ${cssContent}              </style>
               """
+
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
+
 
     val index_top = """<!doctype html>
 <html lang="ko">

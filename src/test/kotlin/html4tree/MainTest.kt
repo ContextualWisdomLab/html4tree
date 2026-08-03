@@ -15,6 +15,14 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MainTest {
+
+    @Test
+    fun testTopLevelProperties() {
+        org.junit.Assert.assertNotNull(cssContent)
+        org.junit.Assert.assertNotNull(styleHash)
+        org.junit.Assert.assertNotNull(css)
+    }
+
     private lateinit var tempDir: File
 
     @Before
