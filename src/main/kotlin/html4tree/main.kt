@@ -290,6 +290,17 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                   transition: none;
                 }
               }
+              .empty-dir {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 2rem;
+                background-color: #f6f8fa;
+                border: 1px dashed #d0d7de;
+                border-radius: 6px;
+                color: #57606a;
+              }
               @media (prefers-color-scheme: dark) {
                 body {
                   background-color: #0d1117;
@@ -302,14 +313,11 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                   background-color: #161b22;
                   outline-color: #58a6ff;
                 }
-              }
-              .empty-dir {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                padding: 0.5rem;
-                opacity: 0.7;
-                font-style: italic;
+                .empty-dir {
+                  background-color: #161b22;
+                  border-color: #30363d;
+                  color: #8b949e;
+                }
               }
               """
 
