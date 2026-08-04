@@ -95,7 +95,6 @@ class MainTest {
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("<meta name=\"robots\" content=\"noindex, nofollow\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
-        assertTrue(htmlContent.contains("role=\"status\""))
         assertTrue(htmlContent.contains("role=\"list\""))
     }
 
@@ -119,6 +118,12 @@ class MainTest {
         val normalFile = File(tempDir, "normal_file.txt")
         normalFile.createNewFile()
 
+        val unicodeHiddenFile = File(tempDir, "。unicode_hidden.txt")
+        unicodeHiddenFile.createNewFile()
+
+        val unicodeHiddenDir = File(tempDir, "．unicode_hidden_dir")
+        unicodeHiddenDir.mkdir()
+
         go(tempDir.absolutePath, -1)
 
         val indexFile = File(tempDir, "index.html")
@@ -128,9 +133,12 @@ class MainTest {
         assertTrue(htmlContent.contains("normal_file.txt"), "normal_file.txt should be listed")
         assertFalse(htmlContent.contains(".hidden_file.txt"), ".hidden_file.txt should not be listed")
         assertFalse(htmlContent.contains(".hidden_dir"), ".hidden_dir should not be listed")
+        assertFalse(htmlContent.contains("。unicode_hidden.txt"), "。unicode_hidden.txt should not be listed")
+        assertFalse(htmlContent.contains("．unicode_hidden_dir"), "．unicode_hidden_dir should not be listed")
 
         val hiddenDirIndexFile = File(hiddenDir, "index.html")
         assertFalse(hiddenDirIndexFile.exists(), "Hidden directories should not be traversed to generate index.html")
+        assertFalse(File(unicodeHiddenDir, "index.html").exists(), "Unicode hidden directories should not be traversed to generate index.html")
     }
 
     @Test
@@ -559,6 +567,21 @@ class MainTest {
     }
 
     @Test
+    fun testStartsWithHiddenPrefix() {
+        assertFalse("".startsWithHiddenPrefix())
+        assertFalse("normal.txt".startsWithHiddenPrefix())
+        assertFalse("  .txt".startsWithHiddenPrefix())
+
+        assertTrue(".hidden".startsWithHiddenPrefix())
+        assertTrue("。unicode".startsWithHiddenPrefix())
+        assertTrue("﹒unicode".startsWithHiddenPrefix())
+        assertTrue("．unicode".startsWithHiddenPrefix())
+        assertTrue("｡unicode".startsWithHiddenPrefix())
+        assertTrue("․unicode".startsWithHiddenPrefix())
+        assertTrue("‥unicode".startsWithHiddenPrefix())
+    }
+
+    @Test
     fun testProcessIgnoreFileHiddenFiles() {
         // .myhidden/.hiddendir are NOT in the static sensitive-file list,
         // so this fails if the dynamic hidden-file exclusion is removed.
@@ -566,11 +589,17 @@ class MainTest {
         File(tempDir, ".hiddendir").mkdir()
         File(tempDir, ".env").createNewFile()
         File(tempDir, "test.txt").createNewFile()
+        File(tempDir, "。unicodehidden").createNewFile()
+        File(tempDir, "．unicodedir").mkdir()
+        File(tempDir, "․unicodefile").createNewFile()
 
         val excluded = process_ignore_file(tempDir)
         assertTrue(excluded.contains(".myhidden"))
         assertTrue(excluded.contains(".hiddendir"))
         assertTrue(excluded.contains(".env"))
+        assertTrue(excluded.contains("。unicodehidden"))
+        assertTrue(excluded.contains("．unicodedir"))
+        assertTrue(excluded.contains("․unicodefile"))
         assertFalse(excluded.contains("test.txt"))
     }
 

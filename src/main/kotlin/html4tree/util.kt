@@ -6,6 +6,12 @@ data class Entry (val data: File, val level: Int, var next: Entry?, val fileKey:
 
 data class LinkedListEntry(val file: File, val level: Int, var fileKey: Any? = null)
 
+fun String.startsWithHiddenPrefix(): Boolean {
+    if (this.isEmpty()) return false
+    val c = this[0]
+    return c == '.' || c == '。' || c == '﹒' || c == '．' || c == '｡' || c == '․' || c == '‥'
+}
+
 class LinkedList {
     var first: Entry? = null
     var last: Entry? = null

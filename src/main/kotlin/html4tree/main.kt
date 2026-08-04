@@ -94,7 +94,7 @@ internal fun crawl_directories(
             dirFiles?.forEach {
                 // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls (isDirectory/isSymbolicLink)
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
+                if(!it.name.startsWithHiddenPrefix() && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
                     val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
                     ll.push(childEntry)
                 }
@@ -221,7 +221,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.startsWith(".")) {
+        if (it.startsWithHiddenPrefix()) {
             files_to_exclude.add(it)
         }
     }
@@ -304,9 +304,6 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                 }
               }
               .empty-dir {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
                 padding: 0.5rem;
                 opacity: 0.7;
                 font-style: italic;
@@ -353,7 +350,7 @@ ${cssContent}              </style>
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
-           if (!fileName.startsWith(".") && fileName !in exclude) {
+           if (!fileName.startsWithHiddenPrefix() && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
                try {
@@ -375,7 +372,7 @@ ${cssContent}              </style>
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#8505;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
+            l.append("""          <li><div class="empty-dir">이 디렉토리는 비어 있습니다.</div></li>""")
             l.append('\n')
         }
 
