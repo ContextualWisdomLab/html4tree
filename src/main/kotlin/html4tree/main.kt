@@ -281,9 +281,11 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
               }
               a:hover, a:focus-visible {
                 background-color: #f6f8fa;
-                text-decoration: underline;
                 outline: 2px solid #0969da;
                 outline-offset: -2px;
+              }
+              a:hover span:not(.icon), a:focus-visible span:not(.icon) {
+                text-decoration: underline;
               }
               @media (prefers-reduced-motion: reduce) {
                 a {
