@@ -88,3 +88,13 @@
 **Vulnerability:** The calculated CSP hash for the inline `<style>` block did not match the actual injected content.
 **Learning:** When using Kotlin multiline strings for injecting content (like CSS) and calculating its hash, any surrounding whitespace or implicit padding added during interpolation (e.g., in `<style>${cssContent}</style>`) will alter the final string. This causes the browser to reject the style due to a CSP violation, effectively breaking the styling.
 **Prevention:** Always apply `.trimIndent()` to multiline string literals used for CSP hashing, and inject them without any additional padding (e.g., `<style>${exactContent}</style>`) to ensure the calculated hash matches the rendered output perfectly.
+## 2026-08-04 - [html4tree] Strix Security Fixes: Path Traversal, ReDoS, and TOCTOU
+**Vulnerability:**
+1. `Files.isDirectory` followed symlinks partially, but `canonicalFile` resolved them completely, leading to canonical path boundary mismatches.
+2. Glob patterns could trigger ReDoS by nesting alternations (`{`...`}`) and character classes (`[`...`]`).
+3. TOCTOU via fileKey fallback was missing canonical path checks on file systems that lack fileKey support.
+**Learning:** Canonical checks need to establish the canonical root before parsing the initial directory to prevent boundary escapes when symlinks are provided as inputs. Glob compilation needs explicit complexity limits in untrusted inputs. TOCTOU prevention must fall back to canonical path containment checks when OS primitives like fileKey fail.
+**Prevention:**
+1. Save `File(topDir).canonicalFile` and enforce it across all queue iterations using `canonicalPath.startsWith(canonicalRootPath)`.
+2. Inspect untrusted pattern strings for curly brackets and brackets and enforce a hard limit (e.g. max 5 alternations and 10 classes) before calling `getPathMatcher`.
+3. Use canonical bounds check as a fallback TOCTOU defense mechanism.

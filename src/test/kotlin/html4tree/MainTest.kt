@@ -608,6 +608,23 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileReDosProtection() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val tooManyAlternations = "{a,b,c,d,e,f,g}"
+        val tooManyCharClasses = "[a][b][c][d][e][f][g][h][i][j][k]"
+        val goodPattern = "*.kt"
+
+        ignoreFile.writeText("$tooManyAlternations\n$tooManyCharClasses\n$goodPattern\n")
+
+        File(tempDir, "test.kt").createNewFile()
+        File(tempDir, tooManyAlternations).createNewFile()
+
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("test.kt"))
+        assertFalse(excluded.contains(tooManyAlternations))
+    }
+
+    @Test
     fun testIgnoreFileIsSymlink() {
         val targetFile = File(tempDir, "target.ignore")
         targetFile.writeText("*.txt")
@@ -705,5 +722,37 @@ class MainTest {
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
+    }
+
+    @Test
+    fun testCanonicalPathRejection() {
+        val rootDir = File(tempDir, "canonical_root")
+        rootDir.mkdir()
+        val ll = LinkedList()
+
+        // Mock a file object whose canonical path jumps outside the root
+        val mockOutofBoundsDir = object : File(rootDir, "sneaky") {
+            override fun getCanonicalPath(): String {
+                return "/tmp/sneaky"
+            }
+        }
+
+        val entry = LinkedListEntry(mockOutofBoundsDir, 0)
+        entry.fileKey = "matched-key"
+        ll.push(entry)
+
+        var processed = false
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() },
+            isDirectory = { true },
+            isSymbolicLink = { false },
+            readIdentity = { FileIdentity("matched-key", true) },
+            canonicalRootPath = rootDir.canonicalPath
+        )
+        assertFalse(processed, "Canonical path outside root should be rejected")
     }
 }

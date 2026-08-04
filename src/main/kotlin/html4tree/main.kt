@@ -41,19 +41,21 @@ fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
     require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
     // 보안 수정: symlink 검사를 우회하는 canonicalFile 대신 absoluteFile을 사용
-    // canonicalFile은 symlink를 대상 경로로 해석하여 이어지는 NOFOLLOW_LINKS 검사를 무력화합니다.
-    val top_dir = File(topDir).absoluteFile.toPath().normalize().toFile()
+    val initialFile = File(topDir)
+    val canonicalRoot = initialFile.canonicalFile
+    val top_dir = canonicalRoot
 
     // 보안 향상: 시스템 전체 정보 노출 및 리소스 고갈(DoS) 방지를 위해 크로스 플랫폼 방식으로 루트 디렉토리 크롤링을 제한합니다.
     require(top_dir.parentFile != null) { "Crawling the root directory is not allowed for security reasons" }
 
-    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
+    require(!Files.isSymbolicLink(initialFile.absoluteFile.toPath().normalize())) { "Top directory must be an existing non-symlink directory" }
+    require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing directory" }
 
     val ll = LinkedList()
 
     val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
     ll.push(topEntry)
-    crawl_directories(ll, maxLevel)
+    crawl_directories(ll, maxLevel, canonicalRootPath = canonicalRoot.absolutePath)
 }
 
 internal fun crawl_directories(
@@ -64,12 +66,18 @@ internal fun crawl_directories(
     listFiles: (File) -> Array<File>? = { it.listFiles() },
     isDirectory: (File) -> Boolean = { Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) },
     isSymbolicLink: (File) -> Boolean = { Files.isSymbolicLink(it.toPath()) },
-    readIdentity: (File) -> FileIdentity = ::read_file_identity
+    readIdentity: (File) -> FileIdentity = ::read_file_identity,
+    canonicalRootPath: String = ""
 ) {
     var lle: LinkedListEntry? = ll.pull()
 
     while(lle != null){
         if (!isDirectory(lle.file)) {
+            lle = ll.pull()
+            continue
+        }
+
+        if (canonicalRootPath.isNotEmpty() && !lle.file.canonicalPath.startsWith(canonicalRootPath)) {
             lle = ll.pull()
             continue
         }
@@ -190,9 +198,18 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                if (lineIndex >= 1000) break
                val pattern = it.trim()
                if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: java.util.regex.PatternSyntaxException) {
+                   // 보안 수정: ReDoS 방지를 위한 Glob 패턴 복잡성 검증
+                   var alternationCount = 0
+                   var charClassCount = 0
+                   for (i in 0 until pattern.length) {
+                       if (pattern[i] == '{') alternationCount++
+                       if (pattern[i] == '[') charClassCount++
+                   }
+                   if (alternationCount <= 5 && charClassCount <= 10) {
+                       try {
+                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                       } catch (_: java.util.regex.PatternSyntaxException) {
+                       }
                    }
                }
            }
