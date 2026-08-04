@@ -30,6 +30,11 @@ class MainTest {
     }
 
     @Test
+    fun testIsHiddenFileEmpty() {
+        assertFalse(isHiddenFile(""))
+    }
+
+    @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
@@ -562,12 +567,18 @@ class MainTest {
         File(tempDir, ".myhidden").createNewFile()
         File(tempDir, ".hiddendir").mkdir()
         File(tempDir, ".env").createNewFile()
+        File(tempDir, "\u3002myhidden").createNewFile()
+        File(tempDir, "\uFF0Eenv").createNewFile()
+        File(tempDir, "\uFF61hiddendir").mkdir()
         File(tempDir, "test.txt").createNewFile()
 
         val excluded = process_ignore_file(tempDir)
         assertTrue(excluded.contains(".myhidden"))
         assertTrue(excluded.contains(".hiddendir"))
         assertTrue(excluded.contains(".env"))
+        assertTrue(excluded.contains("\u3002myhidden"))
+        assertTrue(excluded.contains("\uFF0Eenv"))
+        assertTrue(excluded.contains("\uFF61hiddendir"))
         assertFalse(excluded.contains("test.txt"))
     }
 

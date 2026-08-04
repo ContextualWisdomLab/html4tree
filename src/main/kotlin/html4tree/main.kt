@@ -94,7 +94,7 @@ internal fun crawl_directories(
             dirFiles?.forEach {
                 // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls (isDirectory/isSymbolicLink)
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
+                if(!isHiddenFile(it.name) && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
                     val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
                     ll.push(childEntry)
                 }
@@ -221,7 +221,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.startsWith(".")) {
+        if (isHiddenFile(it)) {
             files_to_exclude.add(it)
         }
     }
@@ -351,7 +351,7 @@ ${cssContent}              </style>
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
-           if (!fileName.startsWith(".") && fileName !in exclude) {
+           if (!isHiddenFile(fileName) && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
                try {
@@ -395,6 +395,12 @@ ${cssContent}              </style>
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
    }
 
+}
+
+fun isHiddenFile(name: String): Boolean {
+    if (name.isEmpty()) return false
+    val firstChar = name[0]
+    return firstChar == '.' || firstChar == '\u3002' || firstChar == '\uFF0E' || firstChar == '\uFF61'
 }
 
 fun help() {
