@@ -1,0 +1,11 @@
+--- src/test/kotlin/html4tree/MainTest.kt
++++ src/test/kotlin/html4tree/MainTest.kt
+@@ -148,7 +148,7 @@
+         ll.push(LinkedListEntry(tempDir, 0))
+
+         crawl_directories(
+-            ll,
++            ll,
+             -1,
+             processDirectory = { _, _, _ -> processedCount++ },
+             listFiles = { null }, // Simulate permission denied
