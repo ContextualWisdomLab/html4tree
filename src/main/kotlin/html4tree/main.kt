@@ -240,11 +240,7 @@ fun write_index_file(curr_dir: File, content: String) {
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
-    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
-
-    val cssContent = """
+internal val CSS_CONTENT = """
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 line-height: 1.5;
@@ -313,12 +309,16 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
               }
               """
 
-    val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
+internal val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 
-    val css = """
+internal val CSS_BLOCK = """
               <style>
-${cssContent}              </style>
+${CSS_CONTENT}              </style>
               """
+
+fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -327,11 +327,11 @@ ${cssContent}              </style>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="color-scheme" content="light dark">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${STYLE_HASH}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
-        ${css}
+        ${CSS_BLOCK}
      </head>
      <body>
        <main>

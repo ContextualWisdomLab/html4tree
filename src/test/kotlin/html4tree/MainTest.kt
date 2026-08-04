@@ -678,6 +678,13 @@ class MainTest {
     }
 
     @Test
+    fun testTopLevelCssPropertiesCoverage() {
+        assertTrue(CSS_CONTENT.contains("body {"))
+        assertTrue(STYLE_HASH.startsWith("sha256-"))
+        assertTrue(CSS_BLOCK.contains("<style>"))
+    }
+
+    @Test
     fun testToctouSymlinkSwapRejection() {
         val subdir = File(tempDir, "toctou_test_dir")
         subdir.mkdir()
