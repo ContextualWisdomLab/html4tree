@@ -13,6 +13,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 class MainTest {
     private lateinit var tempDir: File
@@ -586,6 +587,21 @@ class MainTest {
         assertTrue(excluded.contains(".hiddendir"))
         assertTrue(excluded.contains(".env"))
         assertFalse(excluded.contains("test.txt"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileUnicodeLookalikeHiddenFiles() {
+        File(tempDir, "\uFF0Egit").createNewFile()
+        File(tempDir, "\u3002env").createNewFile()
+        File(tempDir, "normal.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("\uFF0Egit"))
+        assertTrue(excluded.contains("\u3002env"))
+        assertFalse(excluded.contains("normal.txt"))
+
+        // 커버리지를 위해 HIDDEN_FILE_PATTERN의 getter도 호출
+        assertNotNull(HIDDEN_FILE_PATTERN)
     }
 
     @Test

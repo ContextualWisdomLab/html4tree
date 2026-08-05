@@ -10,6 +10,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.CopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
+import java.util.regex.Pattern
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -27,6 +28,9 @@ class Html4tree : CliktCommand() {
 
 fun main(args: Array<String>)  = Html4tree().main(args)
 
+// ⚡ Bolt Performance Optimization: 컴파일된 정규식을 최상위에 정의하여 반복되는 패턴 객체 생성 비용 절감
+// 🛡️ Sentinel: 유니코드 Dot 유사 문자(\uFF0E 등)를 이용한 숨김 파일 감지 우회 방지
+val HIDDEN_FILE_PATTERN = Pattern.compile("^[\\.\\uFF0E\\u3002\\uFE52\\u2024\\u2219\\u22C5].*")
 
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
 
@@ -97,7 +101,7 @@ internal fun crawl_directories(
             dirFiles?.forEach {
                 // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls (isDirectory/isSymbolicLink)
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
+                if(!HIDDEN_FILE_PATTERN.matcher(it.name).matches() && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
                     val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
                     ll.push(childEntry)
                 }
@@ -224,7 +228,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.startsWith(".")) {
+        if (HIDDEN_FILE_PATTERN.matcher(it).matches()) {
             files_to_exclude.add(it)
         }
     }
@@ -359,7 +363,7 @@ ${cssContent}              </style>
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
-           if (!fileName.startsWith(".") && fileName !in exclude) {
+           if (!HIDDEN_FILE_PATTERN.matcher(fileName).matches() && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
                try {

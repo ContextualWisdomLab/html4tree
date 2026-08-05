@@ -88,3 +88,8 @@
 **Vulnerability:** 파일 교체 시 원자적 쓰기(Atomic Move) 지원 여부를 확인하지 않고 무조건 `REPLACE_EXISTING`으로 교체하여 발생할 수 있는 Race Condition (TOCTOU 등) 및 파일 손상 이슈 방지.
 **Learning:** `Files.move` 시 `StandardCopyOption.ATOMIC_MOVE`를 사용하면 파일 업데이트의 원자성을 보장하여 동시 접근으로 인한 파일 손상 및 악의적인 심볼릭 링크 스왑을 방지할 수 있습니다. 그러나 일부 파일 시스템(예: 다른 파티션 간 이동)에서는 이를 지원하지 않으므로, `AtomicMoveNotSupportedException`이 발생할 경우 `REPLACE_EXISTING`만으로 롤백(Fallback)하는 방어적 로직이 필요합니다.
 **Prevention:** `index.html` 파일을 갱신할 때 임시 파일을 먼저 작성하고 대상 위치로 원자적 이동(Atomic Move)을 시도하며, 예외 발생 시 일반적인 교체 옵션으로 복구되도록 처리해야 합니다. (Defense-in-depth)
+
+## 2024-08-05 - [html4tree] 유니코드 Lookalike 문자를 이용한 숨김 파일 감지 우회 취약점 방지
+**Vulnerability:** `startsWith(".")`를 사용한 숨김 파일 감지 로직은 ASCII 온점(U+002E)만 인식하므로, 공격자가 U+FF0E, U+3002 등 점(Dot)과 유사하게 보이는 유니코드 문자로 시작하는 파일을 생성하면 숨김 파일 감지를 우회하여 민감한 정보(예: `．env`)를 노출시킬 수 있습니다.
+**Learning:** 파일 경로 검증 및 숨김 파일 감지와 같은 보안 검사에서는 ASCII 문자뿐만 아니라 시각적으로 유사한 유니코드 문자(Lookalike characters)도 포함하여 필터링하는 정규식을 적용해야 합니다.
+**Prevention:** `[\\.\\uFF0E\\u3002\\uFE52\\u2024\\u2219\\u22C5]` 와 같이 다양한 형태의 점(Dot) 유니코드 문자를 매칭하는 Regex 패턴을 사용하여 숨김 파일 검증 로직(`HIDDEN_FILE_PATTERN`)을 강화하고, 이를 전체 디렉토리 탐색(`crawl_directories`, `process_dir`, `process_ignore_file`)에 일관되게 적용하십시오.
