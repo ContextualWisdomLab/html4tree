@@ -36,7 +36,7 @@
 ## 2024-06-28 - [html4tree] 구성 파일에 대한 심볼릭 링크 및 디렉토리 공격
 **Vulnerability:** 심볼릭 링크/디렉토리 `.html4ignore`를 통한 DoS 및 경로 탐색
 **Learning:** 런타임에 파싱되는 애플리케이션 구성 파일(예: `.html4ignore`)은 해당 파일 유형이 암묵적으로 신뢰될 경우 표적이 될 수 있습니다. 사용자나 공격자는 `.html4ignore`라는 이름의 디렉토리를 생성하여 읽기 시 충돌을 유발하거나, `/dev/zero` 또는 `/dev/urandom`에 심볼릭 링크를 연결하여 애플리케이션이 멈추고 리소스를 무한히 소비하게 만들 수 있습니다.
-**Prevention:** 구성 파일 파싱을 시도하기 전에 항상 구성 파일이 일반 파일인지(`isFile`) 확인하고 심볼릭 처리 시에 심볼릭 링크를 명시적으로 거부(`!Files.isSymbolicLink`)하십시오.
+**Prevention:** 구성 파일 파싱을 시도하기 전에 항상 구성 파일이 일반 파일인지(`isFile`) 확인하고 심볼릭 링크를 명시적으로 거부(`!Files.isSymbolicLink`)하십시오.
 
 ## 2024-05-31 - [DoS Risk] 무시 파일 처리 중 통제되지 않은 리소스 소비
 **Vulnerability:** `.html4ignore` 처리가 패턴의 수나 길이에 대한 상한 없이 정규식 패턴을 줄 단위로 읽습니다. 공격자는 수천 개의 지나치게 긴 정규식 패턴이 포함된 파일을 조작하여 서비스 거부(DoS) 및 잠재적인 ReDoS를 유발할 수 있습니다.
@@ -84,7 +84,7 @@
 **Learning:** 정적으로 고정된 인라인 스타일이나 스크립트에는 난수화된 Nonce보다 콘텐츠 자체의 해시(SHA-256 등)를 사용하는 것이 안전하고 일관된 방식임을 배웠습니다.
 **Prevention:** 자동 생성되는 정적 HTML의 콘텐츠 보안 정책(CSP)에는 `style-src 'sha256-<HASH>'` 방식을 적용하고, `<style>` 태그에서 불필요한 `nonce` 속성을 제거하여 브라우저의 무결성 검증 기능을 적극 활용하십시오.
 
-## 2024-07-20 - [getPathMatcher 처리되지 않은 예외(DoS) 취약점 수정]
-**Vulnerability:** 형식이 잘못된 패턴(예: `glob:` 와 같은 접두어 구문 오류 등)에 대해 `FileSystems.getDefault().getPathMatcher()`가 발생하는 `IllegalArgumentException`을 적절히 처리하지 못하여 애플리케이션 크래시(DoS)가 발생할 수 있습니다.
-**Learning:** `getPathMatcher`는 유효하지 않은 입력에 대해 `IllegalArgumentException`을 발생시킵니다. 기존에는 `java.util.regex.PatternSyntaxException`만 캐치하였으나, 이는 `IllegalArgumentException`의 하위 클래스일 뿐이므로 다른 종류의 `IllegalArgumentException`이 발생할 경우 예외 처리를 누락하게 됩니다.
-**Prevention:** Java NIO `getPathMatcher`로 신뢰할 수 없는 glob 문자열을 파싱할 때는 반드시 상위 클래스인 `IllegalArgumentException` 전체를 포괄하여 예외 처리(catch)해야 합니다.
+## 2024-07-20 - [getPathMatcher 잘못된 예외 확장 제안 반려]
+**Vulnerability:** 잘못된 문제 인식
+**Learning:** `getPathMatcher`에서 `IllegalArgumentException`을 모두 잡으려 한 시도는, `process_ignore_file`에서 `"glob:" + pattern` 형식으로 런타임에 항상 문법(syntax) 접두어를 지정하므로 순수한 `IllegalArgumentException`(syntax 접두어 부족으로 인한 예외)이 발생하지 않는다는 사실을 간과한 것이었습니다. 사용자가 유발할 수 있는 예외는 패턴 자체의 문법 오류인 `PatternSyntaxException`뿐이며, 이는 이미 적절히 처리되고 있었습니다.
+**Prevention:** API 문서 및 구현체의 실제 동작(예: `syntax:pattern` 강제 주입 여부)을 철저히 확인하여, 사용자 입력 경계(boundary)에서 실제로 도달할 수 없는 예외를 처리하기 위해 광범위한 예외 클래스(예: `IllegalArgumentException`)를 포착하는 식의 방어적 코딩을 지양하십시오. 불필요하게 예외 범위를 넓히면 내부 구현의 실제 버그를 숨길 위험이 있습니다.
