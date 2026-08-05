@@ -8,11 +8,27 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.FileTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+fun createMockAttributes(isDirectory: Boolean, isSymbolicLink: Boolean): BasicFileAttributes {
+    return object : BasicFileAttributes {
+        override fun lastModifiedTime(): FileTime = FileTime.fromMillis(0)
+        override fun lastAccessTime(): FileTime = FileTime.fromMillis(0)
+        override fun creationTime(): FileTime = FileTime.fromMillis(0)
+        override fun isRegularFile(): Boolean = !isDirectory && !isSymbolicLink
+        override fun isDirectory(): Boolean = isDirectory
+        override fun isSymbolicLink(): Boolean = isSymbolicLink
+        override fun isOther(): Boolean = false
+        override fun size(): Long = 0
+        override fun fileKey(): Any? = null
+    }
+}
 
 class MainTest {
     private lateinit var tempDir: File
@@ -154,8 +170,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { createMockAttributes(isDirectory = true, isSymbolicLink = false) },
             readIdentity = { FileIdentity("after-swap", true) }
         )
 
@@ -176,8 +191,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { createMockAttributes(isDirectory = true, isSymbolicLink = false) },
             readIdentity = { FileIdentity(null, false) }
         )
 
@@ -200,8 +214,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { file -> if (file == root) arrayOf(child) else emptyArray() },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { createMockAttributes(isDirectory = true, isSymbolicLink = false) },
             readIdentity = { file ->
                 val key = file.absolutePath
                 val callCount = callsByPath.getOrDefault(key, 0)
@@ -239,8 +252,7 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            isDirectory = { it == directoryEntry },
-            isSymbolicLink = { false },
+            readAttributes = { createMockAttributes(isDirectory = it == directoryEntry, isSymbolicLink = false) },
             readIdentity = { FileIdentity("directory-key", true) }
         )
 
@@ -698,12 +710,35 @@ class MainTest {
                 listed = true
                 emptyArray()
             },
-            isDirectory = { true },
-            isSymbolicLink = { false },
+            readAttributes = { createMockAttributes(isDirectory = true, isSymbolicLink = false) },
             readIdentity = { FileIdentity("current-key", true) }
         )
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
+    }
+
+    @Test
+    fun testCrawlDirectoriesDefaultLambdas() {
+        val root = File(tempDir, "default-root")
+        root.mkdir()
+        val child = File(root, "child")
+        child.mkdir()
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(root, 0, read_file_identity(root).key))
+
+        val processedDirs = mutableListOf<File>()
+
+        crawl_directories(
+            ll = queue,
+            maxLevel = -1,
+            processDirectory = { file, _, _ -> processedDirs.add(file) },
+            listFiles = { it.listFiles() }
+            // Using default readAttributes and readIdentity
+        )
+
+        assertEquals(2, processedDirs.size)
+        assertTrue(processedDirs.contains(root))
+        assertTrue(processedDirs.contains(child))
     }
 }

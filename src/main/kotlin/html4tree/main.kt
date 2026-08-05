@@ -133,14 +133,20 @@ internal fun crawl_directories(
     processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
-    isDirectory: (File) -> Boolean = { Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) },
-    isSymbolicLink: (File) -> Boolean = { Files.isSymbolicLink(it.toPath()) },
+    readAttributes: (File) -> BasicFileAttributes? = {
+        try {
+            Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        } catch (e: Exception) {
+            null
+        }
+    },
     readIdentity: (File) -> FileIdentity = ::read_file_identity
 ) {
     var lle: LinkedListEntry? = ll.pull()
 
     while(lle != null){
-        if (!isDirectory(lle.file)) {
+        val lleAttrs = readAttributes(lle.file)
+        if (lleAttrs == null || !lleAttrs.isDirectory) {
             lle = ll.pull()
             continue
         }
@@ -165,9 +171,12 @@ internal fun crawl_directories(
             dirFiles?.forEach {
                 // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls (isDirectory/isSymbolicLink)
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
-                    val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                    ll.push(childEntry)
+                if(!it.name.startsWith(".") && it.name !in exclude) {
+                    val itAttrs = readAttributes(it)
+                    if (itAttrs != null && itAttrs.isDirectory && !itAttrs.isSymbolicLink) {
+                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                        ll.push(childEntry)
+                    }
                 }
             }
         }
