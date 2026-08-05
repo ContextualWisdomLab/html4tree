@@ -190,9 +190,21 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                if (lineIndex >= 1000) break
                val pattern = it.trim()
                if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: java.util.regex.PatternSyntaxException) {
+                   // 보안 향상: 너무 많은 와일드카드를 포함한 glob 패턴으로 인한 ReDoS(지수적 역추적) 방지
+                   var wildcardCount = 0
+                   for (i in 0 until pattern.length) {
+                       val c = pattern[i]
+                       if (c == '*' || c == '?' || c == '{') {
+                           if (i == 0 || pattern[i - 1] != '\\') {
+                               wildcardCount++
+                           }
+                       }
+                   }
+                   if (wildcardCount <= 5) {
+                       try {
+                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                       } catch (_: java.util.regex.PatternSyntaxException) {
+                       }
                    }
                }
            }
@@ -327,8 +339,6 @@ ${cssContent}              </style>
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${styleHash}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
-        <!-- 보안 향상: 검색 엔진이 디렉토리 구조 및 파일 목록을 색인화하지 못하도록 방지 (정보 노출 방지) -->
-        <meta name="robots" content="noindex, nofollow">
         <title>${curr_dir.getName().escapeHtml()}</title>
         ${css}
      </head>

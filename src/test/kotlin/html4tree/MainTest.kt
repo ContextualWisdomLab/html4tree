@@ -520,15 +520,6 @@ class MainTest {
         process_dir(tempDir)
     }
 
-    @Test
-    fun testIndexHtmlIncludesRobotsNoIndex() {
-        go(tempDir.absolutePath, 0)
-        val indexFile = File(tempDir, "index.html")
-        assertTrue(indexFile.exists(), "index.html should be generated")
-        val content = indexFile.readText()
-        assertTrue(content.contains("""<meta name="robots" content="noindex, nofollow">"""), "Generated HTML should include robots meta tag to prevent indexing")
-    }
-
     @Test(expected = IllegalArgumentException::class)
     fun testGoBlankDir() {
         go("   ", -1)
@@ -612,6 +603,14 @@ class MainTest {
         assertTrue(excluded.contains("pattern500"))
         assertFalse(excluded.contains("pattern1005"))
         assertFalse(excluded.contains(longPattern))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileReDosProtection() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*{*,*,*,*,*,*,*}*\n") // 8 wildcards > 5 limit
+        val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("index.html"))
     }
 
