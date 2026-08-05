@@ -43,3 +43,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2026-08-05 - 루프 내 정적 객체 반복 할당 최적화
+**Learning:** 디렉토리 순회 루프(예: `process_dir`, `process_ignore_file`) 내부에 큰 상수 문자열이나 고정된 설정 리스트(예: `defaultSensitiveFiles`)를 지역 변수로 선언하면, 매 호출마다 객체가 반복적으로 할당되어 메모리 낭비와 GC 압박을 유발합니다. 더불어 Kotlin에서 정적 속성을 추출할 때 암시적 getter로 인한 커버리지 하락을 막으려면 `private object` 내부에 `const val` 혹은 `@JvmField`를 활용해야 합니다.
+**Action:** 함수 호출마다 생성될 필요가 없는 고정 데이터(큰 문자열, 설정 리스트, 정해진 해시 연산 등)는 `private object`로 분리하여 애플리케이션 수명 주기 동안 한 번만 할당되도록 합니다.
