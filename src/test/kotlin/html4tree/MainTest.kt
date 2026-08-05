@@ -719,6 +719,25 @@ class MainTest {
     }
 
     @Test
+    fun testCrawlDirectoriesDefaultLambdaException() {
+        val missingDir = File(tempDir, "missing-dir")
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(missingDir, 0, null))
+
+        val processedDirs = mutableListOf<File>()
+
+        crawl_directories(
+            ll = queue,
+            maxLevel = -1,
+            processDirectory = { file, _, _ -> processedDirs.add(file) },
+            listFiles = { null }
+            // Using default readAttributes which will throw NoSuchFileException and return null
+        )
+
+        assertEquals(0, processedDirs.size)
+    }
+
+    @Test
     fun testCrawlDirectoriesDefaultLambdas() {
         val root = File(tempDir, "default-root")
         root.mkdir()
