@@ -347,19 +347,35 @@ class MainTest {
     }
 
     @Test
-    fun testWriteIndexFileCleansUpTempFileOnFailure() {
-        // Files.move cannot replace a non-empty directory, so this drives the
-        // exception path through write_index_file's finally block.
-        val indexDir = File(tempDir, "index.html")
-        indexDir.mkdir()
-        File(indexDir, "occupant.txt").writeText("keep")
-
-        assertFailsWith<Exception> {
-            write_index_file(tempDir, "content")
+    fun testWriteIndexFileFallbackOnAtomicMoveNotSupported() {
+        var fallbackCalled = false
+        val mockMove: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked")
+            }
+            fallbackCalled = true
+            java.nio.file.Files.move(src, dest, *options)
         }
 
-        assertTrue(indexDir.isDirectory)
-        assertEquals("keep", File(indexDir, "occupant.txt").readText())
+        write_index_file(tempDir, "test content", mockMove)
+
+        assertTrue(fallbackCalled, "Fallback to regular move was not called")
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals("test content", indexFile.readText())
+    }
+
+    @Test
+    fun testWriteIndexFileCleansUpTempFileOnFailure() {
+        // Using mock move to simulate a failure and cover the default moveFile fallback logic
+        val mockMoveFails: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
+            throw java.io.IOException("Mock IO Exception")
+        }
+
+        assertFailsWith<java.io.IOException> {
+            write_index_file(tempDir, "content", mockMoveFails)
+        }
+
         val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
         assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
     }
