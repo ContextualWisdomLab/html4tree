@@ -706,4 +706,14 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testIsHiddenFile() {
+        assertTrue(".env".isHiddenFile())
+        assertTrue("\u3002env".isHiddenFile())
+        assertTrue("\uFF0Eenv".isHiddenFile())
+        assertTrue("\uFF61env".isHiddenFile())
+        assertFalse("env".isHiddenFile())
+        assertFalse("".isHiddenFile())
+    }
 }
