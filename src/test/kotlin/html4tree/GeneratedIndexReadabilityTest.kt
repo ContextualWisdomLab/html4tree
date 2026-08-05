@@ -102,12 +102,7 @@ class GeneratedIndexReadabilityTest {
             }
             """.trimIndent()
         val darkModeMarker = "@media (prefers-color-scheme: dark)"
-        val darkRule =
-            """
-            .empty-dir {
-              color: #8b949e;
-            }
-            """.trimIndent()
+        val darkRule = "  .empty-dir {\n    color: #8b949e;\n  }"
 
         val baseRuleIndex = style.indexOf(baseRule)
         val darkModeIndex = style.indexOf(darkModeMarker)
