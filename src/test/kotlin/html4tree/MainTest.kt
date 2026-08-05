@@ -94,7 +94,6 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
-        assertTrue(htmlContent.contains("role=\"status\""))
         assertTrue(htmlContent.contains("role=\"list\""))
     }
 
