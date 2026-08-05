@@ -21,6 +21,15 @@ jobs:
         run: |
           echo "JAVA_HOME=$JAVA_HOME_11_X64" >> "$GITHUB_ENV"
           echo "$JAVA_HOME_11_X64/bin" >> "$GITHUB_PATH"
+      - name: Verify Gradle wrapper integrity
+        shell: bash
+        run: |
+          expected_sha256="76b12da7f4a7cdd025e5996811a2e49bf5df0fb62d72554ab555c0e434b63aae"
+          actual_sha256="$(sha256sum gradle/wrapper/gradle-wrapper.jar | awk '{print $1}')"
+          if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+            echo "::error file=gradle/wrapper/gradle-wrapper.jar::Gradle wrapper checksum mismatch: expected $expected_sha256, got $actual_sha256"
+            exit 1
+          fi
       - name: Build and test (includes jacoco coverage verification)
         run: ./gradlew build --no-daemon
       - name: Report coverage gaps on failure
