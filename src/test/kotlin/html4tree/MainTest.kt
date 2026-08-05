@@ -521,6 +521,26 @@ class MainTest {
         process_dir(tempDir)
     }
 
+    @Test
+    fun testProcessDirRootDirectoryNameFallback() {
+        // Create an anonymous File subclass to mock a root directory where getName() returns an empty string
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+
+        process_dir(fakeRoot)
+
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+
+        val expectedTitle = "<title>${fakeRoot.absolutePath.escapeHtml()}</title>"
+        val expectedH1 = "<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"
+        assertTrue(htmlContent.contains(expectedTitle), "Should fallback to absolutePath for title")
+        assertTrue(htmlContent.contains(expectedH1), "Should fallback to absolutePath for h1")
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun testGoBlankDir() {
         go("   ", -1)
