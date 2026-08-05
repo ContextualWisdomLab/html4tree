@@ -24,6 +24,14 @@ main {
   max-width: 800px;
   margin: 0 auto;
 }
+h1 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #d0d7de;
+  word-break: break-all;
+}
 ul {
   list-style-type: none;
   padding-left: 0;
@@ -59,10 +67,21 @@ a:hover, a:focus-visible {
     transition: none;
   }
 }
+.empty-dir {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  opacity: 0.7;
+  font-style: italic;
+}
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #0d1117;
     color: #c9d1d9;
+  }
+  h1 {
+    border-bottom-color: #21262d;
   }
   a {
     color: #58a6ff;
@@ -71,14 +90,6 @@ a:hover, a:focus-visible {
     background-color: #161b22;
     outline-color: #58a6ff;
   }
-}
-.empty-dir {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  opacity: 0.7;
-  font-style: italic;
 }
 """.trimIndent()
 
