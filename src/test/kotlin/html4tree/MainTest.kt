@@ -133,6 +133,20 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirWithEmptyName() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>${fakeRoot.absolutePath.escapeHtml()}</title>"))
+        assertTrue(htmlContent.contains("<h1>${fakeRoot.absolutePath.escapeHtml()}</h1>"))
+    }
+
+    @Test
     fun testReadFileIdentityMissingPathIsUnreadable() {
         val identity = read_file_identity(File(tempDir, "missing"))
 
