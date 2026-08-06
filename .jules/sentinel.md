@@ -88,3 +88,8 @@
 **Vulnerability:** CSP 해시 불일치로 인한 인라인 스타일 차단
 **Learning:** 브라우저는 인라인 스크립트와 스타일의 내부 텍스트(공백과 줄바꿈 포함)를 정확하게 해싱하여 Content-Security-Policy(CSP) 해시와 비교합니다. Kotlin의 멀티라인 문자열(`"""`)을 사용하여 템플릿에 콘텐츠를 주입할 때 암묵적인 여백이나 줄바꿈이 추가되면 최종 HTML 문자열이 변경되어 CSP 해시가 무효화됩니다.
 **Prevention:** 콘텐츠를 해싱하기 전에 `.trimIndent()`를 적용하여 원본 문자열을 정규화하고, HTML 템플릿에 주입할 때 `<style>${exactContent}</style>`와 같이 공백 없이 주입하여 해시가 완벽하게 일치하도록 해야 합니다.
+
+## 2024-05-18 - [파일 이동 시 TOCTOU 취약점 완화]
+**Vulnerability:** 애플리케이션이 `Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)`를 사용하여 임시 파일을 덮어쓰는 과정에서 TOCTOU (Time-of-Check to Time-of-Use) 취약점이 발생할 수 있었습니다.
+**Learning:** `REPLACE_EXISTING`은 기본적으로 원자적(atomic)이지 않습니다. 임시 파일이 생성되고 이동되는 사이에 다른 프로세스가 대상 파일이나 디렉토리 구조를 변경하면 상태 불일치나 예기치 않은 덮어쓰기가 발생할 수 있습니다.
+**Prevention:** `StandardCopyOption.ATOMIC_MOVE`와 `StandardCopyOption.REPLACE_EXISTING`을 함께 사용하여 원자성을 보장해야 합니다. 단, CI의 overlayfs와 같이 모든 파일 시스템에서 `ATOMIC_MOVE`를 지원하는 것은 아니므로, 항상 `AtomicMoveNotSupportedException`을 `try-catch`로 처리하고 `REPLACE_EXISTING`으로 폴백하도록 구현해야 합니다.
