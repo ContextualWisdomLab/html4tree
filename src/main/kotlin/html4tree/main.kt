@@ -160,7 +160,7 @@ internal fun crawl_directories(
     processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
-    readAttributes: (File) -> BasicFileAttributes? = ::read_basic_file_attributes,
+    readAttributes: (File) -> BasicFileAttributes? = { read_basic_file_attributes(it) },
     readIdentity: (File) -> FileIdentity = ::read_file_identity
 ) {
     var lle: LinkedListEntry? = ll.pull()
