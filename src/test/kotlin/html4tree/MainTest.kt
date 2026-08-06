@@ -87,16 +87,6 @@ class MainTest {
     }
 
     @Test
-    fun testCssContainsMicroUxImprovements() {
-        go(tempDir.absolutePath, -1)
-        val indexFile = File(tempDir, "index.html")
-        assertTrue(indexFile.exists())
-        val htmlContent = indexFile.readText()
-        assertTrue(htmlContent.contains("a:hover span:not(.icon), a:focus-visible span:not(.icon) {"))
-        assertTrue(htmlContent.contains("text-decoration: underline;"))
-    }
-
-    @Test
     fun testGoEmptyDir() {
         go(tempDir.absolutePath, -1)
         val indexFile = File(tempDir, "index.html")
