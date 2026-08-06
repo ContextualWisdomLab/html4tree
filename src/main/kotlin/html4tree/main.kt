@@ -1,6 +1,7 @@
 package html4tree
 
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.nio.file.Files
 import java.nio.file.LinkOption
@@ -119,6 +120,21 @@ internal fun read_file_identity(file: File): FileIdentity {
     }
 }
 
+internal fun read_basic_file_attributes(
+    file: File,
+    reader: (File) -> BasicFileAttributes = {
+        Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+    }
+): BasicFileAttributes? {
+    return try {
+        reader(file)
+    } catch (e: IOException) {
+        null
+    } catch (e: SecurityException) {
+        null
+    }
+}
+
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
     require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
@@ -144,13 +160,7 @@ internal fun crawl_directories(
     processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
-    readAttributes: (File) -> BasicFileAttributes? = {
-        try {
-            Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        } catch (e: Exception) {
-            null
-        }
-    },
+    readAttributes: (File) -> BasicFileAttributes? = { read_basic_file_attributes(it) },
     readIdentity: (File) -> FileIdentity = ::read_file_identity
 ) {
     var lle: LinkedListEntry? = ll.pull()
@@ -185,8 +195,15 @@ internal fun crawl_directories(
                 if(!it.name.startsWith(".") && it.name !in exclude) {
                     val itAttrs = readAttributes(it)
                     if (itAttrs != null && itAttrs.isDirectory && !itAttrs.isSymbolicLink) {
-                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
+                        val childIdentity = readIdentity(it)
+                        if (childIdentity.readable) {
+                            val childEntry = LinkedListEntry(
+                                it,
+                                currentLevel + 1,
+                                childIdentity.key
+                            )
+                            ll.push(childEntry)
+                        }
                     }
                 }
             }

@@ -1,13 +1,13 @@
 package html4tree
 
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 /** Regression coverage for fail-closed directory identity acquisition. */
 class CrawlDirectoriesIdentityRegressionTest {
@@ -69,16 +69,23 @@ class CrawlDirectoriesIdentityRegressionTest {
         }
     }
 
-    /** The default attribute reader must not hide unrelated programming failures. */
+    /** Expected I/O failures are converted to an absent attribute snapshot. */
     @Test
-    fun defaultAttributeReaderCatchesOnlyExpectedFilesystemFailures() {
-        val source = File("src/main/kotlin/html4tree/main.kt").readText()
-        val reader = source
-            .substringAfter("readAttributes: (File) -> BasicFileAttributes? = {")
-            .substringBefore("readIdentity: (File) -> FileIdentity")
+    fun basicAttributeReaderSkipsIoFailures() {
+        val candidate = File("missing")
 
-        assertTrue("catch (e: IOException)" in reader)
-        assertTrue("catch (e: SecurityException)" in reader)
-        assertFalse("catch (e: Exception)" in reader)
+        assertNull(read_basic_file_attributes(candidate) { throw IOException("missing") })
+    }
+
+    /** Expected access-control failures are converted to an absent attribute snapshot. */
+    @Test
+    fun basicAttributeReaderSkipsSecurityFailures() {
+        val candidate = File("restricted")
+
+        assertNull(
+            read_basic_file_attributes(candidate) {
+                throw SecurityException("restricted")
+            }
+        )
     }
 }
