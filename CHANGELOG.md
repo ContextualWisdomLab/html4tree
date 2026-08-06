@@ -19,3 +19,6 @@ All notable changes to this project are documented in this file.
 
 - Record the CSP byte-identity decision, threat boundary, verification contract,
   and current W3C Working Draft reference in `docs/doctoring`.
+
+### Security
+- Enhance crash-consistency of `index.html` generation by using `StandardCopyOption.ATOMIC_MOVE` on supporting filesystems (falling back to standard replacement), protecting against Time-of-Check to Time-of-Use (TOCTOU) file corruption.

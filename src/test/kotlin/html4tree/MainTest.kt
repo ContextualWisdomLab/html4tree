@@ -347,11 +347,11 @@ class MainTest {
     }
 
     @Test
-    fun testWriteIndexFileFallbackOnAtomicMoveNotSupported() {
+    fun testWriteIndexFileFallbackSuccessful() {
         var fallbackCalled = false
         val mockMove: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
             if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
-                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked")
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Simulated provider rejection")
             }
             fallbackCalled = true
             java.nio.file.Files.move(src, dest, *options)
@@ -359,25 +359,78 @@ class MainTest {
 
         write_index_file(tempDir, "test content", mockMove)
 
-        assertTrue(fallbackCalled, "Fallback to regular move was not called")
+        assertTrue(fallbackCalled, "Fallback should occur when Atomic Move fails")
         val indexFile = File(tempDir, "index.html")
         assertTrue(indexFile.exists())
         assertEquals("test content", indexFile.readText())
     }
 
     @Test
-    fun testWriteIndexFileCleansUpTempFileOnFailure() {
-        // Using mock move to simulate a failure and cover the default moveFile fallback logic
+    fun testWriteIndexFileTempPlacementInSameDirectory() {
+        var tempFileDir: java.io.File? = null
+        val mockMove: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
+            tempFileDir = src.toFile().parentFile
+            java.nio.file.Files.move(src, dest, *options)
+        }
+
+        write_index_file(tempDir, "temp dir content", mockMove)
+
+        assertTrue(tempFileDir != null, "temp file dir should not be null")
+        assertEquals(tempDir.absolutePath, tempFileDir!!.absolutePath, "Temporary file must be created in the target directory to support atomic moves")
+    }
+
+    @Test
+    fun testWriteIndexFileAtomicMoveSuccess() {
+        var atomicUsed = false
+        val mockMove: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                atomicUsed = true
+            }
+            java.nio.file.Files.move(src, dest, *options)
+        }
+
+        write_index_file(tempDir, "atomic content", mockMove)
+
+        assertTrue(atomicUsed, "Atomic move option should be used by default")
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals("atomic content", indexFile.readText())
+    }
+
+    @Test
+    fun testWriteIndexFileFallbackFailureCleansTempAndPreservesTarget() {
+        val targetIndex = File(tempDir, "index.html")
+        targetIndex.writeText("original target")
+
         val mockMoveFails: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
-            throw java.io.IOException("Mock IO Exception")
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Simulated provider rejection")
+            }
+            throw java.io.IOException("Fallback simulated IO failure")
         }
 
         assertFailsWith<java.io.IOException> {
-            write_index_file(tempDir, "content", mockMoveFails)
+            write_index_file(tempDir, "failed content", mockMoveFails)
+        }
+
+        assertEquals("original target", targetIndex.readText(), "Target should be preserved on fallback failure")
+        val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
+        assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+    }
+
+    @Test
+    fun testWriteIndexFileCleansUpTempFileOnFailure() {
+        val indexDir = File(tempDir, "index.html")
+        indexDir.mkdir()
+        File(indexDir, "occupant.txt").writeText("keep")
+
+        assertFailsWith<Exception> {
+            write_index_file(tempDir, "content")
         }
 
         val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
         assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+        assertEquals("keep", File(indexDir, "occupant.txt").readText())
     }
 
     @Test
