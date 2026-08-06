@@ -59,7 +59,7 @@ class CrawlDirectoriesIdentityRegressionTest {
                         }
                         else -> FileIdentity(null, false)
                     }
-                },
+                }
             )
 
             assertEquals(listOf(root), processed)
