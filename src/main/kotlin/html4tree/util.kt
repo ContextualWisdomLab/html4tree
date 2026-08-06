@@ -2,12 +2,6 @@ package html4tree
 
 import java.io.File
 
-fun String.isHiddenFile(): Boolean {
-    if (this.isEmpty()) return false
-    val c = this[0]
-    return c == '.' || c == '\u3002' || c == '\uFF0E' || c == '\uFF61'
-}
-
 data class Entry (val data: File, val level: Int, var next: Entry?, val fileKey: Any? = null)
 
 data class LinkedListEntry(val file: File, val level: Int, var fileKey: Any? = null)

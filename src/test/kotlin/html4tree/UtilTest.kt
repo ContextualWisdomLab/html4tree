@@ -5,7 +5,6 @@ import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
-import kotlin.test.assertFalse
 
 class UtilTest {
 
@@ -153,10 +152,5 @@ class UtilTest {
         assertEquals(File("f2"), list.pull()?.file)
         assertEquals(File("f3"), list.pull()?.file)
         assertNull(list.pull())
-    }
-
-    @Test
-    fun testIsHiddenFileEmptyString() {
-        assertFalse("".isHiddenFile())
     }
 }
