@@ -120,6 +120,21 @@ internal fun read_file_identity(file: File): FileIdentity {
     }
 }
 
+internal fun read_basic_file_attributes(
+    file: File,
+    reader: (File) -> BasicFileAttributes = {
+        Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+    }
+): BasicFileAttributes? {
+    return try {
+        reader(file)
+    } catch (e: IOException) {
+        null
+    } catch (e: SecurityException) {
+        null
+    }
+}
+
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
     require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
@@ -145,15 +160,7 @@ internal fun crawl_directories(
     processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
-    readAttributes: (File) -> BasicFileAttributes? = {
-        try {
-            Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        } catch (e: IOException) {
-            null
-        } catch (e: SecurityException) {
-            null
-        }
-    },
+    readAttributes: (File) -> BasicFileAttributes? = ::read_basic_file_attributes,
     readIdentity: (File) -> FileIdentity = ::read_file_identity
 ) {
     var lle: LinkedListEntry? = ll.pull()
