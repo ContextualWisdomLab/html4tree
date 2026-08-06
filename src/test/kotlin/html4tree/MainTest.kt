@@ -572,6 +572,17 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileHiddenFilesUnicodeHomoglyphs() {
+        File(tempDir, "\u3002myhidden").createNewFile()
+        File(tempDir, "\uFF0Ehiddendir").mkdir()
+        File(tempDir, "\uFF61env").createNewFile()
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("\u3002myhidden"))
+        assertTrue(excluded.contains("\uFF0Ehiddendir"))
+        assertTrue(excluded.contains("\uFF61env"))
+    }
+
+    @Test
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
