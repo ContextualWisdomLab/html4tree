@@ -50,14 +50,27 @@ a {
 }
 a:hover, a:focus-visible {
   background-color: #f6f8fa;
-  text-decoration: underline;
   outline: 2px solid #0969da;
   outline-offset: -2px;
+}
+a:hover span:last-child, a:focus-visible span:last-child {
+  text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
   a {
     transition: none;
   }
+}
+li + li {
+  border-top: 1px solid #d0d7de;
+}
+.empty-dir {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  color: #656d76;
+  font-style: italic;
 }
 @media (prefers-color-scheme: dark) {
   body {
@@ -71,14 +84,12 @@ a:hover, a:focus-visible {
     background-color: #161b22;
     outline-color: #58a6ff;
   }
-}
-.empty-dir {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  opacity: 0.7;
-  font-style: italic;
+  li + li {
+    border-top-color: #21262d;
+  }
+  .empty-dir {
+    color: #8b949e;
+  }
 }
 """.trimIndent()
 
