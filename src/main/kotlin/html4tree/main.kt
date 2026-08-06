@@ -1,6 +1,7 @@
 package html4tree
 
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.nio.file.Files
 import java.nio.file.LinkOption
@@ -147,7 +148,9 @@ internal fun crawl_directories(
     readAttributes: (File) -> BasicFileAttributes? = {
         try {
             Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        } catch (e: Exception) {
+        } catch (e: IOException) {
+            null
+        } catch (e: SecurityException) {
             null
         }
     },
@@ -185,8 +188,15 @@ internal fun crawl_directories(
                 if(!it.name.startsWith(".") && it.name !in exclude) {
                     val itAttrs = readAttributes(it)
                     if (itAttrs != null && itAttrs.isDirectory && !itAttrs.isSymbolicLink) {
-                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
+                        val childIdentity = readIdentity(it)
+                        if (childIdentity.readable) {
+                            val childEntry = LinkedListEntry(
+                                it,
+                                currentLevel + 1,
+                                childIdentity.key
+                            )
+                            ll.push(childEntry)
+                        }
                     }
                 }
             }
