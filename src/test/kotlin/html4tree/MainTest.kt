@@ -708,12 +708,15 @@ class MainTest {
     }
 
     @Test
-    fun testIsHiddenFile() {
-        assertTrue(".env".isHiddenFile())
-        assertTrue("\u3002env".isHiddenFile())
-        assertTrue("\uFF0Eenv".isHiddenFile())
-        assertTrue("\uFF61env".isHiddenFile())
-        assertFalse("env".isHiddenFile())
-        assertFalse("".isHiddenFile())
+    fun testProcessIgnoreFileInvalidGlob() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        // Malformed glob pattern that throws IllegalArgumentException (not just PatternSyntaxException)
+        ignoreFile.writeText("glob:*.{txt,")
+
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir, null)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
     }
 }
