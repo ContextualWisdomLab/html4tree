@@ -521,6 +521,21 @@ class MainTest {
         process_dir(tempDir)
     }
 
+    @Test
+    fun testProcessDirEmptyNameFallback() {
+        val rootDir = File(tempDir, "rootMockDir")
+        rootDir.mkdir()
+        val mockRootFile = object : File(tempDir, "rootMockDir") {
+            override fun getName() = ""
+        }
+        process_dir(mockRootFile)
+        val indexFile = File(rootDir, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>/</title>"))
+        assertTrue(htmlContent.contains("<h1>/</h1>"))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun testGoBlankDir() {
         go("   ", -1)
