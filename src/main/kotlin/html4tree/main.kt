@@ -13,87 +13,6 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
-private val CSS_CONTENT = """
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.5;
-  padding: 1rem;
-  color: #1f2328;
-}
-main {
-  max-width: 800px;
-  margin: 0 auto;
-}
-ul {
-  list-style-type: none;
-  padding-left: 0;
-}
-a.dir-link {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  width: 100%;
-  overflow-wrap: anywhere;
-  box-sizing: border-box;
-}
-.icon {
-  flex-shrink: 0;
-  width: 1.25rem;
-  text-align: center;
-}
-a {
-  padding: 0.5rem;
-  text-decoration: none;
-  color: #0969da;
-  border-radius: 4px;
-  transition: background-color 0.2s ease, outline-color 0.2s ease;
-}
-a:hover, a:focus-visible {
-  background-color: #f6f8fa;
-  outline: 2px solid #0969da;
-  outline-offset: -2px;
-}
-a:hover span:last-child, a:focus-visible span:last-child {
-  text-decoration: underline;
-}
-@media (prefers-reduced-motion: reduce) {
-  a {
-    transition: none;
-  }
-}
-li + li {
-  border-top: 1px solid #d0d7de;
-}
-.empty-dir {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  color: #656d76;
-  font-style: italic;
-}
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #0d1117;
-    color: #c9d1d9;
-  }
-  a {
-    color: #58a6ff;
-  }
-  a:hover, a:focus-visible {
-    background-color: #161b22;
-    outline-color: #58a6ff;
-  }
-  li + li {
-    border-top-color: #21262d;
-  }
-  .empty-dir {
-    color: #8b949e;
-  }
-}
-""".trimIndent()
-
-private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -298,7 +217,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        files_to_exclude.add("index.html")
 
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+    val defaultSensitiveFiles = Constants.DEFAULT_SENSITIVE_FILES
     files_to_exclude.addAll(defaultSensitiveFiles)
 
     // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
@@ -333,11 +252,11 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="color-scheme" content="light dark">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${STYLE_HASH}'; base-uri 'none'; form-action 'none';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${Constants.STYLE_HASH}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <title>${curr_dir.getName().escapeHtml()}</title>
-        <style>${CSS_CONTENT}</style>
+        <style>${Constants.CSS_CONTENT}</style>
      </head>
      <body>
        <main>
