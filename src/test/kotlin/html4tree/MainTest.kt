@@ -706,4 +706,28 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testIsHiddenFile() {
+        assertTrue(".env".isHiddenFile())
+        assertTrue("\u3002env".isHiddenFile())
+        assertTrue("\uFF0Egit".isHiddenFile())
+        assertTrue("\uFF61ssh".isHiddenFile())
+        assertFalse("test.txt".isHiddenFile())
+        assertFalse("".isHiddenFile())
+    }
+
+    @Test
+    fun testProcessIgnoreFileHomoglyphs() {
+        File(tempDir, "\u3002myhidden").createNewFile()
+        File(tempDir, "\uFF0Ehiddendir").mkdir()
+        File(tempDir, "\uFF61env").createNewFile()
+        File(tempDir, "test2.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir)
+        assertTrue(excluded.contains("\u3002myhidden"))
+        assertTrue(excluded.contains("\uFF0Ehiddendir"))
+        assertTrue(excluded.contains("\uFF61env"))
+        assertFalse(excluded.contains("test2.txt"))
+    }
 }
