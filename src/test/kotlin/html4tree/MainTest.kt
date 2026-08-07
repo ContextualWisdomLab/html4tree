@@ -582,6 +582,21 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileIllegalArgumentException() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        // '[' throws PatternSyntaxException, '\0' throws IllegalArgumentException
+        ignoreFile.writeText("a\u0000b\n\n*.log")
+
+        File(tempDir, "test.log").createNewFile()
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("test.log"))
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
     fun testProcessIgnoreFileDosProtection() {
         val ignoreFile = File(tempDir, ".html4ignore")
         val longPattern = "a".repeat(101)

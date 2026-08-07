@@ -88,3 +88,8 @@
 **Vulnerability:** CSP 해시 불일치로 인한 인라인 스타일 차단
 **Learning:** 브라우저는 인라인 스크립트와 스타일의 내부 텍스트(공백과 줄바꿈 포함)를 정확하게 해싱하여 Content-Security-Policy(CSP) 해시와 비교합니다. Kotlin의 멀티라인 문자열(`"""`)을 사용하여 템플릿에 콘텐츠를 주입할 때 암묵적인 여백이나 줄바꿈이 추가되면 최종 HTML 문자열이 변경되어 CSP 해시가 무효화됩니다.
 **Prevention:** 콘텐츠를 해싱하기 전에 `.trimIndent()`를 적용하여 원본 문자열을 정규화하고, HTML 템플릿에 주입할 때 `<style>${exactContent}</style>`와 같이 공백 없이 주입하여 해시가 완벽하게 일치하도록 해야 합니다.
+
+## 2026-08-07 - [MEDIUM] FileSystem getPathMatcher 예외 처리 미흡으로 인한 DoS
+**Vulnerability:** 사용자가 조작 가능한 .html4ignore 내의 glob 패턴 파싱 중 특정 잘못된 구문(예: 빈 문자열, 특정 특수 문자)으로 인해 java.lang.IllegalArgumentException 또는 기타 예외가 발생하여, 전체 프로세스가 중단(DoS)될 수 있습니다.
+**Learning:** Java NIO의 getPathMatcher 메서드는 PatternSyntaxException 외에도 IllegalArgumentException과 같은 다른 런타임 예외를 발생시킬 수 있습니다. 외부 입력을 처리할 때는 포괄적인 예외 처리가 필요합니다.
+**Prevention:** glob 패턴 파싱 및 getPathMatcher 호출 시 포괄적인 예외 처리를 사용하여 예상치 못한 런타임 예외로 인한 애플리케이션 충돌을 방지해야 합니다.
