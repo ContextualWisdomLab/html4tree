@@ -706,4 +706,19 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testGeneratedCssContainsNewH1Styles() {
+        val testDir = File(tempDir, "h1_style_test")
+        testDir.mkdir()
+        go(testDir.absolutePath, 0)
+
+        val indexFile = File(testDir, "index.html")
+        assertTrue(indexFile.exists())
+
+        val content = indexFile.readText()
+        assertTrue(content.contains("word-break: break-all;"))
+        assertTrue(content.contains("border-bottom: 1px solid #d0d7de;"))
+        assertTrue(content.contains("border-bottom-color: #21262d;"))
+    }
 }

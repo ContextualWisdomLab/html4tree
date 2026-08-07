@@ -406,4 +406,3 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 fun help() {
     println("ERROR: help has not been written yet!")
 }
-// Trigger CI re-run due to Strix backend failure
