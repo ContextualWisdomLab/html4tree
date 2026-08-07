@@ -365,6 +365,20 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileAtomicException() {
+        val localTempDir = Files.createTempDirectory("test_atomic").toFile()
+        try {
+            write_index_file(localTempDir, "content") { _, _ ->
+                throw java.nio.file.AtomicMoveNotSupportedException("src", "dest", "mock exception")
+            }
+            val indexPath = localTempDir.toPath().resolve("index.html")
+            assertTrue(Files.exists(indexPath))
+        } finally {
+            localTempDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
