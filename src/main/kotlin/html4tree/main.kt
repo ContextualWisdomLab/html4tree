@@ -24,6 +24,10 @@ main {
   max-width: 800px;
   margin: 0 auto;
 }
+h1 {
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
 ul {
   list-style-type: none;
   padding-left: 0;

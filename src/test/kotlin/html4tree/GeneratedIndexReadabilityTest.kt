@@ -178,4 +178,13 @@ class GeneratedIndexReadabilityTest {
             }
         return (0.2126 * channels[0]) + (0.7152 * channels[1]) + (0.0722 * channels[2])
     }
+
+    @Test
+    fun generatedH1PreventsMobileLayoutBreakage() {
+        process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
+        val style = emittedStyle()
+        assertTrue(style.contains("h1 {"))
+        assertTrue(style.contains("overflow-wrap: anywhere;"))
+        assertTrue(style.contains("word-break: break-all;"))
+    }
 }

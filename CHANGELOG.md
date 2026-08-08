@@ -12,21 +12,4 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
-- Generate the inline-style Content Security Policy SHA-256 source expression
-  from the exact normalized UTF-8 stylesheet bytes emitted into each generated
-  `index.html` file, preventing template whitespace from invalidating the policy.
-
-### Tests
-
-- Add a real generated-file regression test that independently recomputes the
-  declared style hash from the emitted `<style>` text.
-- Add generated-page regressions for row ordering, empty-state semantics, CSS
-  cascade ordering, reduced-motion retention, text-only decoration, and numeric
-  text/focus contrast thresholds.
-
-### Documentation
-
-- Record the CSP byte-identity decision, threat boundary, verification contract,
-  and current W3C Working Draft reference in `docs/doctoring`.
-- Record the generated-index readability decision, WCAG 2.2 engineering basis,
-  contrast calculations, scope boundaries, and verification contract.
+- 공백이 없는 긴 디렉토리 이름으로 인해 모바일 기기에서 레이아웃이 깨지는 현상을 방지하기 위해, 생성된 `h1` 태그에 `overflow-wrap: anywhere` 및 `word-break: break-all` 속성을 추가했습니다.
