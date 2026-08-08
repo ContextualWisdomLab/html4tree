@@ -365,6 +365,21 @@ class MainTest {
     }
 
     @Test
+    fun testAtomicMoveFallback() {
+        var fallbackCalled = false
+        write_index_file(tempDir, "content") { src, dest, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked")
+            } else {
+                fallbackCalled = true
+                java.nio.file.Files.move(src, dest, *options)
+            }
+        }
+        assertTrue(fallbackCalled, "Fallback move should be called when ATOMIC_MOVE is not supported")
+        assertEquals("content", File(tempDir, "index.html").readText())
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
