@@ -312,8 +312,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 }
 
 fun write_index_file(curr_dir: File, content: String) {
-    val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    val currDirPath = curr_dir.toPath()
+    val indexPath = currDirPath.resolve("index.html")
+    val tempPath = Files.createTempFile(currDirPath, ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
