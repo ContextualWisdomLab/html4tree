@@ -88,3 +88,8 @@
 **Vulnerability:** CSP 해시 불일치로 인한 인라인 스타일 차단
 **Learning:** 브라우저는 인라인 스크립트와 스타일의 내부 텍스트(공백과 줄바꿈 포함)를 정확하게 해싱하여 Content-Security-Policy(CSP) 해시와 비교합니다. Kotlin의 멀티라인 문자열(`"""`)을 사용하여 템플릿에 콘텐츠를 주입할 때 암묵적인 여백이나 줄바꿈이 추가되면 최종 HTML 문자열이 변경되어 CSP 해시가 무효화됩니다.
 **Prevention:** 콘텐츠를 해싱하기 전에 `.trimIndent()`를 적용하여 원본 문자열을 정규화하고, HTML 템플릿에 주입할 때 `<style>${exactContent}</style>`와 같이 공백 없이 주입하여 해시가 완벽하게 일치하도록 해야 합니다.
+
+## 2026-08-08 - [html4tree] 경로 및 입력 예외 처리 관련 보안 강화 (DoS 및 정보 노출 방지)
+**Vulnerability:** `getPathMatcher`가 던질 수 있는 `IllegalArgumentException` 누락에 의한 애플리케이션 크래시(DoS), 그리고 파일 시스템 루트(`""`) 처리 시 빈 문자열 노출로 인한 접근성 문제 및 대체 경로 사용 유도로 인한 정보 노출(Information Disclosure) 위험.
+**Learning:** `getPathMatcher`와 같은 기본 라이브러리는 예상치 못한 입력에 대해 문서화되지 않은 런타임 예외를 던질 수 있으며, 파일명 기반 처리는 루트 디렉토리 같은 엣지 케이스를 간과할 수 있습니다.
+**Prevention:** 사용자 제공 패턴 처리 시 `Exception`을 포괄적으로 잡아 크래시를 방지하고, 빈 파일명에 대해 `"/"` 같은 안전한 정적 대체값을 제공하여 파일 시스템 절대 경로가 노출되는 정보 누출을 방지하십시오.
