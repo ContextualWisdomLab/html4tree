@@ -2,9 +2,8 @@ package html4tree
 
 import org.junit.Test
 import java.io.File
-import kotlin.test.assertTrue
-import kotlin.test.assertEquals
 import java.nio.file.Files
+import kotlin.test.assertTrue
 
 class GlobTest {
     @Test
@@ -32,7 +31,9 @@ class GlobTest {
             val indexFile = File(tempDir, "index.html")
             assertTrue(indexFile.exists())
             val content = indexFile.readText()
-            assertTrue(content.contains("<title>${tempDir.name.escapeHtml()}</title>"))
+            val escapedDirName = tempDir.name.escapeHtml()
+            assertTrue(content.contains("<title>$escapedDirName</title>"))
+            assertTrue(content.contains("<h1>$escapedDirName</h1>"))
         } finally {
             tempDir.deleteRecursively()
         }
@@ -40,14 +41,21 @@ class GlobTest {
 }
 
 class ExtraTest {
-    @org.junit.Test
+    @Test
     fun testFallbackInlinedEmpty() {
-        // Just trigger the .ifEmpty branch explicitly for coverage if needed
-        val fakeFile = object : java.io.File("does_not_exist") {
+        val tempDir = Files.createTempDirectory("fallback_test_empty").toFile()
+        val emptyNameDir = object : File(tempDir.path) {
             override fun getName(): String = ""
         }
         try {
-            process_dir(fakeFile, emptySet(), emptyArray())
-        } catch (e: Exception) {}
+            process_dir(emptyNameDir, emptySet(), emptyArray())
+            val indexFile = File(tempDir, "index.html")
+            assertTrue(indexFile.exists())
+            val content = indexFile.readText()
+            assertTrue(content.contains("<title>/</title>"))
+            assertTrue(content.contains("<h1>/</h1>"))
+        } finally {
+            tempDir.deleteRecursively()
+        }
     }
 }
