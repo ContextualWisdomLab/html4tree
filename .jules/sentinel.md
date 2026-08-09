@@ -88,3 +88,7 @@
 **Vulnerability:** CSP 해시 불일치로 인한 인라인 스타일 차단
 **Learning:** 브라우저는 인라인 스크립트와 스타일의 내부 텍스트(공백과 줄바꿈 포함)를 정확하게 해싱하여 Content-Security-Policy(CSP) 해시와 비교합니다. Kotlin의 멀티라인 문자열(`"""`)을 사용하여 템플릿에 콘텐츠를 주입할 때 암묵적인 여백이나 줄바꿈이 추가되면 최종 HTML 문자열이 변경되어 CSP 해시가 무효화됩니다.
 **Prevention:** 콘텐츠를 해싱하기 전에 `.trimIndent()`를 적용하여 원본 문자열을 정규화하고, HTML 템플릿에 주입할 때 `<style>${exactContent}</style>`와 같이 공백 없이 주입하여 해시가 완벽하게 일치하도록 해야 합니다.
+## 2026-08-09 - 검색 엔진 연동 정보 노출 방지
+**Vulnerability:** 공개적으로 호스팅될 경우 검색 엔진에 의해 민감한 디렉토리 목록(Information Exposure)이 크롤링되어 노출될 수 있음
+**Learning:** 디렉토리 인덱스 페이지 등 정적 HTML 파일에 대한 검색 엔진의 크롤링을 방지하기 위해서는 `<meta name="robots" content="noindex, nofollow">`를 반드시 명시해야 함
+**Prevention:** HTML 생성 시 robots 메타 태그를 포함하도록 강제하고, 이를 확인하는 단위 테스트를 작성해야 함
