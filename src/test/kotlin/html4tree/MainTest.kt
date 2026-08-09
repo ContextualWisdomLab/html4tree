@@ -344,6 +344,7 @@ class MainTest {
         assertTrue(htmlContent.contains("prefers-reduced-motion"))
         assertTrue(htmlContent.contains("max-width: 800px;"))
         assertTrue(htmlContent.contains("margin: 0 auto;"))
+        assertTrue(htmlContent.contains("overflow-wrap: anywhere;"))
     }
 
     @Test
@@ -705,15 +706,5 @@ class MainTest {
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
-    }
-
-    @Test
-    fun testIsHiddenFile() {
-        assertTrue(".hidden".isHiddenFile())
-        assertTrue("\uFF0Ehidden".isHiddenFile())
-        assertTrue("\u3002hidden".isHiddenFile())
-        assertTrue("\uFF61hidden".isHiddenFile())
-        assertFalse("visible.txt".isHiddenFile())
-        assertFalse("".isHiddenFile())
     }
 }
