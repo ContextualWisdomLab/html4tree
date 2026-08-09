@@ -377,6 +377,29 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileHandlesAtomicMoveNotSupported() {
+        val content = "atomic fallback content"
+        write_index_file(tempDir, content) { source, target ->
+            throw java.nio.file.AtomicMoveNotSupportedException(source.toString(), target.toString(), "Mocked atomic move failure")
+        }
+        val indexPath = File(tempDir, "index.html")
+        assertTrue(indexPath.exists())
+        assertEquals(content, indexPath.readText())
+    }
+
+    @Test
+    fun testWriteIndexFileAtomicMoveSuccessFallback() {
+        val content = "atomic move success content"
+        // This simulates a successful atomic move when no exception is thrown
+        write_index_file(tempDir, content) { source, target ->
+             Files.move(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+        val indexPath = File(tempDir, "index.html")
+        assertTrue(indexPath.exists())
+        assertEquals(content, indexPath.readText())
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
