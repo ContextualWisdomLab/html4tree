@@ -516,6 +516,18 @@ class MainTest {
     }
 
     @Test
+    fun testProcessDirEmptyNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") { override fun getName() = "" }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexFile = File(fakeRoot, "index.html")
+        assertTrue(indexFile.exists())
+        val htmlContent = indexFile.readText()
+        assertTrue(htmlContent.contains("<title>/</title>"))
+        assertTrue(htmlContent.contains("<h1>/</h1>"))
+    }
+
+    @Test
     fun testProcessDirItEqualsCurrDir() {
         File(tempDir, "tempDir").mkdir()
         process_dir(tempDir)

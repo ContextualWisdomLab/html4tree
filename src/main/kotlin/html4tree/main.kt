@@ -326,6 +326,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
 
+    val dirName = if (curr_dir.name.isEmpty()) "/" else curr_dir.name
+
     val index_top = """<!doctype html>
 <html lang="ko">
      <head>
@@ -336,12 +338,12 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${STYLE_HASH}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
-        <title>${curr_dir.getName().escapeHtml()}</title>
+        <title>${dirName.escapeHtml()}</title>
         <style>${CSS_CONTENT}</style>
      </head>
      <body>
        <main>
-         <h1>${curr_dir.getName().escapeHtml()}</h1>
+         <h1>${dirName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
