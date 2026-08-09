@@ -144,20 +144,14 @@ internal fun crawl_directories(
     processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
-    readAttributes: (File) -> BasicFileAttributes? = {
-        try {
-            Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        } catch (e: Exception) {
-            null
-        }
-    },
+    isDirectory: (File) -> Boolean = { Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) },
+    isSymbolicLink: (File) -> Boolean = { Files.isSymbolicLink(it.toPath()) },
     readIdentity: (File) -> FileIdentity = ::read_file_identity
 ) {
     var lle: LinkedListEntry? = ll.pull()
 
     while(lle != null){
-        val attrs = readAttributes(lle.file)
-        if (attrs == null || !attrs.isDirectory) {
+        if (!isDirectory(lle.file)) {
             lle = ll.pull()
             continue
         }
@@ -180,14 +174,11 @@ internal fun crawl_directories(
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls (isDirectory/isSymbolicLink)
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.startsWith(".") && it.name !in exclude) {
-                    val childAttrs = readAttributes(it)
-                    if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
-                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
-                    }
+                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
+                    val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                    ll.push(childEntry)
                 }
             }
         }
