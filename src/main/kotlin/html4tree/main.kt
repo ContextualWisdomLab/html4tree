@@ -185,7 +185,7 @@ internal fun crawl_directories(
             dirFiles?.forEach {
                 // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.startsWith(".") && it.name !in exclude) {
+                if(!it.name.isHiddenFile() && it.name !in exclude) {
                     val childAttrs = readAttributes(it)
                     if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
                         val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
@@ -195,6 +195,13 @@ internal fun crawl_directories(
             }
         }
         lle = ll.pull()
+    }
+}
+
+fun String.isHiddenFile(): Boolean {
+    return when (firstOrNull()) {
+        '.', '\u3002', '\uFF0E', '\uFF61' -> true
+        else -> false
     }
 }
 
@@ -313,9 +320,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
-    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
+    // 보안 향상: dot-like prefixes are treated as hidden to prevent visually-confusable sensitive entries from reaching generated indexes.
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.startsWith(".")) {
+        if (it.isHiddenFile()) {
             files_to_exclude.add(it)
         }
     }
@@ -369,7 +376,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
-           if (!fileName.startsWith(".") && fileName !in exclude) {
+           if (!fileName.isHiddenFile() && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
                try {
