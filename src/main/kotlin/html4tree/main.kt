@@ -147,20 +147,14 @@ internal fun crawl_directories(
     processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
-    readAttributes: (File) -> BasicFileAttributes? = {
-        try {
-            Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        } catch (e: Exception) {
-            null
-        }
-    },
+    isDirectory: (File) -> Boolean = { Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS) },
+    isSymbolicLink: (File) -> Boolean = { Files.isSymbolicLink(it.toPath()) },
     readIdentity: (File) -> FileIdentity = ::read_file_identity
 ) {
     var lle: LinkedListEntry? = ll.pull()
 
     while(lle != null){
-        val attrs = readAttributes(lle.file)
-        if (attrs == null || !attrs.isDirectory) {
+        if (!isDirectory(lle.file)) {
             lle = ll.pull()
             continue
         }
@@ -183,25 +177,15 @@ internal fun crawl_directories(
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls (isDirectory/isSymbolicLink)
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.isHiddenFile() && it.name !in exclude) {
-                    val childAttrs = readAttributes(it)
-                    if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
-                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
-                    }
+                if(!it.name.startsWith(".") && it.name !in exclude && isDirectory(it) && !isSymbolicLink(it)) {
+                    val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                    ll.push(childEntry)
                 }
             }
         }
         lle = ll.pull()
-    }
-}
-
-fun String.isHiddenFile(): Boolean {
-    return when (firstOrNull()) {
-        '.', '\u3002', '\uFF0E', '\uFF61' -> true
-        else -> false
     }
 }
 
@@ -320,9 +304,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
     files_to_exclude.addAll(defaultSensitiveFiles)
 
-    // 보안 향상: dot-like prefixes are treated as hidden to prevent visually-confusable sensitive entries from reaching generated indexes.
+    // 보안 향상: .env, .git 등 민감한 정보가 포함될 수 있는 숨김 파일(.으로 시작하는 모든 항목)을 기본적으로 노출하지 않도록 제외 (정보 노출 방지)
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.isHiddenFile()) {
+        if (it.startsWith(".")) {
             files_to_exclude.add(it)
         }
     }
@@ -376,7 +360,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
-           if (!fileName.isHiddenFile() && fileName !in exclude) {
+           if (!fileName.startsWith(".") && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
                try {
@@ -425,3 +409,5 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 fun help() {
     println("ERROR: help has not been written yet!")
 }
+
+// Trigger CI re-run
