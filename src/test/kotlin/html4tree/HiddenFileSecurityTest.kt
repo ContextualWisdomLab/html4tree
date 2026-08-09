@@ -2,9 +2,21 @@ package html4tree
 
 import org.junit.Test
 import java.nio.file.Files
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HiddenFileSecurityTest {
+    @Test
+    fun hiddenFileClassifierRecognizesAsciiAndUnicodeDotPrefixes() {
+        val hiddenNames = listOf(".env", "\u3002env", "\uFF0Egit", "\uFF61ssh")
+
+        hiddenNames.forEach { name ->
+            assertTrue(name.isHiddenFile(), "Dot-like prefix must be treated as hidden: $name")
+        }
+        assertFalse("visible.txt".isHiddenFile())
+        assertFalse("".isHiddenFile())
+    }
+
     @Test
     fun unicodeDotHomoglyphsAreExcludedFromDirectoryIndexes() {
         val directory = Files.createTempDirectory("html4tree-homoglyph-").toFile()
