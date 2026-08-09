@@ -43,3 +43,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2026-08-09 - 잦은 호출 함수 내 고정 컬렉션 및 Comparator 할당 최적화
+**학습:** `process_ignore_file` 내 `listOf` 및 `process_dir` 내 `compareBy`와 같이 자주 호출되는 함수 내부에서 객체를 반복 할당하면 불필요한 성능 및 메모리 오버헤드가 발생합니다.
+**조치:** 불변 정적 문자열, 컬렉션 및 람다(Comparator 등)는 최상단 `private val` 상수로 호이스팅(hoisting)하여 객체 할당을 한 번으로 줄입니다.
