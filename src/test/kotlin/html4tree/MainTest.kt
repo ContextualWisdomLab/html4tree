@@ -533,6 +533,20 @@ class MainTest {
         process_dir(tempDir)
     }
 
+    @Test
+    fun testRootDirectoryNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot)
+        val indexHtml = File(fakeRoot, "index.html")
+        assertTrue(indexHtml.exists())
+        val htmlContent = indexHtml.readText()
+        assertTrue(htmlContent.contains("<title>Root</title>"))
+        assertTrue(htmlContent.contains("<h1>Root</h1>"))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun testGoBlankDir() {
         go("   ", -1)
