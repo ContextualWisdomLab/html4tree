@@ -739,4 +739,41 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testToctouSymlinkSwapRejectionPostListing() {
+        val subdir = File(tempDir, "toctou_test_dir_post")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "valid-key"
+        ll.push(entry)
+
+        var processed = false
+        var listCalled = false
+        var identityCallCount = 0
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = {
+                listCalled = true
+                emptyArray()
+            },
+            readAttributes = { file -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = {
+                identityCallCount++
+                if (identityCallCount == 1) {
+                    FileIdentity("valid-key", true) // First check passes
+                } else {
+                    FileIdentity("changed-key", true) // Second check fails (swapped)
+                }
+            }
+        )
+
+        assertTrue(listCalled, "listFiles should be called since the first check passes")
+        assertFalse(processed, "Directory processing should be skipped due to TOCTOU mitigation post-listing")
+    }
 }

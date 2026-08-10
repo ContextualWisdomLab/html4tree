@@ -172,6 +172,14 @@ internal fun crawl_directories(
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)
+
+        // 보안 향상: 디렉토리 목록을 가져온 후, 악의적인 심볼릭 링크로 교체되었는지 확인하여 TOCTOU 취약점을 방지합니다.
+        val postIdentity = readIdentity(lle.file)
+        if (!postIdentity.readable || currentIdentity.key != postIdentity.key) {
+            lle = ll.pull()
+            continue
+        }
+
         val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
@@ -338,9 +346,9 @@ fun write_index_file(
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
             // 보안 향상: TOCTOU(Time-of-Check to Time-of-Use) 및 불완전한 파일 쓰기를 방지하기 위해 Atomic Move를 시도합니다.
-            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE))
+            moveFile(tempPath, indexPath, arrayOf<java.nio.file.CopyOption>(StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE))
         } catch (e: java.nio.file.AtomicMoveNotSupportedException) {
-            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+            moveFile(tempPath, indexPath, arrayOf<java.nio.file.CopyOption>(StandardCopyOption.REPLACE_EXISTING))
         }
     } finally {
         Files.deleteIfExists(tempPath)

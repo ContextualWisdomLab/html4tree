@@ -93,3 +93,8 @@
 **Vulnerability:** 파일 쓰기 중간에 충돌이 발생하거나 파일 교체 중 불완전한 상태가 노출되는 취약점 및 TOCTOU(Time-of-Check to Time-of-Use) 취약점
 **Learning:** 파일을 쓸 때 임시 파일에 먼저 쓰고 `Files.move`를 사용할 때 `StandardCopyOption.ATOMIC_MOVE`를 사용하지 않으면, 파일 교체 중간 상태가 노출되거나 다른 프로세스가 해당 파일을 참조할 때 불완전한 상태일 수 있습니다. 환경에 따라(예: Docker의 overlayfs 등) Atomic Move를 지원하지 않을 수 있으므로, `AtomicMoveNotSupportedException` 발생 시 기본 교체로 폴백(fallback)하는 방어가 필요합니다.
 **Prevention:** 파일 업데이트 시 임시 파일에 내용을 완전히 쓴 후, `StandardCopyOption.ATOMIC_MOVE` 옵션과 함께 `Files.move`를 사용하여 대상 경로로 원자적으로 이동시키고 지원하지 않는 경우를 대비한 `try-catch` 폴백을 구현하십시오.
+
+## 2026-08-10 - [html4tree] 파일 리스팅 중 발생하는 심볼릭 링크 스왑 취약점(TOCTOU) 추가 대응
+**Vulnerability:** 디렉토리 속성 검사 직후부터 파일 리스팅 시점 사이에 악의적인 심볼릭 링크로 교체될 수 있는 TOCTOU 취약점.
+**Learning:** 크롤러가 파일을 큐에서 꺼내어 검사하는 과정과 실제 리스팅하는 과정 사이에 시간차가 발생하면, 공격자가 심볼릭 링크를 통해 의도되지 않은 디렉토리의 파일을 노출시킬 수 있습니다.
+**Prevention:** 큐에서 꺼내어 검사한 직후 리스팅(`listFiles`)을 수행한 다음, 다시 한번 디렉토리의 속성(`BasicFileAttributes.fileKey()`)을 검사하여 속성이 변경되었거나 접근이 불가해진 경우를 감지하고 작업을 취소해야 합니다.
