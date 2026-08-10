@@ -172,7 +172,8 @@ internal fun crawl_directories(
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)
-        val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
+        // ⚡ Bolt Performance Optimization: Avoid intermediate ArrayList allocation during array creation
+        val dirFilesNames = dirFiles?.let { files -> Array(files.size) { files[it].name } }
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
