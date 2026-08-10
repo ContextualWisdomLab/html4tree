@@ -88,3 +88,7 @@
 **Vulnerability:** CSP 해시 불일치로 인한 인라인 스타일 차단
 **Learning:** 브라우저는 인라인 스크립트와 스타일의 내부 텍스트(공백과 줄바꿈 포함)를 정확하게 해싱하여 Content-Security-Policy(CSP) 해시와 비교합니다. Kotlin의 멀티라인 문자열(`"""`)을 사용하여 템플릿에 콘텐츠를 주입할 때 암묵적인 여백이나 줄바꿈이 추가되면 최종 HTML 문자열이 변경되어 CSP 해시가 무효화됩니다.
 **Prevention:** 콘텐츠를 해싱하기 전에 `.trimIndent()`를 적용하여 원본 문자열을 정규화하고, HTML 템플릿에 주입할 때 `<style>${exactContent}</style>`와 같이 공백 없이 주입하여 해시가 완벽하게 일치하도록 해야 합니다.
+## 2024-08-10 - glob 패턴 구문 오류로 인한 애플리케이션 크래시(DoS) 방지
+**Vulnerability:** 파일 필터링 로직에서 `getPathMatcher` 사용 시 특정 구문 오류에 대해 `java.util.regex.PatternSyntaxException`만 예외 처리하여, 그 외의 `IllegalArgumentException` 발생 시 애플리케이션이 크래시되는 DoS 취약점이 존재했습니다.
+**Learning:** `java.nio.file.FileSystems.getDefault().getPathMatcher()`는 인자가 유효하지 않을 때 `IllegalArgumentException`을 던지며, `PatternSyntaxException`은 이의 하위 클래스입니다. 다양한 패턴 오류를 포괄적으로 처리하기 위해서는 상위 클래스인 `IllegalArgumentException`을 잡는 처리하는 것이 안전합니다.
+**Prevention:** 외부 입력(패턴)을 파싱하는 라이브러리 함수 호출 시, 공식 문서에 명시된 모든 발생 가능한 예외(특히 `IllegalArgumentException`과 같은 포괄적 예외)를 방어적으로 처리하여 예기치 않은 크래시를 방지합니다.

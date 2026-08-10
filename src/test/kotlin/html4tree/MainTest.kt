@@ -717,4 +717,12 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testProcessIgnoreFileIllegalArgumentException() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("[\n")
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("index.html"))
+    }
 }
