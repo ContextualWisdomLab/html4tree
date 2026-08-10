@@ -95,6 +95,12 @@ li + li {
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 
+// ⚡ Bolt Performance Optimization: Extract static collection to prevent redundant allocations inside the frequently called process_ignore_file loop.
+private object Config {
+    @JvmField
+    val DEFAULT_SENSITIVE_FILES = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+}
+
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
     val topDir: String by argument(help="Top directory to crawl")
@@ -314,8 +320,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        files_to_exclude.add("index.html")
 
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
-    files_to_exclude.addAll(defaultSensitiveFiles)
+    // ⚡ Bolt Performance Optimization: Use pre-allocated static collection instead of creating a new list on every directory visit
+    files_to_exclude.addAll(Config.DEFAULT_SENSITIVE_FILES)
 
     // 보안 향상: dot-like prefixes are treated as hidden to prevent visually-confusable sensitive entries from reaching generated indexes.
     (dirFilesNames ?: curr_dir.list())?.forEach {

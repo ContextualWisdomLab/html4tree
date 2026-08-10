@@ -46,3 +46,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화 (순회 루프)
 **학습:** 디렉토리 순회 루프 내에서 isDirectory 및 isSymbolicLink 두 번의 stat을 각각 호출하면 파일 시스템 I/O 오버헤드가 배가됩니다. 메모리 내 제외 규칙 확인 후 한 번의 readAttributes로 속성을 한 번에 가져오는 것이 훨씬 빠릅니다.
 **조치:** Files.isDirectory 및 Files.isSymbolicLink를 단일 Files.readAttributes 호출로 교체하여 O(N) I/O 통신을 최적화했습니다.
+## 2025-01-24 - 불필요한 로컬 컬렉션 인스턴스화 최적화
+**Learning:** `process_ignore_file`과 같이 디렉토리마다 반복적으로 호출되는 함수 내부에서 `listOf`를 통해 리스트를 선언하면, 매 방문 시 새 컬렉션이 할당되어 불필요한 가비지 컬렉션(GC) 압력이 발생합니다.
+**Action:** 자주 참조되는 정적 컬렉션은 함수 내부에 선언하지 않고 `private object`로 추출하여 애플리케이션 수명 주기 동안 한 번만 할당되도록 최적화합니다.
