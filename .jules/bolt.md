@@ -46,3 +46,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화 (순회 루프)
 **학습:** 디렉토리 순회 루프 내에서 isDirectory 및 isSymbolicLink 두 번의 stat을 각각 호출하면 파일 시스템 I/O 오버헤드가 배가됩니다. 메모리 내 제외 규칙 확인 후 한 번의 readAttributes로 속성을 한 번에 가져오는 것이 훨씬 빠릅니다.
 **조치:** Files.isDirectory 및 Files.isSymbolicLink를 단일 Files.readAttributes 호출로 교체하여 O(N) I/O 통신을 최적화했습니다.
+## 2025-01-25 - Comparator 객체 생성 방지 (루프 외부 할당)
+**학습:** Kotlin에서 `compareBy { it.name }`를 루프 내부에서 또는 빈번하게 호출되는 함수에서 사용할 경우 매 호출마다 새로운 `Comparator` 객체가 할당되어 성능 및 가비지 컬렉션(GC) 압력이 발생합니다.
+**조치:** 빈번한 정렬 작업에 사용되는 Comparator를 최상위 레벨의 `private val` 상수로 호이스팅(hoisting)하여 매번 새롭게 객체가 생성되는 것을 방지합니다.
