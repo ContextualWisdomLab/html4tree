@@ -88,3 +88,8 @@
 **Vulnerability:** CSP 해시 불일치로 인한 인라인 스타일 차단
 **Learning:** 브라우저는 인라인 스크립트와 스타일의 내부 텍스트(공백과 줄바꿈 포함)를 정확하게 해싱하여 Content-Security-Policy(CSP) 해시와 비교합니다. Kotlin의 멀티라인 문자열(`"""`)을 사용하여 템플릿에 콘텐츠를 주입할 때 암묵적인 여백이나 줄바꿈이 추가되면 최종 HTML 문자열이 변경되어 CSP 해시가 무효화됩니다.
 **Prevention:** 콘텐츠를 해싱하기 전에 `.trimIndent()`를 적용하여 원본 문자열을 정규화하고, HTML 템플릿에 주입할 때 `<style>${exactContent}</style>`와 같이 공백 없이 주입하여 해시가 완벽하게 일치하도록 해야 합니다.
+
+## 2026-08-10 - [MEDIUM] Glob 패턴 컴파일 중 포괄적인 예외 처리 누락으로 인한 DoS
+**Vulnerability:** `.html4ignore` 파일 파싱 중 사용자가 입력한 잘못된 glob 패턴(예: 비어있거나 특정 문법 오류가 있는 패턴)이 `IllegalArgumentException`을 발생시켜 전체 크롤러 애플리케이션 충돌을 유발(DoS)할 수 있었습니다.
+**Learning:** `FileSystems.getDefault().getPathMatcher()`는 잘못된 구문(Syntax)에 대해 `PatternSyntaxException`뿐만 아니라 구문이 잘못된 특수한 형태에 대해 `IllegalArgumentException`도 발생시킬 수 있습니다.
+**Prevention:** 정규식이나 glob과 같이 런타임에 동적으로 사용자 입력을 컴파일하는 부분에서는 구문 관련 특정 예외뿐만 아니라 `Exception`과 같은 일반적인(generic) 예외를 모두 처리하여 크래시를 방지하고 안전하게 실패(Fail Securely)하도록(무시하도록) 구현해야 합니다.

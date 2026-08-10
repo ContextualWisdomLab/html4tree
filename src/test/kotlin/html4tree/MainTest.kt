@@ -594,6 +594,19 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileDosException() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        // Malformed glob syntax to trigger IllegalArgumentException
+        ignoreFile.writeText("]")
+
+        File(tempDir, "test.txt").createNewFile()
+
+        val excluded = process_ignore_file(tempDir, null)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
     fun testProcessIgnoreFileDosProtection() {
         val ignoreFile = File(tempDir, ".html4ignore")
         val longPattern = "a".repeat(101)
