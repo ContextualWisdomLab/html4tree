@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import kotlin.test.assertEquals
@@ -374,6 +375,27 @@ class MainTest {
         assertEquals("keep", File(indexDir, "occupant.txt").readText())
         val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
         assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+    }
+
+    @Test
+    fun testWriteIndexFileAtomicFallback() {
+        var calledWithAtomic = false
+        var calledWithoutAtomic = false
+        val mockMove: (java.nio.file.Path, java.nio.file.Path, Array<java.nio.file.CopyOption>) -> java.nio.file.Path = { src, dest, options ->
+            if (options.contains(StandardCopyOption.ATOMIC_MOVE)) {
+                calledWithAtomic = true
+                throw java.nio.file.AtomicMoveNotSupportedException(src.toString(), dest.toString(), "Mocked")
+            } else {
+                calledWithoutAtomic = true
+                Files.move(src, dest, *options)
+            }
+        }
+
+        write_index_file(tempDir, "atomic fallback test", mockMove)
+
+        assertTrue(calledWithAtomic, "Should attempt atomic move first")
+        assertTrue(calledWithoutAtomic, "Should fallback to non-atomic move")
+        assertEquals("atomic fallback test", File(tempDir, "index.html").readText())
     }
 
     @Test
