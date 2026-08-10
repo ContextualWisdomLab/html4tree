@@ -352,6 +352,7 @@ class MainTest {
         assertTrue(htmlContent.contains("font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;"))
         assertTrue(htmlContent.contains("line-height: 1.5;"))
         assertTrue(htmlContent.contains("padding: 1rem;"))
+        assertTrue(htmlContent.contains("padding: 0.75rem 0.5rem;"))
         assertTrue(htmlContent.contains("transition: background-color"))
         assertTrue(htmlContent.contains("prefers-reduced-motion"))
         assertTrue(htmlContent.contains("max-width: 800px;"))

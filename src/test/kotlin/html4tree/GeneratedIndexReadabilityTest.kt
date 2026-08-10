@@ -96,7 +96,7 @@ class GeneratedIndexReadabilityTest {
               display: flex;
               align-items: flex-start;
               gap: 0.5rem;
-              padding: 0.5rem;
+              padding: 0.75rem 0.5rem;
               color: #656d76;
               font-style: italic;
             }

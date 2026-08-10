@@ -26,29 +26,33 @@
 **학습:** 하드코딩된 인라인 색상(예: `color: #666`)은 CSS 미디어 쿼리를 우회하며 `!important` 없이는 쉽게 재정의할 수 없기 때문에 다크 모드에서 적응하지 못하고, 어두운 배경에서 텍스트 가독성 문제를 일으킵니다.
 **조치:** 어두운 텍스트에 하드코딩된 16진수 값 대신 `opacity: 0.7`을 사용하여 테마 색상을 동적으로 상속받고 모든 색상 구성표에서 가독성을 보장하십시오.
 
-## 2024-07-12 - Prevent icon misalignment on long file names
-**Learning:** Very long file names in a fluid layout without explicit flexbox wrapping can cause text to wrap below preceding inline icons, breaking the visual hierarchy and alignment.
-**Action:** Always wrap file/directory listings in a flex container with `align-items: flex-start` and isolate icons with `flex-shrink: 0` alongside text content wrapped in a `<span style="overflow-wrap: anywhere;">` (or a global `overflow-wrap` on the container) to ensure text wraps cleanly next to fixed-width icons on mobile devices.
+## 2024-07-12 - 긴 파일 이름에서의 아이콘 오정렬 방지
+**학습:** 명시적인 flexbox 줄바꿈 설정이 없는 유동적인 레이아웃에서 파일 이름이 너무 길 경우, 텍스트가 앞에 있는 인라인 아이콘 아래로 넘어가 시각적 계층 구조와 정렬이 깨질 수 있습니다.
+**조치:** 파일/디렉토리 목록을 항상 `align-items: flex-start` 속성을 가진 flex 컨테이너로 감싸고, 아이콘을 `flex-shrink: 0`으로 격리하십시오. 또한 모바일 환경에서 텍스트가 고정 너비의 아이콘 옆에서 깔끔하게 줄바꿈되도록 텍스트 컨텐츠를 `<span style="overflow-wrap: anywhere;">`로 감싸거나 컨테이너 전체에 `overflow-wrap`을 적용하십시오.
 
 ## 2024-08-01 - 파일 아이콘 메타포
 **학습:** 일반 파일을 나타낼 때 방향 지시 아이콘(우측 삼각형 등)을 사용하면 폴더나 확장 가능한 요소로 오해할 수 있어 시각적인 모호함을 초래합니다. 문서나 페이지 형태의 아이콘이 파일이라는 것을 직관적으로 알 수 있게 해줍니다.
 **조치:** 일반 파일 옆에 표시되는 장식용 아이콘을 우측 삼각형 등에서 페이지 아이콘(예: `&#128196;`)으로 교체하여 시각적 메타포를 일관성 있게 유지하십시오.
 
 ## 2024-05-24 - [a 태그에 부드러운 트랜지션 추가 및 사용자의 모션 설정 존중]
-**Learning:** CSS 트랜지션(`transition: all`)을 추가하면 의도치 않은 애니메이션과 성능 문제를 일으킬 수 있습니다. 또한, 애니메이션은 전정 운동 장애가 있는 사용자에게 문제를 유발할 수 있습니다.
-**Action:** CSS 트랜지션을 추가할 때 `transition: all` 대신 속성(`background-color`, `outline-color` 등)을 명시적으로 지정하십시오. 접근성을 위해 항상 `@media (prefers-reduced-motion: reduce)` 오버라이드를 포함하여 `transition: none`으로 설정하십시오.
+**학습:** CSS 트랜지션(`transition: all`)을 추가하면 의도치 않은 애니메이션과 성능 문제를 일으킬 수 있습니다. 또한, 애니메이션은 전정 운동 장애가 있는 사용자에게 문제를 유발할 수 있습니다.
+**조치:** CSS 트랜지션을 추가할 때 `transition: all` 대신 속성(`background-color`, `outline-color` 등)을 명시적으로 지정하십시오. 접근성을 위해 항상 `@media (prefers-reduced-motion: reduce)` 오버라이드를 포함하여 `transition: none`으로 설정하십시오.
 
 ## 2024-07-10 - 다크 모드 지원 및 지역화 일관성 확보
-**Learning:** `html4tree` CLI로 생성되는 정적 HTML에서 사용자는 네이티브 다크 모드를 기대하며(접근성, 가독성 문제), `<nav>` 레이블("Directory listing")이 다른 UI와 다르게 영문으로 되어 있어 스크린 리더 환경 등에서 지역화(Localization) 일관성을 해칩니다.
-**Action:** `prefers-color-scheme: dark` 미디어 쿼리를 CSS에 추가하여 네이티브 다크 모드를 지원하고, `<nav aria-label="Directory listing">`을 `<nav aria-label="디렉토리 목록">`으로 수정하여 UI를 한국어로 통일했습니다.
-## 2026-07-13 - Add title attributes for parity with aria-labels
-**Learning:** Relying solely on icons or technical symbols (like `..`) without native tooltips can confuse sighted users who don't use screen readers. `title` attributes matching `aria-label` provide parity.
-**Action:** Add `title` attributes to icon-only links to ensure visual tooltips match screen reader text.
+**학습:** `html4tree` CLI로 생성되는 정적 HTML에서 사용자는 네이티브 다크 모드를 기대하며(접근성, 가독성 문제), `<nav>` 레이블("Directory listing")이 다른 UI와 다르게 영문으로 되어 있어 스크린 리더 환경 등에서 지역화(Localization) 일관성을 해칩니다.
+**조치:** `prefers-color-scheme: dark` 미디어 쿼리를 CSS에 추가하여 네이티브 다크 모드를 지원하고, `<nav aria-label="Directory listing">`을 `<nav aria-label="디렉토리 목록">`으로 수정하여 UI를 한국어로 통일했습니다.
+## 2026-07-13 - aria-label과 동일하게 title 속성 추가
+**학습:** 화면 판독기를 사용하지 않는 시각 장애가 없는 사용자는 네이티브 툴팁 없이 아이콘이나 기술적 기호(`..` 등)에만 의존할 경우 혼란을 느낄 수 있습니다. `aria-label`과 일치하는 `title` 속성을 추가하면 동일한 정보를 제공할 수 있습니다.
+**조치:** 아이콘만 있는 링크에 `title` 속성을 추가하여 시각적 툴팁이 화면 판독기 텍스트와 일치하도록 하십시오.
 
 ## 2024-08-01 - 네이티브 브라우저 UI의 다크 모드 지원 강제
 **학습:** CSS 미디어 쿼리(`@media (prefers-color-scheme: dark)`)를 통해 다크 모드를 지원하더라도, 브라우저의 네이티브 UI 요소(스크롤바, 기본 폼 컨트롤, 기본 백그라운드 등)는 테마 변경을 인식하지 못해 어두운 테마 환경에서 밝은 스크롤바가 표시되는 등 시각적 불일치를 초래합니다.
 **조치:** 항상 HTML 문서의 `<head>` 영역에 `<meta name="color-scheme" content="light dark">` 메타 태그를 명시적으로 추가하여 브라우저 수준에서 사용자의 시스템 테마(다크 모드 등)를 완전히 상속받아 일관성 있는 네이티브 UI를 렌더링하도록 보장하십시오.
 
 ## 2024-07-13 - 빈 디렉토리 상태의 접근성(Accessibility) 개선
-**Learning:** 정적 파일 서버의 빈 디렉토리 상태는 스크린 리더 사용자에게 컨텐츠 누락으로 오해받을 수 있으며, 시각적으로도 일반 리스트 아이템과 정렬이 맞지 않는 문제가 있었습니다.
-**Action:** 빈 상태를 나타내는 요소에 `role="status"`를 추가하여 스크린 리더가 명확하게 인지할 수 있도록 하고, 아이콘과 flex 레이아웃을 통해 다른 리스트 아이템과 일관된 시각적 흐름을 제공하도록 합니다.
+**학습:** 정적 파일 서버의 빈 디렉토리 상태는 스크린 리더 사용자에게 컨텐츠 누락으로 오해받을 수 있으며, 시각적으로도 일반 리스트 아이템과 정렬이 맞지 않는 문제가 있었습니다.
+**조치:** 빈 상태를 나타내는 요소에 `role="status"`를 추가하여 스크린 리더가 명확하게 인지할 수 있도록 하고, 아이콘과 flex 레이아웃을 통해 다른 리스트 아이템과 일관된 시각적 흐름을 제공하도록 합니다.
+
+## 2024-08-10 - 모바일 터치 타겟 크기 접근성 개선
+**학습:** 터치 기반 디바이스에서 링크(예: 디렉토리/파일 링크)의 클릭 가능 영역(패딩)이 너무 작으면 모바일 접근성 표준(WCAG Touch Target Size)을 충족하지 못해 사용자가 정확히 탭하기 어려워집니다. 빈 디렉토리를 표시하는 텍스트 역시 시각적 일관성을 위해 적절한 여백을 제공해야 합니다.
+**조치:** 인터랙티브 요소(`.dir-link`, `a`)와 `.empty-dir`에 모바일 터치 타겟 기준(최소 44~48px 높이)을 충족할 수 있도록 상하 패딩을 충분히 늘려(예: `padding: 0.75rem 0.5rem`) 클릭 가능 영역을 확장하고 전체적인 시각적 균형을 맞추십시오.
