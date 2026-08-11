@@ -172,6 +172,16 @@ internal fun crawl_directories(
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)
+
+        // The path can be replaced between the initial identity check and
+        // directory enumeration. Do not process or enqueue children from a
+        // snapshot whose post-listing identity is unreadable or different.
+        val postListingIdentity = readIdentity(lle.file)
+        if (!postListingIdentity.readable || currentIdentity.key != postListingIdentity.key) {
+            lle = ll.pull()
+            continue
+        }
+
         val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
