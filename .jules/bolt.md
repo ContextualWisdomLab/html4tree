@@ -34,7 +34,7 @@
 ## 2024-08-01 - URL 인코딩 빌더 지연 생성
 **학습:** URL 인코딩이 필요 없는 안전한 경로 문자열에서도 항상 `StringBuilder`를 생성하면 hot path에서 불필요한 할당이 발생합니다.
 **조치:** 예약 바이트를 처음 만났을 때만 `StringBuilder`를 만들고, 그 전까지는 원본 문자열을 그대로 반환하는 지연 생성 패턴을 사용합니다.
-## $(date +%Y-%m-%d) - Optimize OS stat calls in file listing
+## 2026-08-11 - Optimize OS stat calls in file listing
 **Learning:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
 **Action:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
@@ -58,3 +58,7 @@
 ## 2026-08-11 - 파일명 배열 직접 생성
 **학습:** 파일 배열에서 이름 배열을 만들 때 `map(...).toTypedArray()`는 결과 배열 외에 중간 컬렉션도 생성합니다. 호출 경계가 이미 배열을 제공한다면 크기를 알고 있는 결과 배열을 직접 채울 수 있습니다.
 **조치:** `crawl_directories`에서 `Array(files.size)`로 파일명 배열을 직접 생성합니다. 순서, null 처리, ignore 입력과 파일 시스템 호출 횟수는 변경하지 않습니다.
+
+## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
+**학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
+**조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
