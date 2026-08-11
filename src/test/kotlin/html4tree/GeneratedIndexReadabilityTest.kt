@@ -87,8 +87,10 @@ class GeneratedIndexReadabilityTest {
 
     @Test
     fun linkRowsRetainMobileTouchTargetPadding() {
-        process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
+        val linkedFile = File(temporaryDirectory, "touch-target.txt").apply { writeText("target") }
+        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(linkedFile))
 
+        assertTrue(generatedHtml().contains("<a class=\"dir-link\""))
         val style = emittedStyle()
         assertTrue(
             style.contains(
