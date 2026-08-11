@@ -407,6 +407,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${STYLE_HASH}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
+        <meta name="robots" content="noindex, nofollow">
         <title>${directoryName.escapeHtml()}</title>
         <style>${CSS_CONTENT}</style>
      </head>

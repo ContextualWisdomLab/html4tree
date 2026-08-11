@@ -33,6 +33,10 @@ class MainTest {
         }
     }
 
+    private fun assertRobotsDirective(htmlContent: String) {
+        assertTrue(htmlContent.contains("<meta name=\"robots\" content=\"noindex, nofollow\">"))
+    }
+
     @Before
     fun setup() {
         tempDir = Files.createTempDirectory("html4tree-test-").toFile()
@@ -109,6 +113,7 @@ class MainTest {
         assertTrue(indexFile.exists())
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
+        assertRobotsDirective(htmlContent)
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
         assertTrue(htmlContent.contains("role=\"status\""))
         assertTrue(htmlContent.contains("role=\"list\""))
@@ -323,6 +328,7 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("<meta name=\"color-scheme\" content=\"light dark\">"))
+        assertRobotsDirective(htmlContent)
         assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
         assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("<main>"))
