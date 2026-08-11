@@ -310,6 +310,8 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("<meta name=\"color-scheme\" content=\"light dark\">"))
+        assertTrue(htmlContent.contains("<meta name=\"theme-color\" content=\"#ffffff\" media=\"(prefers-color-scheme: light)\">"))
+        assertTrue(htmlContent.contains("<meta name=\"theme-color\" content=\"#0d1117\" media=\"(prefers-color-scheme: dark)\">"))
         assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
         assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("<main>"))
@@ -344,7 +346,6 @@ class MainTest {
         assertTrue(htmlContent.contains("prefers-reduced-motion"))
         assertTrue(htmlContent.contains("max-width: 800px;"))
         assertTrue(htmlContent.contains("margin: 0 auto;"))
-        assertTrue(htmlContent.contains("overflow-wrap: anywhere;"))
     }
 
     @Test

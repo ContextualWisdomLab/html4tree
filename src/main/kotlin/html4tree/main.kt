@@ -24,9 +24,6 @@ main {
   max-width: 800px;
   margin: 0 auto;
 }
-h1 {
-  overflow-wrap: anywhere;
-}
 ul {
   list-style-type: none;
   padding-left: 0;
@@ -335,6 +332,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="color-scheme" content="light dark">
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
         <!-- 보안 향상: 인라인 스크립트 실행 방지 -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${STYLE_HASH}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
