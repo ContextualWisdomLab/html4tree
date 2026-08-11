@@ -95,6 +95,11 @@ li + li {
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 
+// ⚡ Bolt Performance Optimization: Hoist invariant collections and comparators to top-level constants
+// to prevent redundant allocations during directory traversal. Declared as private val to avoid getter generation.
+private val DEFAULT_SENSITIVE_FILES = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
+
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
     val topDir: String by argument(help="Top directory to crawl")
@@ -314,8 +319,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        files_to_exclude.add("index.html")
 
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
-    files_to_exclude.addAll(defaultSensitiveFiles)
+    files_to_exclude.addAll(DEFAULT_SENSITIVE_FILES)
 
     // 보안 향상: dot-like prefixes are treated as hidden to prevent visually-confusable sensitive entries from reaching generated indexes.
     (dirFilesNames ?: curr_dir.list())?.forEach {
@@ -368,7 +372,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 
         val filesList = dirFiles ?: curr_dir.listFiles()
         val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
-        dir_files.sortWith(compareBy ({it.name}) )
+        // ⚡ Bolt Performance Optimization: Use hoisted comparator to prevent redundant Comparator allocations
+        dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls

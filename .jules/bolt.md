@@ -46,3 +46,6 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화 (순회 루프)
 **학습:** 디렉토리 순회 루프 내에서 isDirectory 및 isSymbolicLink 두 번의 stat을 각각 호출하면 파일 시스템 I/O 오버헤드가 배가됩니다. 메모리 내 제외 규칙 확인 후 한 번의 readAttributes로 속성을 한 번에 가져오는 것이 훨씬 빠릅니다.
 **조치:** Files.isDirectory 및 Files.isSymbolicLink를 단일 Files.readAttributes 호출로 교체하여 O(N) I/O 통신을 최적화했습니다.
+## 2025-01-25 - 호이스팅(Hoisting) 불변 정적 컬렉션 및 비교자
+**학습:** 디렉토리 순회와 같이 자주 호출되는 함수(`process_ignore_file`, `process_dir`) 내에서 `listOf`로 불변 리스트를 생성하거나, `compareBy` 등을 통해 매번 새로운 `Comparator` 객체를 할당하는 것은 가비지 컬렉션(GC) 오버헤드를 발생시키고 성능을 저하시킵니다.
+**조치:** 불변 데이터 컬렉션과 컴패레이터 인스턴스를 최상단 수준의 `private val` 상수로 끌어올려(Hoisting), 여러 호출 간에 한 번만 생성된 객체를 재사용하도록 최적화했습니다. `private val`로 선언하면 불필요한 getter 메서드 생성을 방지하여 코드 커버리지(Jacoco)도 안전하게 유지할 수 있습니다.
