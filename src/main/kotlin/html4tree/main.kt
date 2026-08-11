@@ -308,24 +308,6 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                 opacity: 0.7;
                 font-style: italic;
               }
-              .skip-link {
-                position: absolute;
-                top: -40px;
-                left: 0;
-                background: #0969da;
-                color: white;
-                padding: 8px;
-                z-index: 100;
-                transition: top 0.2s ease;
-              }
-              .skip-link:focus {
-                top: 0;
-              }
-              @media (prefers-reduced-motion: reduce) {
-                .skip-link {
-                  transition: none;
-                }
-              }
               """
 
     val styleHash = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(cssContent.toByteArray(Charsets.UTF_8)))
@@ -349,8 +331,7 @@ ${cssContent}              </style>
         ${css}
      </head>
      <body>
-       <a href="#main-content" class="skip-link">본문으로 건너뛰기</a>
-       <main id="main-content">
+       <main>
          <h1>${curr_dir.getName().escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
