@@ -1,6 +1,6 @@
 # Generated-page robots indexing preference
 
-Status: **IMPLEMENTED-ON-ACTIVE-PR**
+Status: **IMPLEMENTED-ON-PROTECTED-MAIN**
 
 ## Decision
 
@@ -20,7 +20,7 @@ Operators must remove confidential material from the generated tree or protect i
 
 ## Verification contract
 
-`MainTest` generates both an empty directory page and a page containing entries, then applies one shared assertion to the exact emitted directive. The test-only predecessor commit failed both generated-page cases before production emitted the directive. CI, coverage, Security Scan, SAST, and current-head review remain required on the final unchanged source head.
+`MainTest` generates both an empty directory page and a page containing entries, then applies one shared assertion to the exact emitted directive. The test-only predecessor commit failed both generated-page cases before production emitted the directive. PR #425 integrated the contract on protected `master` at commit `b939ca735bb565fe8b5158823710ea96483d227a`; later source changes remain subject to exact-head CI, Security Scan, SAST, and repository review policy.
 
 ## Rollback and recovery
 
