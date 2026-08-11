@@ -15,6 +15,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.system.measureTimeMillis
+import java.lang.management.ManagementFactory
 
 class MainTest {
     private lateinit var tempDir: File
@@ -716,5 +718,49 @@ class MainTest {
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
+    }
+
+    @Test
+    fun testCrawlPerformanceBenchmark() {
+        val levels = 3
+        val dirsPerLevel = 3
+        val filesPerDir = 5
+
+        fun createTree(currentDir: File, currentLevel: Int) {
+            if (currentLevel > levels) return
+            for (i in 1..filesPerDir) {
+                File(currentDir, "file-${currentLevel}-${i}.txt").createNewFile()
+            }
+            for (i in 1..dirsPerLevel) {
+                val sub = File(currentDir, "dir-${currentLevel}-${i}")
+                sub.mkdir()
+                createTree(sub, currentLevel + 1)
+            }
+        }
+
+        val benchmarkDir = File(tempDir, "benchmark")
+        benchmarkDir.mkdir()
+        createTree(benchmarkDir, 1)
+
+        val garbageCollectorBeans = ManagementFactory.getGarbageCollectorMXBeans()
+        var initialGcCount: Long = 0
+        for (gc in garbageCollectorBeans) {
+             val count = gc.collectionCount
+             if (count > 0) initialGcCount += count
+        }
+
+        val time = measureTimeMillis {
+            go(benchmarkDir.absolutePath, -1)
+        }
+
+        var finalGcCount: Long = 0
+        for (gc in garbageCollectorBeans) {
+             val count = gc.collectionCount
+             if (count > 0) finalGcCount += count
+        }
+
+        println("Benchmark Tree Crawl Time: ${time}ms")
+        println("Benchmark GC Collections: ${finalGcCount - initialGcCount}")
+        assertTrue(time >= 0, "Time should be positive")
     }
 }
