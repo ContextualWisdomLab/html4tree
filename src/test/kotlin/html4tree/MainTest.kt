@@ -357,6 +357,10 @@ class MainTest {
         assertTrue(htmlContent.contains("prefers-reduced-motion"))
         assertTrue(htmlContent.contains("max-width: 800px;"))
         assertTrue(htmlContent.contains("margin: 0 auto;"))
+        assertTrue(
+            Regex("""h1\s*\{[^}]*overflow-wrap:\s*anywhere;""").containsMatchIn(htmlContent),
+            "long directory headings must wrap within narrow viewports"
+        )
     }
 
     @Test
