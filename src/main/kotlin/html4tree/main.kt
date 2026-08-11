@@ -172,6 +172,16 @@ internal fun crawl_directories(
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)
+
+        // The path can be replaced between the initial identity check and
+        // directory enumeration. Do not process or enqueue children from a
+        // snapshot whose post-listing identity is unreadable or different.
+        val postListingIdentity = readIdentity(lle.file)
+        if (!postListingIdentity.readable || currentIdentity.key != postListingIdentity.key) {
+            lle = ll.pull()
+            continue
+        }
+
         val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
@@ -327,12 +337,37 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     return files_to_exclude
 }
 
-fun write_index_file(curr_dir: File, content: String) {
+fun write_index_file(
+    curr_dir: File,
+    content: String,
+    moveFile: (
+        java.nio.file.Path,
+        java.nio.file.Path,
+        Array<out java.nio.file.CopyOption>
+    ) -> Unit = { source, target, options ->
+        Files.move(source, target, *options)
+        Unit
+    }
+) {
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        Files.move(tempPath, indexPath, StandardCopyOption.REPLACE_EXISTING)
+        try {
+            // With ATOMIC_MOVE, Java ignores every other copy option and the
+            // existing-target policy is provider-specific.
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.ATOMIC_MOVE))
+        } catch (error: java.io.IOException) {
+            if (
+                error !is java.nio.file.AtomicMoveNotSupportedException &&
+                error !is java.nio.file.FileAlreadyExistsException
+            ) {
+                throw error
+            }
+            // This compatibility fallback preserves replacement semantics but
+            // is explicitly non-atomic.
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+        }
     } finally {
         Files.deleteIfExists(tempPath)
     }

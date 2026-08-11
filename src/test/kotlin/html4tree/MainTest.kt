@@ -378,6 +378,51 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileFallsBackWhenAtomicMoveIsUnsupported() {
+        val indexFile = File(tempDir, "index.html")
+        indexFile.writeText("old content")
+        var attemptedAtomic = false
+        var attemptedFallback = false
+
+        write_index_file(tempDir, "atomic fallback content") { source, target, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                attemptedAtomic = true
+                throw java.nio.file.AtomicMoveNotSupportedException(
+                    source.toString(),
+                    target.toString(),
+                    "test filesystem does not support atomic moves"
+                )
+            }
+            attemptedFallback = true
+            Files.move(source, target, *options)
+            Unit
+        }
+
+        assertTrue(attemptedAtomic, "atomic replacement must be attempted first")
+        assertTrue(attemptedFallback, "unsupported atomic replacement must use the documented fallback")
+        assertEquals("atomic fallback content", indexFile.readText())
+    }
+
+    @Test
+    fun testWriteIndexFileFallsBackWhenAtomicReplacementRejectsExistingTarget() {
+        val indexFile = File(tempDir, "index.html")
+        indexFile.writeText("old content")
+        var attemptedFallback = false
+
+        write_index_file(tempDir, "replacement content") { source, target, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                throw java.nio.file.FileAlreadyExistsException(target.toString())
+            }
+            attemptedFallback = true
+            Files.move(source, target, *options)
+            Unit
+        }
+
+        assertTrue(attemptedFallback, "existing-target atomic conflicts must use the replacement fallback")
+        assertEquals("replacement content", indexFile.readText())
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
@@ -717,6 +762,77 @@ class MainTest {
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
+    }
+
+    @Test
+    fun testDirectoryReplacementAfterListingIsRejected() {
+        val subdir = File(tempDir, "post_listing_swap")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "stable-key"
+        ll.push(entry)
+
+        var processed = false
+        var listed = false
+        var identityCalls = 0
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = {
+                listed = true
+                emptyArray()
+            },
+            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = {
+                identityCalls++
+                if (identityCalls == 1) {
+                    FileIdentity("stable-key", true)
+                } else {
+                    FileIdentity("replacement-key", true)
+                }
+            }
+        )
+
+        assertTrue(listed, "the initial identity should allow child listing")
+        assertEquals(2, identityCalls, "identity must be re-read after child listing")
+        assertFalse(processed, "a replaced directory must not be processed")
+    }
+
+    @Test
+    fun testDirectoryBecomingUnreadableAfterListingIsRejected() {
+        val subdir = File(tempDir, "post_listing_unreadable")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "stable-key"
+        ll.push(entry)
+
+        var processed = false
+        var identityCalls = 0
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() },
+            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = {
+                identityCalls++
+                if (identityCalls == 1) {
+                    FileIdentity("stable-key", true)
+                } else {
+                    FileIdentity(null, false)
+                }
+            }
+        )
+
+        assertEquals(2, identityCalls, "identity must be re-read after child listing")
+        assertFalse(processed, "a directory that becomes unreadable must not be processed")
     }
 
     @Test
