@@ -717,4 +717,17 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testProcessIgnoreFileWithIllegalArgumentPattern() {
+        val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
+        try {
+            val ignoreFile = File(tempDir, ".html4ignore")
+            ignoreFile.writeText("a[b\n\\\n")
+            val excluded = process_ignore_file(tempDir, null)
+            assertTrue(excluded.contains("index.html"))
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
 }
