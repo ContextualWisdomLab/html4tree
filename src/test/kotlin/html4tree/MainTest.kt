@@ -675,15 +675,22 @@ class MainTest {
             "signing.KEY",
             "certificate.p12",
             "certificate.PFX",
+            "certificate.crt",
+            "certificate.CER",
+            "certificate.der",
             "service.keystore",
             "service.TRUSTSTORE",
+            "service.JKS",
             "application.sqlite",
             "archive.DB",
             "backup.bak",
             "query.sql",
             "traffic.pcap",
+            "traffic.PCAPNG",
             "runtime.log",
             "editor.swp",
+            "editor.SWO",
+            "editor.swpx",
             "autosave~"
         )
         val safeNames = arrayOf("public.txt", "image.png", "catalog.html")
