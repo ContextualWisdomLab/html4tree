@@ -93,3 +93,9 @@
 **Vulnerability:** `.html4ignore`의 잘못된 glob 구문이 파일 생성 전체를 중단할 수 있습니다.
 **Learning:** `FileSystem.getPathMatcher()`의 잘못된 구문과 인수는 `IllegalArgumentException` 계열입니다. 반면 권한, 공급자, I/O 등 다른 실패는 구성 또는 운영 문제이므로 숨기면 안 됩니다.
 **Prevention:** 사용자 패턴 하나를 건너뛸 때는 `IllegalArgumentException`만 포착합니다. `Exception` 같은 광범위한 포착으로 `SecurityException`이나 관련 없는 운영 실패를 정상 입력처럼 처리하지 않습니다.
+
+## 2026-08-11 - Case-insensitive sensitive file exclusion
+**Vulnerability:** Exact string membership in the default sensitive-file set allowed mixed-case variants such as `ID_RSA`, `Secrets.YML`, and `CONFIG.JSON` to appear in generated indexes.
+**Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
+**Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
+**Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
