@@ -8,8 +8,6 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.attribute.FileTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -18,20 +16,6 @@ import kotlin.test.assertTrue
 
 class MainTest {
     private lateinit var tempDir: File
-
-    private fun createMockAttributes(isDir: Boolean, isSymlink: Boolean): BasicFileAttributes {
-        return object : BasicFileAttributes {
-            override fun lastModifiedTime(): FileTime = FileTime.fromMillis(0)
-            override fun lastAccessTime(): FileTime = FileTime.fromMillis(0)
-            override fun creationTime(): FileTime = FileTime.fromMillis(0)
-            override fun isRegularFile(): Boolean = !isDir && !isSymlink
-            override fun isDirectory(): Boolean = isDir
-            override fun isSymbolicLink(): Boolean = isSymlink
-            override fun isOther(): Boolean = false
-            override fun size(): Long = 0L
-            override fun fileKey(): Any? = null
-        }
-    }
 
     @Before
     fun setup() {
@@ -170,7 +154,8 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            readAttributes = { file -> createMockAttributes(isDir = true, isSymlink = false) },
+            isDirectory = { true },
+            isSymbolicLink = { false },
             readIdentity = { FileIdentity("after-swap", true) }
         )
 
@@ -191,7 +176,8 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            readAttributes = { file -> createMockAttributes(isDir = true, isSymlink = false) },
+            isDirectory = { true },
+            isSymbolicLink = { false },
             readIdentity = { FileIdentity(null, false) }
         )
 
@@ -214,7 +200,8 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { file -> if (file == root) arrayOf(child) else emptyArray() },
-            readAttributes = { file -> createMockAttributes(isDir = true, isSymlink = false) },
+            isDirectory = { true },
+            isSymbolicLink = { false },
             readIdentity = { file ->
                 val key = file.absolutePath
                 val callCount = callsByPath.getOrDefault(key, 0)
@@ -252,7 +239,8 @@ class MainTest {
             processDirectory = { file, _, _ -> processed.add(file) },
             processIgnoreFile = { _, _ -> emptySet() },
             listFiles = { emptyArray() },
-            readAttributes = { file -> createMockAttributes(isDir = file == directoryEntry, isSymlink = false) },
+            isDirectory = { it == directoryEntry },
+            isSymbolicLink = { false },
             readIdentity = { FileIdentity("directory-key", true) }
         )
 
@@ -725,7 +713,8 @@ class MainTest {
                 listed = true
                 emptyArray()
             },
-            readAttributes = { file -> createMockAttributes(isDir = true, isSymlink = false) },
+            isDirectory = { true },
+            isSymbolicLink = { false },
             readIdentity = { FileIdentity("current-key", true) }
         )
 
