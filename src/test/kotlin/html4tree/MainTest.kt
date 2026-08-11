@@ -669,6 +669,36 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileExcludesSensitiveExtensionsCaseInsensitively() {
+        val sensitiveNames = arrayOf(
+            "private.pem",
+            "signing.KEY",
+            "certificate.p12",
+            "certificate.PFX",
+            "service.keystore",
+            "service.TRUSTSTORE",
+            "application.sqlite",
+            "archive.DB",
+            "backup.bak",
+            "query.sql",
+            "traffic.pcap",
+            "runtime.log",
+            "editor.swp",
+            "autosave~"
+        )
+        val safeNames = arrayOf("public.txt", "image.png", "catalog.html")
+
+        val excluded = process_ignore_file(tempDir, sensitiveNames + safeNames)
+
+        sensitiveNames.forEach { name ->
+            assertTrue(excluded.contains(name), "$name must be excluded by default")
+        }
+        safeNames.forEach { name ->
+            assertFalse(excluded.contains(name), "$name must remain visible")
+        }
+    }
+
+    @Test
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
