@@ -358,7 +358,7 @@ class MainTest {
         assertTrue(htmlContent.contains("max-width: 800px;"))
         assertTrue(htmlContent.contains("margin: 0 auto;"))
         assertTrue(
-            Regex("""h1\\s*\\{[^}]*overflow-wrap:\\s*anywhere;""").containsMatchIn(htmlContent),
+            Regex("""h1\s*\{[^}]*overflow-wrap:\s*anywhere;""").containsMatchIn(htmlContent),
             "long directory headings must wrap within narrow viewports"
         )
     }
@@ -634,6 +634,41 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively() {
+        val sensitiveNames = listOf("ID_RSA", "Secrets.YML", "CONFIG.JSON")
+        sensitiveNames.forEach { File(tempDir, it).writeText("secret") }
+
+        val excluded = process_ignore_file(tempDir)
+        sensitiveNames.forEach {
+            assertTrue(it in excluded, "$it must be excluded regardless of case")
+        }
+
+        process_dir(tempDir, excluded)
+        val indexContent = File(tempDir, "index.html").readText()
+        sensitiveNames.forEach {
+            assertFalse(indexContent.contains(it), "$it must not be emitted")
+        }
+    }
+
+    @Test
+    fun testProcessIgnoreFileFailsClosedForMalformedDirectoryName() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*.txt")
+        val malformedName = "bad\u0000name.txt"
+
+        val excluded = process_ignore_file(
+            tempDir,
+            arrayOf("valid.txt", malformedName)
+        )
+
+        assertTrue(excluded.contains("valid.txt"))
+        assertTrue(
+            excluded.contains(malformedName),
+            "an entry that cannot be parsed as a path must be excluded"
+        )
+    }
+
+    @Test
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
@@ -766,6 +801,77 @@ class MainTest {
 
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
+    }
+
+    @Test
+    fun testDirectoryReplacementAfterListingIsRejected() {
+        val subdir = File(tempDir, "post_listing_swap")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "stable-key"
+        ll.push(entry)
+
+        var processed = false
+        var listed = false
+        var identityCalls = 0
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = {
+                listed = true
+                emptyArray()
+            },
+            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = {
+                identityCalls++
+                if (identityCalls == 1) {
+                    FileIdentity("stable-key", true)
+                } else {
+                    FileIdentity("replacement-key", true)
+                }
+            }
+        )
+
+        assertTrue(listed, "the initial identity should allow child listing")
+        assertEquals(2, identityCalls, "identity must be re-read after child listing")
+        assertFalse(processed, "a replaced directory must not be processed")
+    }
+
+    @Test
+    fun testDirectoryBecomingUnreadableAfterListingIsRejected() {
+        val subdir = File(tempDir, "post_listing_unreadable")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "stable-key"
+        ll.push(entry)
+
+        var processed = false
+        var identityCalls = 0
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() },
+            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = {
+                identityCalls++
+                if (identityCalls == 1) {
+                    FileIdentity("stable-key", true)
+                } else {
+                    FileIdentity(null, false)
+                }
+            }
+        )
+
+        assertEquals(2, identityCalls, "identity must be re-read after child listing")
+        assertFalse(processed, "a directory that becomes unreadable must not be processed")
     }
 
     @Test

@@ -45,11 +45,11 @@ To only generate the index.html file for the top directory:
 
 ## To exclude files from the generated index.html file
 
-To exclude files place a `.html4ignore` file in the directory you wish to exclude particular files with each line of the file containing a valid regular expression that would match the filename you wish to exclude.
+To exclude files, place a `.html4ignore` file in the directory. Each non-empty line is a Java file-system glob pattern matched against an entry name. Patterns longer than 100 characters and lines after the first 1,000 are ignored.
 
-example:  to exclude files that end in `.txt` you could use the following in the `.html4ignore` file:
+For example, to exclude files ending in `.txt`:
 
-`.*.txt`
+`*.txt`
 
 ## Other
 

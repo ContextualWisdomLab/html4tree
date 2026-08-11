@@ -94,6 +94,7 @@ li + li {
 """.trimIndent()
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
+private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -172,7 +173,19 @@ internal fun crawl_directories(
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)
-        val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
+
+        // The path can be replaced between the initial identity check and
+        // directory enumeration. Do not process or enqueue children from a
+        // snapshot whose post-listing identity is unreadable or different.
+        val postListingIdentity = readIdentity(lle.file)
+        if (!postListingIdentity.readable || currentIdentity.key != postListingIdentity.key) {
+            lle = ll.pull()
+            continue
+        }
+
+        val dirFilesNames = dirFiles?.let { files ->
+            Array(files.size) { index -> files[index].name }
+        }
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
@@ -300,7 +313,12 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        val list = dirFilesNames ?: curr_dir.list()
        list?.forEach {
            val current = it
-           val pathCurrent = java.nio.file.Paths.get(current)
+           val pathCurrent = try {
+               java.nio.file.Paths.get(current)
+           } catch (_: java.nio.file.InvalidPathException) {
+               files_to_exclude.add(current)
+               return@forEach
+           }
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
                  files_to_exclude.add(current)
@@ -313,13 +331,16 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
 
+    // ⚡ Bolt Performance Optimization: Extract static list to prevent redundant allocations per directory
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
-    files_to_exclude.addAll(defaultSensitiveFiles)
+    files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
-    // 보안 향상: dot-like prefixes are treated as hidden to prevent visually-confusable sensitive entries from reaching generated indexes.
+    // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.isHiddenFile()) {
+        if (
+            it.isHiddenFile() ||
+            it.toLowerCase(java.util.Locale.ROOT) in Constants.defaultSensitiveFileNamesLowercase
+        ) {
             files_to_exclude.add(it)
         }
     }
@@ -394,7 +415,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 
         val filesList = dirFiles ?: curr_dir.listFiles()
         val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
-        dir_files.sortWith(compareBy ({it.name}) )
+        dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
@@ -447,4 +468,13 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 
 fun help() {
     println("ERROR: help has not been written yet!")
+}
+
+private object Constants {
+    @JvmField
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+
+    @JvmField
+    val defaultSensitiveFileNamesLowercase =
+        defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 }

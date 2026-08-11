@@ -46,3 +46,15 @@
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화 (순회 루프)
 **학습:** 디렉토리 순회 루프 내에서 isDirectory 및 isSymbolicLink 두 번의 stat을 각각 호출하면 파일 시스템 I/O 오버헤드가 배가됩니다. 메모리 내 제외 규칙 확인 후 한 번의 readAttributes로 속성을 한 번에 가져오는 것이 훨씬 빠릅니다.
 **조치:** Files.isDirectory 및 Files.isSymbolicLink를 단일 Files.readAttributes 호출로 교체하여 O(N) I/O 통신을 최적화했습니다.
+
+## 2026-08-09 - 반복 호출되는 함수 내 정적 리스트 최적화
+**Learning:** 디렉토리를 탐색할 때마다 호출되는 함수(process_ignore_file) 내부에서 listOf()로 고정된 리스트를 할당하면 불필요한 메모리 할당과 GC 부하가 발생합니다.
+**Action:** 정적인 컬렉션은 private object로 추출하고 @JvmField 등을 활용하여 단 한 번만 초기화되도록 최적화해야 합니다.
+
+## 2026-08-11 - Comparator 객체 재사용
+**학습:** 반복 호출되는 디렉터리 정렬 경계에서 `compareBy<File> { it.name }`를 매번 만들 필요는 없습니다. 정렬 의미가 상태와 무관하면 하나의 불변 비교자를 재사용할 수 있습니다.
+**조치:** 파일명 비교자를 최상위 `private val`로 한 번 생성하고 `process_dir`의 정렬에서 재사용합니다. 정렬 순서와 파일 시스템 경계는 변경하지 않습니다.
+
+## 2026-08-11 - 파일명 배열 직접 생성
+**학습:** 파일 배열에서 이름 배열을 만들 때 `map(...).toTypedArray()`는 결과 배열 외에 중간 컬렉션도 생성합니다. 호출 경계가 이미 배열을 제공한다면 크기를 알고 있는 결과 배열을 직접 채울 수 있습니다.
+**조치:** `crawl_directories`에서 `Array(files.size)`로 파일명 배열을 직접 생성합니다. 순서, null 처리, ignore 입력과 파일 시스템 호출 횟수는 변경하지 않습니다.
