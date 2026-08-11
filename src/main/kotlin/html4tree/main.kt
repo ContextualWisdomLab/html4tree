@@ -313,7 +313,12 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        val list = dirFilesNames ?: curr_dir.list()
        list?.forEach {
            val current = it
-           val pathCurrent = java.nio.file.Paths.get(current)
+           val pathCurrent = try {
+               java.nio.file.Paths.get(current)
+           } catch (_: java.nio.file.InvalidPathException) {
+               files_to_exclude.add(current)
+               return@forEach
+           }
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
                  files_to_exclude.add(current)
