@@ -247,19 +247,22 @@ fun String.escapeHtml(): String {
     return sb?.toString() ?: this
 }
 
+private val UNRESERVED_URL_CHARS = BooleanArray(256).apply {
+    for (c in 'A'..'Z') this[c.toInt()] = true
+    for (c in 'a'..'z') this[c.toInt()] = true
+    for (c in '0'..'9') this[c.toInt()] = true
+    this['-'.toInt()] = true
+    this['.'.toInt()] = true
+    this['_'.toInt()] = true
+    this['~'.toInt()] = true
+}
+
 fun String.urlEncodePath(): String {
     val bytes = this.toByteArray(Charsets.UTF_8)
     var encoded: StringBuilder? = null
     for (i in bytes.indices) {
         val byte = bytes[i].toInt() and 0xff
-        val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
-                           (byte in 'a'.toInt()..'z'.toInt()) ||
-                           (byte in '0'.toInt()..'9'.toInt()) ||
-                           byte == '-'.toInt() ||
-                           byte == '.'.toInt() ||
-                           byte == '_'.toInt() ||
-                           byte == '~'.toInt()
-        if (isUnreserved) {
+        if (UNRESERVED_URL_CHARS[byte]) {
             encoded?.append(byte.toChar())
         } else {
             var builder = encoded
