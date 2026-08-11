@@ -183,7 +183,9 @@ internal fun crawl_directories(
             continue
         }
 
-        val dirFilesNames = dirFiles?.map { it.name }?.toTypedArray()
+        val dirFilesNames = dirFiles?.let { files ->
+            Array(files.size) { index -> files[index].name }
+        }
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
