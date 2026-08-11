@@ -330,9 +330,12 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
-    // 보안 향상: dot-like prefixes are treated as hidden to prevent visually-confusable sensitive entries from reaching generated indexes.
+    // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        if (it.isHiddenFile()) {
+        if (
+            it.isHiddenFile() ||
+            it.toLowerCase(java.util.Locale.ROOT) in Constants.defaultSensitiveFileNamesLowercase
+        ) {
             files_to_exclude.add(it)
         }
     }
@@ -465,4 +468,8 @@ fun help() {
 private object Constants {
     @JvmField
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+
+    @JvmField
+    val defaultSensitiveFileNamesLowercase =
+        defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 }
