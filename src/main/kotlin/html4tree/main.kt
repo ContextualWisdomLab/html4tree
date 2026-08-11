@@ -492,14 +492,21 @@ private object Constants {
         ".key",
         ".p12",
         ".pfx",
+        ".crt",
+        ".cer",
+        ".der",
         ".keystore",
         ".truststore",
+        ".jks",
         ".sqlite",
         ".db",
         ".bak",
         ".sql",
         ".pcap",
+        ".pcapng",
         ".log",
-        ".swp"
+        ".swp",
+        ".swo",
+        ".swpx"
     )
 }
