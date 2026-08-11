@@ -86,6 +86,22 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
+    fun linkRowsRetainMobileTouchTargetPadding() {
+        process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
+
+        val style = emittedStyle()
+        assertTrue(
+            style.contains(
+                """
+                a {
+                  padding: 0.75rem 0.5rem;
+                  text-decoration: none;
+                """.trimIndent()
+            )
+        )
+    }
+
+    @Test
     fun emptyStateUsesExplicitLightAndDarkForegroundColors() {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
