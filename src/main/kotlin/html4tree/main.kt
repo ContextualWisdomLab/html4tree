@@ -24,6 +24,9 @@ main {
   max-width: 800px;
   margin: 0 auto;
 }
+h1 {
+  overflow-wrap: anywhere;
+}
 ul {
   list-style-type: none;
   padding-left: 0;
