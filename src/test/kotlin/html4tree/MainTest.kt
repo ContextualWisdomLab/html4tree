@@ -647,6 +647,24 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileFailsClosedForMalformedDirectoryName() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*.txt")
+        val malformedName = "bad\u0000name.txt"
+
+        val excluded = process_ignore_file(
+            tempDir,
+            arrayOf("valid.txt", malformedName)
+        )
+
+        assertTrue(excluded.contains("valid.txt"))
+        assertTrue(
+            excluded.contains(malformedName),
+            "an entry that cannot be parsed as a path must be excluded"
+        )
+    }
+
+    @Test
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
