@@ -803,6 +803,39 @@ class MainTest {
     }
 
     @Test
+    fun testDirectoryBecomingUnreadableAfterListingIsRejected() {
+        val subdir = File(tempDir, "post_listing_unreadable")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "stable-key"
+        ll.push(entry)
+
+        var processed = false
+        var identityCalls = 0
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() },
+            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = {
+                identityCalls++
+                if (identityCalls == 1) {
+                    FileIdentity("stable-key", true)
+                } else {
+                    FileIdentity(null, false)
+                }
+            }
+        )
+
+        assertEquals(2, identityCalls, "identity must be re-read after child listing")
+        assertFalse(processed, "a directory that becomes unreadable must not be processed")
+    }
+
+    @Test
     fun testProcessIgnoreFileWithIllegalArgumentPattern() {
         val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
         try {
