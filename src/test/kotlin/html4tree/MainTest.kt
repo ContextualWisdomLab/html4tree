@@ -630,6 +630,23 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively() {
+        val sensitiveNames = listOf("ID_RSA", "Secrets.YML", "CONFIG.JSON")
+        sensitiveNames.forEach { File(tempDir, it).writeText("secret") }
+
+        val excluded = process_ignore_file(tempDir)
+        sensitiveNames.forEach {
+            assertTrue(it in excluded, "$it must be excluded regardless of case")
+        }
+
+        process_dir(tempDir, excluded)
+        val indexContent = File(tempDir, "index.html").readText()
+        sensitiveNames.forEach {
+            assertFalse(indexContent.contains(it), "$it must not be emitted")
+        }
+    }
+
+    @Test
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
