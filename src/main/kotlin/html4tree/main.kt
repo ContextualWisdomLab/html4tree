@@ -344,12 +344,18 @@ fun write_index_file(
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
-            moveFile(
-                tempPath,
-                indexPath,
-                arrayOf(StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
-            )
-        } catch (error: java.nio.file.AtomicMoveNotSupportedException) {
+            // With ATOMIC_MOVE, Java ignores every other copy option and the
+            // existing-target policy is provider-specific.
+            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.ATOMIC_MOVE))
+        } catch (error: java.io.IOException) {
+            if (
+                error !is java.nio.file.AtomicMoveNotSupportedException &&
+                error !is java.nio.file.FileAlreadyExistsException
+            ) {
+                throw error
+            }
+            // This compatibility fallback preserves replacement semantics but
+            // is explicitly non-atomic.
             moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
         }
     } finally {
