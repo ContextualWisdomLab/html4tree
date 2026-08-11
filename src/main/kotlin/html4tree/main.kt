@@ -340,9 +340,14 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
     (dirFilesNames ?: curr_dir.list())?.forEach {
+        val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
             it.isHiddenFile() ||
-            it.toLowerCase(java.util.Locale.ROOT) in Constants.defaultSensitiveFileNamesLowercase
+            normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
+            normalizedName.endsWith("~") ||
+            Constants.defaultSensitiveExtensions.any { extension ->
+                normalizedName.endsWith(extension)
+            }
         ) {
             files_to_exclude.add(it)
         }
@@ -480,4 +485,28 @@ private object Constants {
     @JvmField
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
+
+    @JvmField
+    val defaultSensitiveExtensions = listOf(
+        ".pem",
+        ".key",
+        ".p12",
+        ".pfx",
+        ".crt",
+        ".cer",
+        ".der",
+        ".keystore",
+        ".truststore",
+        ".jks",
+        ".sqlite",
+        ".db",
+        ".bak",
+        ".sql",
+        ".pcap",
+        ".pcapng",
+        ".log",
+        ".swp",
+        ".swo",
+        ".swpx"
+    )
 }
