@@ -290,7 +290,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                if (pattern.isNotEmpty() && pattern.length <= 100) {
                    try {
                        ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: java.util.regex.PatternSyntaxException) {
+                   } catch (_: IllegalArgumentException) {
                    }
                }
            }
@@ -341,6 +341,7 @@ fun write_index_file(curr_dir: File, content: String) {
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
+    val directoryName = curr_dir.name.ifEmpty { "Root" }
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -352,12 +353,12 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src '${STYLE_HASH}'; base-uri 'none'; form-action 'none';">
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
-        <title>${curr_dir.getName().escapeHtml()}</title>
+        <title>${directoryName.escapeHtml()}</title>
         <style>${CSS_CONTENT}</style>
      </head>
      <body>
        <main>
-         <h1>${curr_dir.getName().escapeHtml()}</h1>
+         <h1>${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
@@ -395,7 +396,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#8505;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
+            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
 

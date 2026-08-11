@@ -112,6 +112,7 @@ class MainTest {
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
         assertTrue(htmlContent.contains("role=\"status\""))
         assertTrue(htmlContent.contains("role=\"list\""))
+        assertTrue(htmlContent.contains("&#128194;"))
     }
 
     @Test
@@ -717,4 +718,32 @@ class MainTest {
         assertFalse(processed, "fileKey mismatch should skip directory processing")
         assertFalse(listed, "fileKey mismatch should skip child listing")
     }
+
+    @Test
+    fun testProcessIgnoreFileWithIllegalArgumentPattern() {
+        val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
+        try {
+            val ignoreFile = File(tempDir, ".html4ignore")
+            ignoreFile.writeText("a[b\n\\\n")
+            val excluded = process_ignore_file(tempDir, null)
+            assertTrue(excluded.contains("index.html"))
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testProcessDirEmptyNameFallback() {
+        val fakeRoot = object : File(tempDir, "fakeRoot") {
+            override fun getName() = ""
+        }
+        fakeRoot.mkdir()
+        process_dir(fakeRoot, setOf(), arrayOf())
+        val indexHtml = File(fakeRoot, "index.html")
+        assertTrue(indexHtml.exists())
+        val content = indexHtml.readText()
+        assertTrue(content.contains("<title>Root</title>"))
+        assertTrue(content.contains("<h1>Root</h1>"))
+    }
+
 }
