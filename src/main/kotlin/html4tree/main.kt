@@ -94,6 +94,7 @@ li + li {
 """.trimIndent()
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
+private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -404,7 +405,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 
         val filesList = dirFiles ?: curr_dir.listFiles()
         val dir_files: MutableList<File> = filesList?.toMutableList() ?: mutableListOf()
-        dir_files.sortWith(compareBy ({it.name}) )
+        dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
