@@ -328,6 +328,8 @@ class MainTest {
         val htmlContent = indexFile.readText()
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertTrue(htmlContent.contains("<meta name=\"color-scheme\" content=\"light dark\">"))
+        assertTrue(htmlContent.contains("<meta name=\"theme-color\" content=\"#ffffff\" media=\"(prefers-color-scheme: light)\">"))
+        assertTrue(htmlContent.contains("<meta name=\"theme-color\" content=\"#0d1117\" media=\"(prefers-color-scheme: dark)\">"))
         assertRobotsDirective(htmlContent)
         assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
         assertTrue(htmlContent.contains("role=\"list\""))
