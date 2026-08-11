@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Emit a `noindex, nofollow` robots meta preference on every generated
+  directory page, with the explicit boundary that supporting crawlers must
+  first fetch the page and that confidential data still requires server-side
+  protection.
+
 ### Changed
 
 - Improve generated directory-index readability with adjacent-row separators,
@@ -26,6 +33,9 @@ All notable changes to this project are documented in this file.
 
 ### Documentation
 
+- Record the generated-page robots indexing preference, crawler-access
+  prerequisite, non-security boundary, rollback contract, and current Google
+  Search Central reference in `docs/doctoring/robots-indexing-preference.md`.
 - Record the CSP byte-identity decision, threat boundary, verification contract,
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
