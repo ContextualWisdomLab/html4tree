@@ -221,19 +221,22 @@ fun String.isHiddenFile(): Boolean {
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
+// ⚡ Bolt Performance Optimization: Array-based lookup mapping
+// Avoids `when` conditionals and jump table logic, making execution faster in the hot path.
+private val HTML_ESCAPE_TABLE = Array<String?>(128) { null }.apply {
+    this['&'.toInt()] = "&amp;"
+    this['<'.toInt()] = "&lt;"
+    this['>'.toInt()] = "&gt;"
+    this['"'.toInt()] = "&quot;"
+    this['\''.toInt()] = "&#x27;"
+    this['`'.toInt()] = "&#x60;"
+}
+
 fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        val replacement = if (c.toInt() < 128) HTML_ESCAPE_TABLE[c.toInt()] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -340,11 +343,15 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
     (dirFilesNames ?: curr_dir.list())?.forEach {
+        // ⚡ Bolt Performance Optimization: Short-circuit string allocation
+        // Check cheap prefix/suffix rules before allocating a new string via toLowerCase
+        if (it.isHiddenFile() || it.endsWith("~")) {
+            files_to_exclude.add(it)
+            return@forEach
+        }
         val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
-            it.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
-            normalizedName.endsWith("~") ||
             Constants.defaultSensitiveExtensions.any { extension ->
                 normalizedName.endsWith(extension)
             }
