@@ -410,7 +410,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <meta name="robots" content="noindex, nofollow">
-        <title>${directoryName.escapeHtml()}</title>
+        <title>${directoryName.escapeHtml()} - 디렉토리 목록</title>
         <style>${CSS_CONTENT}</style>
      </head>
      <body>
