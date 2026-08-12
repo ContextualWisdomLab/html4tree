@@ -45,7 +45,7 @@ a.dir-link {
   text-align: center;
 }
 a {
-  padding: 0.5rem;
+  padding: 0.75rem 0.5rem;
   text-decoration: none;
   color: #0969da;
   border-radius: 4px;
@@ -71,7 +71,7 @@ li + li {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.75rem 0.5rem;
   color: #656d76;
   font-style: italic;
 }
