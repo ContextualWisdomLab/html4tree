@@ -358,6 +358,7 @@ class MainTest {
         assertTrue(htmlContent.contains("class=\"dir-link\""))
         assertTrue(htmlContent.contains(".empty-dir"))
         assertTrue(htmlContent.contains("prefers-color-scheme: dark"))
+        assertTrue(Regex("""<time datetime="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z" class="visually-hidden">Generated at \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z</time>""").containsMatchIn(htmlContent))
         assertTrue(htmlContent.contains("font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;"))
         assertTrue(htmlContent.contains("line-height: 1.5;"))
         assertTrue(htmlContent.contains("padding: 1rem;"))

@@ -75,6 +75,17 @@ li + li {
   color: #656d76;
   font-style: italic;
 }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #0d1117;
@@ -415,6 +426,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
      </head>
      <body>
        <main>
+         <time datetime="${java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(java.time.ZoneOffset.UTC).format(java.time.Instant.now())}" class="visually-hidden">Generated at ${java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(java.time.ZoneOffset.UTC).format(java.time.Instant.now())}</time>
          <h1>${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
