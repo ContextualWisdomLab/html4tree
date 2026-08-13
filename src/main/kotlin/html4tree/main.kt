@@ -443,6 +443,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                    isLinkedDirectory = attrs.isDirectory
                    isSymbolicLink = attrs.isSymbolicLink
                } catch (e: Exception) {
+                   // 보안 향상: 속성을 읽을 수 없는 파일(권한 부족, 깨진 심볼릭 링크 등)은 안전하게 무시하여
+                   // 파일명 노출(Information Exposure)을 방지합니다. (Fail Securely)
+                   return@forEach
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }

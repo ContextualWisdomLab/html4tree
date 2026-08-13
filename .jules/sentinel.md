@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-08-13 - [안전하지 않은 예외 처리로 인한 파일 정보 노출]
+**Vulnerability:** 파일 속성을 읽는 도중 예외가 발생했을 때 (예: 권한 부족, 깨진 심볼릭 링크), 예외를 무시하고 기본값(isSymbolicLink=false)을 유지하여 파일 이름이 디렉토리 인덱스에 노출되는 Fail Open 취약점.
+**Learning:** 시스템 레벨 예외(IOException, AccessDeniedException 등)를 처리할 때는 기본 로직을 그대로 타게 해서는 안 되며, 보안 관점에서 '실패 시 닫기(Fail Securely)' 원칙을 적용해야 함.
+**Prevention:** 파일을 순회하며 접근 권한이 필요한 작업을 할 때, 접근 실패 시 해당 파일을 무시(skip)하도록 예외 처리 블록(catch)에서 루프를 조기 종료(return/continue) 처리해야 함.
