@@ -292,9 +292,6 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
-    // ⚡ Bolt Performance Optimization: Cache directory listing to prevent multiple expensive OS calls
-    val cachedDirFilesNames = dirFilesNames ?: curr_dir.list()
-
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
@@ -316,20 +313,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       if (cachedDirFilesNames != null) {
-           for (current in cachedDirFilesNames) {
-               val pathCurrent = try {
-                   java.nio.file.Paths.get(current)
-               } catch (_: java.nio.file.InvalidPathException) {
-                   files_to_exclude.add(current)
-                   continue
-               }
-               for (matcher in ignored_matchers) {
-                  if (matcher.matches(pathCurrent)) {
-                     files_to_exclude.add(current)
-                     break
-                  }
-               }
+       val list = dirFilesNames ?: curr_dir.list()
+       list?.forEach {
+           val current = it
+           val pathCurrent = try {
+               java.nio.file.Paths.get(current)
+           } catch (_: java.nio.file.InvalidPathException) {
+               files_to_exclude.add(current)
+               return@forEach
+           }
+           for (matcher in ignored_matchers) {
+              if (matcher.matches(pathCurrent)) {
+                 files_to_exclude.add(current)
+                 break
+              }
            }
        }
     }
@@ -341,19 +338,18 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
-    if (cachedDirFilesNames != null) {
-        for (it in cachedDirFilesNames) {
-            val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
-            if (
-                it.isHiddenFile() ||
-                normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
-                normalizedName.endsWith("~") ||
-                Constants.defaultSensitiveExtensions.any { extension ->
-                    normalizedName.endsWith(extension)
-                }
-            ) {
-                files_to_exclude.add(it)
+    // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
+    (dirFilesNames ?: curr_dir.list())?.forEach {
+        val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
+        if (
+            it.isHiddenFile() ||
+            normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
+            normalizedName.endsWith("~") ||
+            Constants.defaultSensitiveExtensions.any { extension ->
+                normalizedName.endsWith(extension)
             }
+        ) {
+            files_to_exclude.add(it)
         }
     }
 
