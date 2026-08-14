@@ -1,0 +1,154 @@
+name: Repair PR 442 security contract
+
+on:
+  push:
+    branches:
+      - fix-fail-securely-info-exposure-14413613517653866972
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-pr-442
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: fix-fail-securely-info-exposure-14413613517653866972
+          fetch-depth: 0
+
+      - name: Use preinstalled Temurin JDK 11
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_11_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_11_X64/bin" >> "$GITHUB_PATH"
+
+      - name: Apply all-or-nothing directory index policy
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('src/main/kotlin/html4tree/main.kt')
+          source = source_path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  '    val index_middle = fun():String{ \n',
+                  '    val index_middle = fun():String?{ \n',
+              ),
+              (
+                  '''               } catch (e: Exception) {
+                   // 보안 향상: 속성을 읽을 수 없는 파일(권한 부족, 깨진 심볼릭 링크 등)은 안전하게 무시하여
+                   // 파일명 노출(Information Exposure)을 방지합니다. (Fail Securely)
+                   return@forEach
+               }
+''',
+                  '''               } catch (_: Exception) {
+                   // 한 항목의 메타데이터라도 검증할 수 없으면 부분 목록을 만들지 않습니다.
+                   // 호출자는 기존 index.html을 제거하고 이 디렉토리의 출력을 fail closed 합니다.
+                   return null
+               }
+''',
+              ),
+              (
+                  '''   try {
+       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+''',
+                  '''   val renderedEntries = index_middle()
+   if (renderedEntries == null) {
+       // A partial listing leaks which entries were readable. Remove any stale
+       // generated index and publish nothing for this directory instead.
+       Files.deleteIfExists(curr_dir.toPath().resolve("index.html"))
+       return
+   }
+
+   try {
+       write_index_file(curr_dir, index_top+renderedEntries+index_bottom)
+''',
+              ),
+          ]
+
+          for old, new in replacements:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one source match, found {count}: {old[:80]!r}')
+              source = source.replace(old, new, 1)
+
+          source_path.write_text(source, encoding='utf-8')
+
+          test_path = Path('src/test/kotlin/html4tree/AttrExceptionTest.kt')
+          test_path.write_text('''package html4tree
+
+import org.junit.Test
+import java.io.File
+import java.nio.file.Files
+import kotlin.test.assertFalse
+
+class AttrExceptionTest {
+    @Test
+    fun testUnreadableEntryRemovesTheWholeGeneratedIndex() {
+        val tempDir = Files.createTempDirectory("attr_test").toFile()
+        try {
+            val visibleFile = File(tempDir, "visible.txt").apply { writeText("visible") }
+            val nonExistentFile = File(tempDir, "does_not_exist")
+            val existingIndex = File(tempDir, "index.html").apply {
+                writeText("stale listing that must not survive")
+            }
+
+            process_dir(tempDir, setOf(), arrayOf(visibleFile, nonExistentFile))
+
+            assertFalse(
+                existingIndex.exists(),
+                "A metadata failure must remove the complete generated index instead of publishing a partial list"
+            )
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+}
+''', encoding='utf-8')
+
+          sentinel_path = Path('.jules/sentinel.md')
+          sentinel = sentinel_path.read_text(encoding='utf-8')
+          old_record = '''
+## 2024-08-13 - [안전하지 않은 예외 처리로 인한 파일 정보 노출]
+**Vulnerability:** 파일 속성을 읽는 도중 예외가 발생했을 때 (예: 권한 부족, 깨진 심볼릭 링크), 예외를 무시하고 기본값(isSymbolicLink=false)을 유지하여 파일 이름이 디렉토리 인덱스에 노출되는 Fail Open 취약점.
+**Learning:** 시스템 레벨 예외(IOException, AccessDeniedException 등)를 처리할 때는 기본 로직을 그대로 타게 해서는 안 되며, 보안 관점에서 '실패 시 닫기(Fail Securely)' 원칙을 적용해야 함.
+**Prevention:** 파일을 순회하며 접근 권한이 필요한 작업을 할 때, 접근 실패 시 해당 파일을 무시(skip)하도록 예외 처리 블록(catch)에서 루프를 조기 종료(return/continue) 처리해야 함.'''
+          new_record = '''
+## 2026-08-14 - [검증 불가능한 항목이 있는 디렉토리의 부분 인덱스 노출]
+**Vulnerability:** 파일 속성을 읽지 못한 항목만 누락한 부분 목록은 항목별 가독성 상태를 외부 출력에 반영하고, 기존 index.html이 남으면 더 이상 검증되지 않은 이름도 계속 노출할 수 있음.
+**Learning:** 디렉토리 인덱스는 항목별 best-effort 출력이 아니라 하나의 원자적 보안 산출물이어야 함. 모든 포함 후보의 메타데이터를 검증한 경우에만 완전한 목록을 게시해야 함.
+**Prevention:** 한 항목의 속성 검증이라도 실패하면 새 목록 생성을 중단하고 기존 생성 인덱스를 제거하며, 파일명·실패 항목 수·오류 상세를 대체 HTML에 기록하지 않음.'''
+          count = sentinel.count(old_record)
+          if count != 1:
+              raise SystemExit(f'expected one sentinel record, found {count}')
+          sentinel_path.write_text(sentinel.replace(old_record, new_record, 1), encoding='utf-8')
+          PY
+
+      - name: Verify Gradle wrapper integrity
+        shell: bash
+        run: |
+          expected_sha256="76b12da7f4a7cdd025e5996811a2e49bf5df0fb62d72554ab555c0e434b63aae"
+          actual_sha256="$(sha256sum gradle/wrapper/gradle-wrapper.jar | awk '{print $1}')"
+          test "$actual_sha256" = "$expected_sha256"
+
+      - name: Run the complete build and coverage gate
+        run: ./gradlew clean build --no-daemon
+
+      - name: Commit verified repair and remove this workflow
+        shell: bash
+        run: |
+          rm .github/workflows/repair-pr-442.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: make unreadable directory indexes all-or-nothing"
+          git push origin HEAD:fix-fail-securely-info-exposure-14413613517653866972
