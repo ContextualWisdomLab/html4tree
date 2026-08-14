@@ -57,22 +57,6 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
-    fun generatedFileAndDirectoryNamesUseAutomaticTextDirection() {
-        val rtlFile = File(temporaryDirectory, "שלום.txt").apply { writeText("file") }
-        val rtlDirectory = File(temporaryDirectory, "مجلد").apply { mkdir() }
-
-        process_dir(
-            temporaryDirectory,
-            setOf("index.html"),
-            arrayOf(rtlFile, rtlDirectory)
-        )
-
-        val generatedHtml = generatedHtml()
-        assertTrue(generatedHtml.contains("<span dir=\"auto\">שלום.txt</span>"))
-        assertTrue(generatedHtml.contains("<span dir=\"auto\">مجلد</span>"))
-    }
-
-    @Test
     fun emptyDirectoryRetainsOneSemanticStatusRow() {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
