@@ -51,13 +51,6 @@ class MainTest {
 
     @Test
     fun testEscapeHtml() {
-        // Access top-level property explicitly for JaCoCo coverage
-        val mainKtClass = Class.forName("html4tree.MainKt")
-        val field = mainKtClass.getDeclaredField("HTML_ESCAPE_TABLE")
-        field.isAccessible = true
-        val table = field.get(null) as Array<*>
-        assertEquals("&amp;", table['&'.toInt()])
-
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
         assertEquals("&gt;", ">".escapeHtml())
