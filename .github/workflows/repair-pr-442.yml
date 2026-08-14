@@ -31,102 +31,38 @@ jobs:
 
       - name: Apply all-or-nothing directory index policy
         shell: bash
+        env:
+          OLD_ONE: ICAgIHZhbCBpbmRleF9taWRkbGUgPSBmdW4oKTpTdHJpbmd7IAo=
+          NEW_ONE: ICAgIHZhbCBpbmRleF9taWRkbGUgPSBmdW4oKTpTdHJpbmc/eyAK
+          OLD_TWO: ICAgICAgICAgICAgICAgfSBjYXRjaCAoZTogRXhjZXB0aW9uKSB7CiAgICAgICAgICAgICAgICAgICAvLyDrs7TslYgg7Zal7IOBOiDsho3shLHsnYQg7J297J2EIOyImCDsl4bripQg7YyM7J28KOq2jO2VnCDrtoDsobEsIOq5qOynhCDsi6zrs7zrpq0g66eB7YGsIOuTsSnsnYAg7JWI7KCE7ZWY6rKMIOustOyLnO2VmOyXrAogICAgICAgICAgICAgICAgICAgLy8g7YyM7J2866qFIOuFuOy2nChJbmZvcm1hdGlvbiBFeHBvc3VyZSnsnYQg67Cp7KeA7ZWp64uI64ukLiAoRmFpbCBTZWN1cmVseSkKICAgICAgICAgICAgICAgICAgIHJldHVybkBmb3JFYWNoCiAgICAgICAgICAgICAgIH0K
+          NEW_TWO: ICAgICAgICAgICAgICAgfSBjYXRjaCAoXzogRXhjZXB0aW9uKSB7CiAgICAgICAgICAgICAgICAgICAvLyDtlZwg7ZWt66qp7J2YIOuplO2DgOuNsOydtO2EsOudvOuPhCDqsoDspp3tlaAg7IiYIOyXhuycvOuptCDrtoDrtoQg66qp66Gd7J2EIOunjOuTpOyngCDslYrsirXri4jri6QuCiAgICAgICAgICAgICAgICAgICAvLyDtmLjstpzsnpDripQg6riw7KG0IGluZGV4Lmh0bWzsnYQg7KCc6rGw7ZWY6rOgIOydtCDrlJTroInthqDrpqzsnZgg7Lac66Cl7J2EIGZhaWwgY2xvc2VkIO2VqeuLiOuLpC4KICAgICAgICAgICAgICAgICAgIHJldHVybiBudWxsCiAgICAgICAgICAgICAgIH0K
+          OLD_THREE: ICAgdHJ5IHsKICAgICAgIHdyaXRlX2luZGV4X2ZpbGUoY3Vycl9kaXIsIGluZGV4X3RvcCtpbmRleF9taWRkbGUoKStpbmRleF9ib3R0b20pCg==
+          NEW_THREE: ICAgdmFsIHJlbmRlcmVkRW50cmllcyA9IGluZGV4X21pZGRsZSgpCiAgIGlmIChyZW5kZXJlZEVudHJpZXMgPT0gbnVsbCkgewogICAgICAgLy8gQSBwYXJ0aWFsIGxpc3RpbmcgbGVha3Mgd2hpY2ggZW50cmllcyB3ZXJlIHJlYWRhYmxlLiBSZW1vdmUgYW55IHN0YWxlCiAgICAgICAvLyBnZW5lcmF0ZWQgaW5kZXggYW5kIHB1Ymxpc2ggbm90aGluZyBmb3IgdGhpcyBkaXJlY3RvcnkgaW5zdGVhZC4KICAgICAgIEZpbGVzLmRlbGV0ZUlmRXhpc3RzKGN1cnJfZGlyLnRvUGF0aCgpLnJlc29sdmUoImluZGV4Lmh0bWwiKSkKICAgICAgIHJldHVybgogICB9CgogICB0cnkgewogICAgICAgd3JpdGVfaW5kZXhfZmlsZShjdXJyX2RpciwgaW5kZXhfdG9wK3JlbmRlcmVkRW50cmllcytpbmRleF9ib3R0b20pCg==
+          TEST_FILE: cGFja2FnZSBodG1sNHRyZWUKCmltcG9ydCBvcmcuanVuaXQuVGVzdAppbXBvcnQgamF2YS5pby5GaWxlCmltcG9ydCBqYXZhLm5pby5maWxlLkZpbGVzCmltcG9ydCBrb3RsaW4udGVzdC5hc3NlcnRGYWxzZQoKY2xhc3MgQXR0ckV4Y2VwdGlvblRlc3QgewogICAgQFRlc3QKICAgIGZ1biB0ZXN0VW5yZWFkYWJsZUVudHJ5UmVtb3Zlc1RoZVdob2xlR2VuZXJhdGVkSW5kZXgoKSB7CiAgICAgICAgdmFsIHRlbXBEaXIgPSBGaWxlcy5jcmVhdGVUZW1wRGlyZWN0b3J5KCJhdHRyX3Rlc3QiKS50b0ZpbGUoKQogICAgICAgIHRyeSB7CiAgICAgICAgICAgIHZhbCB2aXNpYmxlRmlsZSA9IEZpbGUodGVtcERpciwgInZpc2libGUudHh0IikuYXBwbHkgeyB3cml0ZVRleHQoInZpc2libGUiKSB9CiAgICAgICAgICAgIHZhbCBub25FeGlzdGVudEZpbGUgPSBGaWxlKHRlbXBEaXIsICJkb2VzX25vdF9leGlzdCIpCiAgICAgICAgICAgIHZhbCBleGlzdGluZ0luZGV4ID0gRmlsZSh0ZW1wRGlyLCAiaW5kZXguaHRtbCIpLmFwcGx5IHsKICAgICAgICAgICAgICAgIHdyaXRlVGV4dCgic3RhbGUgbGlzdGluZyB0aGF0IG11c3Qgbm90IHN1cnZpdmUiKQogICAgICAgICAgICB9CgogICAgICAgICAgICBwcm9jZXNzX2Rpcih0ZW1wRGlyLCBzZXRPZigpLCBhcnJheU9mKHZpc2libGVGaWxlLCBub25FeGlzdGVudEZpbGUpKQoKICAgICAgICAgICAgYXNzZXJ0RmFsc2UoCiAgICAgICAgICAgICAgICBleGlzdGluZ0luZGV4LmV4aXN0cygpLAogICAgICAgICAgICAgICAgIkEgbWV0YWRhdGEgZmFpbHVyZSBtdXN0IHJlbW92ZSB0aGUgY29tcGxldGUgZ2VuZXJhdGVkIGluZGV4IGluc3RlYWQgb2YgcHVibGlzaGluZyBhIHBhcnRpYWwgbGlzdCIKICAgICAgICAgICAgKQogICAgICAgIH0gZmluYWxseSB7CiAgICAgICAgICAgIHRlbXBEaXIuZGVsZXRlUmVjdXJzaXZlbHkoKQogICAgICAgIH0KICAgIH0KfQo=
+          OLD_RECORD: CiMjIDIwMjQtMDgtMTMgLSBb7JWI7KCE7ZWY7KeAIOyViuydgCDsmIjsmbgg7LKY66as66GcIOyduO2VnCDtjIzsnbwg7KCV67O0IOuFuOy2nF0KKipWdWxuZXJhYmlsaXR5OioqIO2MjOydvCDsho3shLHsnYQg7J2964qUIOuPhOykkSDsmIjsmbjqsIAg67Cc7IOd7ZaI7J2EIOuVjCAo7JiIOiDqtoztlZwg67aA7KGxLCDquajsp4Qg7Ius67O866atIOunge2BrCksIOyYiOyZuOulvCDrrLTsi5ztlZjqs6Ag6riw67O46rCSKGlzU3ltYm9saWNMaW5rPWZhbHNlKeydhCDsnKDsp4DtlZjsl6wg7YyM7J28IOydtOumhOydtCDrlJTroInthqDrpqwg7J24642x7Iqk7JeQIOuFuOy2nOuQmOuKlCBGYWlsIE9wZW4g7Leo7JW97KCQLgoqKkxlYXJuaW5nOioqIOyLnOyKpO2FnCDroIjrsqgg7JiI7Jm4KElPRXhjZXB0aW9uLCBBY2Nlc3NEZW5pZWRFeGNlcHRpb24g65OxKeulvCDsspjrpqztlaAg65WM64qUIOq4sOuzuCDroZzsp4HsnYQg6re464yA66GcIO2DgOqyjCDtlbTshJzripQg7JWIIOuQmOupsCwg67O07JWIIOq0gOygkOyXkOyEnCAn7Iuk7YyoIOyLnCDri6vquLAoRmFpbCBTZWN1cmVseSknIOybkOy5meydhCDsoIHsmqntlbTslbwg7ZWoLgoqKlByZXZlbnRpb246Kiog7YyM7J287J2EIOyInO2ajO2VmOupsCDsoJHqt7wg6raM7ZWc7J20IO2VhOyalO2VnCDsnpHsl4XsnYQg7ZWgIOuVjCwg7KCR6re8IOyLpO2MqCDsi5wg7ZW064u5IO2MjOydvOydhCDrrLTsi5woc2tpcCntlZjrj4TroZ0g7JiI7Jm4IOyymOumrCDruJTroZ0oY2F0Y2gp7JeQ7IScIOujqO2UhOulvCDsobDquLAg7KKF66OMKHJldHVybi9jb250aW51ZSkg7LKY66as7ZW07JW8IO2VqC4=
+          NEW_RECORD: CiMjIDIwMjYtMDgtMTQgLSBb6rKA7KadIOu2iOqwgOuKpe2VnCDtla3rqqnsnbQg7J6I64qUIOuUlOugie2GoOumrOydmCDrtoDrtoQg7J24642x7IqkIOuFuOy2nF0KKipWdWxuZXJhYmlsaXR5OioqIO2MjOydvCDsho3shLHsnYQg7J297KeAIOuqu+2VnCDtla3rqqnrp4wg64iE65297ZWcIOu2gOu2hCDrqqnroZ3snYAg7ZWt66qp67OEIOqwgOuPheyEsSDsg4Htg5zrpbwg7Jm467aAIOy2nOugpeyXkCDrsJjsmIHtlZjqs6AsIOq4sOyhtCBpbmRleC5odG1s7J20IOuCqOycvOuptCDrjZQg7J207IOBIOqygOymneuQmOyngCDslYrsnYAg7J2066aE64+EIOqzhOyGjSDrhbjstpztlaAg7IiYIOyeiOydjC4KKipMZWFybmluZzoqKiDrlJTroInthqDrpqwg7J24642x7Iqk64qUIO2VreuqqeuzhCBiZXN0LWVmZm9ydCDstpzroKXsnbQg7JWE64uI6528IO2VmOuCmOydmCDsm5DsnpDsoIEg67O07JWIIOyCsOy2nOusvOydtOyWtOyVvCDtlaguIOuqqOuToCDtj6ztlagg7ZuE67O07J2YIOuplO2DgOuNsOydtO2EsOulvCDqsoDspp3tlZwg6rK97Jqw7JeQ66eMIOyZhOyghO2VnCDrqqnroZ3snYQg6rKM7Iuc7ZW07JW8IO2VqC4KKipQcmV2ZW50aW9uOioqIO2VnCDtla3rqqnsnZgg7IaN7ISxIOqygOymneydtOudvOuPhCDsi6TtjKjtlZjrqbQg7IOIIOuqqeuhnSDsg53shLHsnYQg7KSR64uo7ZWY6rOgIOq4sOyhtCDsg53shLEg7J24642x7Iqk66W8IOygnOqxsO2VmOupsCwg7YyM7J2866qFwrfsi6TtjKgg7ZWt66qpIOyImMK37Jik66WYIOyDgeyEuOulvCDrjIDssrQgSFRNTOyXkCDquLDroZ3tlZjsp4Ag7JWK7J2MLg==
         run: |
           python3 - <<'PY'
+          import base64
+          import os
           from pathlib import Path
-
+          def decoded(name):
+              return base64.b64decode(os.environ[name]).decode('utf-8')
           source_path = Path('src/main/kotlin/html4tree/main.kt')
           source = source_path.read_text(encoding='utf-8')
-
-          replacements = [
-              (
-                  '    val index_middle = fun():String{ \n',
-                  '    val index_middle = fun():String?{ \n',
-              ),
-              (
-                  '''               } catch (e: Exception) {
-                   // 보안 향상: 속성을 읽을 수 없는 파일(권한 부족, 깨진 심볼릭 링크 등)은 안전하게 무시하여
-                   // 파일명 노출(Information Exposure)을 방지합니다. (Fail Securely)
-                   return@forEach
-               }
-''',
-                  '''               } catch (_: Exception) {
-                   // 한 항목의 메타데이터라도 검증할 수 없으면 부분 목록을 만들지 않습니다.
-                   // 호출자는 기존 index.html을 제거하고 이 디렉토리의 출력을 fail closed 합니다.
-                   return null
-               }
-''',
-              ),
-              (
-                  '''   try {
-       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
-''',
-                  '''   val renderedEntries = index_middle()
-   if (renderedEntries == null) {
-       // A partial listing leaks which entries were readable. Remove any stale
-       // generated index and publish nothing for this directory instead.
-       Files.deleteIfExists(curr_dir.toPath().resolve("index.html"))
-       return
-   }
-
-   try {
-       write_index_file(curr_dir, index_top+renderedEntries+index_bottom)
-''',
-              ),
-          ]
-
-          for old, new in replacements:
+          for old_name, new_name in [('OLD_ONE', 'NEW_ONE'), ('OLD_TWO', 'NEW_TWO'), ('OLD_THREE', 'NEW_THREE')]:
+              old = decoded(old_name)
+              new = decoded(new_name)
               count = source.count(old)
               if count != 1:
-                  raise SystemExit(f'expected one source match, found {count}: {old[:80]!r}')
+                  raise SystemExit(f'expected one {old_name} match, found {count}')
               source = source.replace(old, new, 1)
-
           source_path.write_text(source, encoding='utf-8')
-
-          test_path = Path('src/test/kotlin/html4tree/AttrExceptionTest.kt')
-          test_path.write_text('''package html4tree
-
-import org.junit.Test
-import java.io.File
-import java.nio.file.Files
-import kotlin.test.assertFalse
-
-class AttrExceptionTest {
-    @Test
-    fun testUnreadableEntryRemovesTheWholeGeneratedIndex() {
-        val tempDir = Files.createTempDirectory("attr_test").toFile()
-        try {
-            val visibleFile = File(tempDir, "visible.txt").apply { writeText("visible") }
-            val nonExistentFile = File(tempDir, "does_not_exist")
-            val existingIndex = File(tempDir, "index.html").apply {
-                writeText("stale listing that must not survive")
-            }
-
-            process_dir(tempDir, setOf(), arrayOf(visibleFile, nonExistentFile))
-
-            assertFalse(
-                existingIndex.exists(),
-                "A metadata failure must remove the complete generated index instead of publishing a partial list"
-            )
-        } finally {
-            tempDir.deleteRecursively()
-        }
-    }
-}
-''', encoding='utf-8')
-
+          Path('src/test/kotlin/html4tree/AttrExceptionTest.kt').write_text(decoded('TEST_FILE'), encoding='utf-8')
           sentinel_path = Path('.jules/sentinel.md')
           sentinel = sentinel_path.read_text(encoding='utf-8')
-          old_record = '''
-## 2024-08-13 - [안전하지 않은 예외 처리로 인한 파일 정보 노출]
-**Vulnerability:** 파일 속성을 읽는 도중 예외가 발생했을 때 (예: 권한 부족, 깨진 심볼릭 링크), 예외를 무시하고 기본값(isSymbolicLink=false)을 유지하여 파일 이름이 디렉토리 인덱스에 노출되는 Fail Open 취약점.
-**Learning:** 시스템 레벨 예외(IOException, AccessDeniedException 등)를 처리할 때는 기본 로직을 그대로 타게 해서는 안 되며, 보안 관점에서 '실패 시 닫기(Fail Securely)' 원칙을 적용해야 함.
-**Prevention:** 파일을 순회하며 접근 권한이 필요한 작업을 할 때, 접근 실패 시 해당 파일을 무시(skip)하도록 예외 처리 블록(catch)에서 루프를 조기 종료(return/continue) 처리해야 함.'''
-          new_record = '''
-## 2026-08-14 - [검증 불가능한 항목이 있는 디렉토리의 부분 인덱스 노출]
-**Vulnerability:** 파일 속성을 읽지 못한 항목만 누락한 부분 목록은 항목별 가독성 상태를 외부 출력에 반영하고, 기존 index.html이 남으면 더 이상 검증되지 않은 이름도 계속 노출할 수 있음.
-**Learning:** 디렉토리 인덱스는 항목별 best-effort 출력이 아니라 하나의 원자적 보안 산출물이어야 함. 모든 포함 후보의 메타데이터를 검증한 경우에만 완전한 목록을 게시해야 함.
-**Prevention:** 한 항목의 속성 검증이라도 실패하면 새 목록 생성을 중단하고 기존 생성 인덱스를 제거하며, 파일명·실패 항목 수·오류 상세를 대체 HTML에 기록하지 않음.'''
+          old_record = decoded('OLD_RECORD')
+          new_record = decoded('NEW_RECORD')
           count = sentinel.count(old_record)
           if count != 1:
               raise SystemExit(f'expected one sentinel record, found {count}')
