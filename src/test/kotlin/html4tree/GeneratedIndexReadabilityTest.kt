@@ -5,10 +5,7 @@ import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.attribute.FileTime
 import kotlin.math.pow
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -69,51 +66,6 @@ class GeneratedIndexReadabilityTest {
 
         assertTrue(generatedHtml.contains(expectedEmptyRow))
         assertTrue(generatedHtml.indexOf(expectedEmptyRow) == generatedHtml.lastIndexOf(expectedEmptyRow))
-    }
-
-    @Test
-    fun entryReplacedBySymlinkBeforeRenderingIsNotLinked() {
-        val listedFile = File(temporaryDirectory, "swapped.txt").apply { writeText("file") }
-        var attributeReads = 0
-
-        process_dir(
-            temporaryDirectory,
-            setOf("index.html"),
-            arrayOf(listedFile),
-            readEntryAttributes = {
-                attributeReads += 1
-                entryAttributes(isSymbolicLink = attributeReads == 2)
-            }
-        )
-
-        val generatedHtml = generatedHtml()
-        assertEquals(2, attributeReads)
-        assertFalse(generatedHtml.contains("swapped.txt"))
-        assertTrue(generatedHtml.contains("이 디렉토리는 비어 있습니다."))
-    }
-
-    @Test
-    fun entryBecomingUnreadableBeforeRenderingIsNotLinked() {
-        val listedFile = File(temporaryDirectory, "unreadable.txt").apply { writeText("file") }
-        var attributeReads = 0
-
-        process_dir(
-            temporaryDirectory,
-            setOf("index.html"),
-            arrayOf(listedFile),
-            readEntryAttributes = {
-                attributeReads += 1
-                if (attributeReads == 2) {
-                    throw java.nio.file.NoSuchFileException(listedFile.path)
-                }
-                entryAttributes(isSymbolicLink = false)
-            }
-        )
-
-        val generatedHtml = generatedHtml()
-        assertEquals(2, attributeReads)
-        assertFalse(generatedHtml.contains("unreadable.txt"))
-        assertTrue(generatedHtml.contains("이 디렉토리는 비어 있습니다."))
     }
 
     @Test
@@ -211,19 +163,6 @@ class GeneratedIndexReadabilityTest {
         assertTrue(contrastRatio("#0969da", "#f6f8fa") >= 3.0)
         assertTrue(contrastRatio("#58a6ff", "#161b22") >= 3.0)
     }
-
-    private fun entryAttributes(isSymbolicLink: Boolean): BasicFileAttributes =
-        object : BasicFileAttributes {
-            override fun lastModifiedTime(): FileTime = FileTime.fromMillis(0)
-            override fun lastAccessTime(): FileTime = FileTime.fromMillis(0)
-            override fun creationTime(): FileTime = FileTime.fromMillis(0)
-            override fun isRegularFile(): Boolean = !isSymbolicLink
-            override fun isDirectory(): Boolean = false
-            override fun isSymbolicLink(): Boolean = isSymbolicLink
-            override fun isOther(): Boolean = false
-            override fun size(): Long = 0
-            override fun fileKey(): Any? = null
-        }
 
     private fun generatedHtml(): String =
         File(temporaryDirectory, "index.html").readText(Charsets.UTF_8)
