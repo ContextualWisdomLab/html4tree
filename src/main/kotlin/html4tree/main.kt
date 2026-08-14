@@ -392,7 +392,18 @@ fun write_index_file(
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+fun process_dir(
+    curr_dir: File,
+    excludeSet: Set<String>? = null,
+    dirFiles: Array<File>? = null,
+    readEntryAttributes: (File) -> BasicFileAttributes = { entry ->
+        Files.readAttributes(
+            entry.toPath(),
+            BasicFileAttributes::class.java,
+            LinkOption.NOFOLLOW_LINKS
+        )
+    }
+){
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
@@ -440,17 +451,23 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                try {
                    // ⚡ Bolt Performance Optimization: Replace 3 separate OS stat calls (isDirectory, it.isDirectory(), isSymbolicLink)
                    // with a single readAttributes call to reduce I/O overhead.
-                   val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                   val attrs = readEntryAttributes(it)
                    isLinkedDirectory = attrs.isDirectory
                    isSymbolicLink = attrs.isSymbolicLink
                    success = true
-               } catch (e: Exception) {
+               } catch (_: Exception) {
                }
 
                if (success) {
-                   val notSymlink = !isSymbolicLink
+                   try {
+                       val currentAttrs = readEntryAttributes(it)
+                       isLinkedDirectory = currentAttrs.isDirectory
+                       isSymbolicLink = currentAttrs.isSymbolicLink
+                   } catch (_: Exception) {
+                       success = false
+                   }
 
-                   if (notSymlink) {
+                   if (success && !isSymbolicLink) {
                        val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                        val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                        val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
