@@ -448,10 +448,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                }
 
                if (success) {
-                   val stillValidName = !fileName.isHiddenFile() && fileName !in exclude
                    val notSymlink = !isSymbolicLink
 
-                   if (stillValidName && notSymlink) {
+                   if (notSymlink) {
                        val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                        val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                        val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
