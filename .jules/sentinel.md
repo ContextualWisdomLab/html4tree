@@ -100,7 +100,7 @@
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
 
-## 2024-08-13 - [안전하지 않은 예외 처리로 인한 파일 정보 노출]
-**Vulnerability:** 파일 속성을 읽는 도중 예외가 발생했을 때 (예: 권한 부족, 깨진 심볼릭 링크), 예외를 무시하고 기본값(isSymbolicLink=false)을 유지하여 파일 이름이 디렉토리 인덱스에 노출되는 Fail Open 취약점.
-**Learning:** 시스템 레벨 예외(IOException, AccessDeniedException 등)를 처리할 때는 기본 로직을 그대로 타게 해서는 안 되며, 보안 관점에서 '실패 시 닫기(Fail Securely)' 원칙을 적용해야 함.
-**Prevention:** 파일을 순회하며 접근 권한이 필요한 작업을 할 때, 접근 실패 시 해당 파일을 무시(skip)하도록 예외 처리 블록(catch)에서 루프를 조기 종료(return/continue) 처리해야 함.
+## 2026-08-14 - [검증 불가능한 항목이 있는 디렉토리의 부분 인덱스 노출]
+**Vulnerability:** 파일 속성을 읽지 못한 항목만 누락한 부분 목록은 항목별 가독성 상태를 외부 출력에 반영하고, 기존 index.html이 남으면 더 이상 검증되지 않은 이름도 계속 노출할 수 있음.
+**Learning:** 디렉토리 인덱스는 항목별 best-effort 출력이 아니라 하나의 원자적 보안 산출물이어야 함. 모든 포함 후보의 메타데이터를 검증한 경우에만 완전한 목록을 게시해야 함.
+**Prevention:** 한 항목의 속성 검증이라도 실패하면 새 목록 생성을 중단하고 기존 생성 인덱스를 제거하며, 파일명·실패 항목 수·오류 상세를 대체 HTML에 기록하지 않음.

@@ -421,7 +421,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
             <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
 """ 
 
-    val index_middle = fun():String{ 
+    val index_middle = fun():String?{ 
         val l = StringBuilder()
 
         val filesList = dirFiles ?: curr_dir.listFiles()
@@ -442,10 +442,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                    val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
                    isLinkedDirectory = attrs.isDirectory
                    isSymbolicLink = attrs.isSymbolicLink
-               } catch (e: Exception) {
-                   // 보안 향상: 속성을 읽을 수 없는 파일(권한 부족, 깨진 심볼릭 링크 등)은 안전하게 무시하여
-                   // 파일명 노출(Information Exposure)을 방지합니다. (Fail Securely)
-                   return@forEach
+               } catch (_: Exception) {
+                   // 한 항목의 메타데이터라도 검증할 수 없으면 부분 목록을 만들지 않습니다.
+                   // 호출자는 기존 index.html을 제거하고 이 디렉토리의 출력을 fail closed 합니다.
+                   return null
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
@@ -473,8 +473,16 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 </html>
 """
 
+   val renderedEntries = index_middle()
+   if (renderedEntries == null) {
+       // A partial listing leaks which entries were readable. Remove any stale
+       // generated index and publish nothing for this directory instead.
+       Files.deleteIfExists(curr_dir.toPath().resolve("index.html"))
+       return
+   }
+
    try {
-       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+       write_index_file(curr_dir, index_top+renderedEntries+index_bottom)
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
