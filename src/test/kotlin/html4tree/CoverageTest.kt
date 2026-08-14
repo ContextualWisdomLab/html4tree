@@ -21,6 +21,14 @@ class CoverageTest {
     }
 
     @Test
+    fun testEscapeMapCoverage() {
+        val field = Class.forName("html4tree.MainKt").getDeclaredField("ESCAPE_MAP")
+        field.isAccessible = true
+        val map = field.get(null) as Array<*>
+        assertTrue(map.size == 128)
+    }
+
+    @Test
     fun testCrawlDirectoriesReadAttributesExceptionFallback() {
         val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
         val readOnlyDir = File(tempDir, "readonly")

@@ -99,6 +99,15 @@ li + li {
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
 
+private val ESCAPE_MAP = Array<String?>(128) { null }.apply {
+    this['&'.toInt()] = "&amp;"
+    this['<'.toInt()] = "&lt;"
+    this['>'.toInt()] = "&gt;"
+    this['"'.toInt()] = "&quot;"
+    this['\''.toInt()] = "&#x27;"
+    this['`'.toInt()] = "&#x60;"
+}
+
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
     val topDir: String by argument(help="Top directory to crawl")
@@ -225,15 +234,8 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        val cInt = c.toInt()
+        val replacement = if (cInt < 128) ESCAPE_MAP[cInt] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
