@@ -1,0 +1,57 @@
+name: Build generated index ownership slice
+
+on:
+  push:
+    branches:
+      - feat/generated-index-ownership
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generated-index-ownership-slice
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: feat/generated-index-ownership
+          fetch-depth: 0
+
+      - name: Use preinstalled Temurin JDK 11
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_11_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_11_X64/bin" >> "$GITHUB_PATH"
+
+      - name: Apply the tested product slice
+        run: python3 scripts/apply_generated_index_ownership.py
+
+      - name: Verify Gradle wrapper integrity
+        shell: bash
+        run: |
+          expected_sha256="76b12da7f4a7cdd025e5996811a2e49bf5df0fb62d72554ab555c0e434b63aae"
+          actual_sha256="$(sha256sum gradle/wrapper/gradle-wrapper.jar | awk '{print $1}')"
+          test "$actual_sha256" = "$expected_sha256"
+
+      - name: Run full tests, package build, and coverage gate
+        run: ./gradlew clean build --no-daemon
+
+      - name: Commit the verified slice and remove bootstrap files
+        shell: bash
+        run: |
+          rm .github/workflows/build-generated-index-ownership.yml
+          rm scripts/apply_generated_index_ownership.py
+          rmdir scripts 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: protect user-authored index files"
+          git push origin HEAD:feat/generated-index-ownership
