@@ -1,0 +1,203 @@
+name: Repair owned-index review findings
+
+on:
+  push:
+    branches:
+      - feat/owned-index-preservation
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-owned-index-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repair-owned-index-review:
+    if: github.repository == 'ContextualWisdomLab/html4tree' && github.ref == 'refs/heads/feat/owned-index-preservation'
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout exact branch without third-party actions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=20 origin "${GITHUB_REF_NAME}"
+          git checkout -B "${GITHUB_REF_NAME}" FETCH_HEAD
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply review fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              text = file_path.read_text()
+              if old not in text:
+                  raise SystemExit(f"missing expected text in {path}: {old[:120]!r}")
+              file_path.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              "README.md",
+              """```
+          $ java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
+          $ java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
+          ```""".replace("          ", ""),
+              """```sh
+          java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
+          java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
+          ```""".replace("          ", ""),
+          )
+
+          replace_once(
+              "src/main/kotlin/html4tree/main.kt",
+              "import com.github.ajalt.clikt.core.CliktCommand\n",
+              "import com.github.ajalt.clikt.core.CliktCommand\nimport com.github.ajalt.clikt.core.UsageError\n",
+          )
+          replace_once(
+              "src/main/kotlin/html4tree/main.kt",
+              """    override fun run() {
+                  go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
+              }
+          }
+          """.replace("          ", ""),
+              """    override fun run() {
+                  validate_cleanup_options(cleanup, dryRun)
+                  go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
+              }
+          }
+          
+          internal fun validate_cleanup_options(cleanup: Boolean, dryRun: Boolean) {
+              if (dryRun && !cleanup) {
+                  throw UsageError("--dry-run requires --cleanup")
+              }
+          }
+          """.replace("          ", ""),
+          )
+          replace_once(
+              "src/main/kotlin/html4tree/main.kt",
+              """internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
+              return try {
+                  if (Files.isSymbolicLink(path)) {
+                      null
+                  } else if (limit <= 0) {
+                      ByteArray(0)
+                  } else {
+                      val bytes = Files.readAllBytes(path)
+                      if (bytes.size <= limit) {
+                          bytes
+                      } else {
+                          bytes.copyOf(limit)
+                      }
+                  }
+              } catch (e: Exception) {
+                  null
+              }
+          }
+          """.replace("          ", ""),
+              """internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
+              return try {
+                  if (Files.isSymbolicLink(path)) {
+                      null
+                  } else if (limit <= 0) {
+                      ByteArray(0)
+                  } else {
+                      Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { stream ->
+                          val buffer = ByteArray(limit)
+                          var offset = 0
+                          while (offset < limit) {
+                              val read = stream.read(buffer, offset, limit - offset)
+                              if (read == -1) {
+                                  break
+                              }
+                              offset += read
+                          }
+                          buffer.copyOf(offset)
+                      }
+                  }
+              } catch (e: Exception) {
+                  null
+              }
+          }
+          """.replace("          ", ""),
+          )
+
+          replace_once(
+              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
+              "import org.junit.Test\n",
+              "import com.github.ajalt.clikt.core.UsageError\nimport org.junit.Test\n",
+          )
+          replace_once(
+              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
+              """    @Test
+              fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {
+          """.replace("          ", ""),
+              """    @Test
+              fun dryRunRequiresCleanup() {
+                  assertFailsWith<UsageError> {
+                      validate_cleanup_options(cleanup = false, dryRun = true)
+                  }
+                  validate_cleanup_options(cleanup = false, dryRun = false)
+                  validate_cleanup_options(cleanup = true, dryRun = false)
+                  validate_cleanup_options(cleanup = true, dryRun = true)
+              }
+          
+              @Test
+              fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {
+          """.replace("          ", ""),
+          )
+          replace_once(
+              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
+              """            val failed = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
+                  if (!failed) {
+                      assertTrue(reports.any { it.startsWith("failed:") })
+                  }
+          """.replace("          ", ""),
+              """            val cleanupSucceeded = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
+                  if (!cleanupSucceeded) {
+                      assertTrue(reports.any { it.startsWith("failed:") })
+                  } else {
+                      owned.writeText(ownedIndexFixture("generated"))
+                  }
+          """.replace("          ", ""),
+          )
+          replace_once(
+              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
+              """        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)
+                  assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)
+                  assertEquals(null, read_index_prefix(File(tempDir, "missing-prefix.html").toPath()))
+          """.replace("          ", ""),
+              """        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)
+                  assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)
+                  val short = File(tempDir, "short-prefix.html")
+                  short.writeText("abc")
+                  assertEquals("abc", String(read_index_prefix(short.toPath(), 64)!!, Charsets.UTF_8))
+                  assertEquals(null, read_index_prefix(File(tempDir, "missing-prefix.html").toPath()))
+          """.replace("          ", ""),
+          )
+          PY
+
+      - name: Verify exact branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew clean build --no-daemon
+
+      - name: Commit verified repair and remove workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/repair-owned-index-review.yml
+          git status --short
+          git add README.md src/main/kotlin/html4tree/main.kt src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt .github/workflows/repair-owned-index-review.yml
+          git commit -m "fix: address owned index review findings"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
