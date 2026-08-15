@@ -9,6 +9,7 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -118,6 +119,9 @@ class Html4tree : CliktCommand() {
     val topDir: String by argument(help="Top directory to crawl")
 
     override fun run() {
+        if (dryRun && !cleanup) {
+            throw UsageError("--dry-run requires --cleanup")
+        }
         go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
     }
 }
@@ -174,11 +178,8 @@ internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT):
         } else if (limit <= 0) {
             ByteArray(0)
         } else {
-            val bytes = Files.readAllBytes(path)
-            if (bytes.size <= limit) {
-                bytes
-            } else {
-                bytes.copyOf(limit)
+            Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { input ->
+                input.readNBytes(limit)
             }
         }
     } catch (e: Exception) {
@@ -551,6 +552,7 @@ fun write_index_file(
 
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     var backupPath: Path? = null
+    var preserveBackupAfterRestoreFailure = false
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         if (replacingOwned || replacingForced) {
@@ -617,13 +619,15 @@ fun write_index_file(
                 moveFile(restoreFrom, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
                 backupPath = null
             } catch (_: Exception) {
+                preserveBackupAfterRestoreFailure = true
+                reporter("backup-retained: ${restoreFrom.toAbsolutePath()}")
             }
         }
         throw error
     } finally {
         Files.deleteIfExists(tempPath)
         val leftoverBackup = backupPath
-        if (leftoverBackup != null) {
+        if (leftoverBackup != null && !preserveBackupAfterRestoreFailure) {
             Files.deleteIfExists(leftoverBackup)
         }
     }
