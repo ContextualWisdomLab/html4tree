@@ -1,17 +1,28 @@
 --- src/main/kotlin/html4tree/main.kt
 +++ src/main/kotlin/html4tree/main.kt
-@@ -368,6 +368,14 @@
-         Files.move(source, target, *options)
-         Unit
+@@ -369,14 +369,17 @@
      }
  ) {
-+    // 🛡️ Sentinel: Re-validate that the target directory is not a symlink immediately before file operations
-+    val attrs = try {
-+        Files.readAttributes(curr_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-+    } catch (e: Exception) {
-+        null
-+    }
-+    if (attrs == null || attrs.isSymbolicLink || !attrs.isDirectory) return
-+
+     // 🛡️ Sentinel: Re-validate that the target directory is not a symlink immediately before file operations
+-    val attrs = try {
+-        Files.readAttributes(curr_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+-    } catch (e: Exception) {
+-        null
+-    }
+-    if (attrs == null || attrs.isSymbolicLink || !attrs.isDirectory) return
+-
      val indexPath = curr_dir.toPath().resolve("index.html")
-     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
++    val tempPath = try {
++        val attrs = try {
++            Files.readAttributes(curr_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++        } catch (e: Exception) {
++            null
++        }
++        if (attrs == null || attrs.isSymbolicLink || !attrs.isDirectory) return
++        Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
++    } catch (e: java.io.IOException) {
++        throw e
++    }
+-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+     try {
+         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))

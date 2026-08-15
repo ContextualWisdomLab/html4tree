@@ -369,15 +369,18 @@ fun write_index_file(
     }
 ) {
     // 🛡️ Sentinel: Re-validate that the target directory is not a symlink immediately before file operations
-    val attrs = try {
-        Files.readAttributes(curr_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-    } catch (e: Exception) {
-        null
-    }
-    if (attrs == null || attrs.isSymbolicLink || !attrs.isDirectory) return
-
     val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    val tempPath = try {
+        val attrs = try {
+            Files.readAttributes(curr_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        } catch (e: Exception) {
+            null
+        }
+        if (attrs == null || attrs.isSymbolicLink || !attrs.isDirectory) return
+        Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    } catch (e: java.io.IOException) {
+        throw e
+    }
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
