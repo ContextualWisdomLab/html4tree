@@ -128,6 +128,26 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileExcludesSensitiveNamesWithWhitespace() {
+        val sensitiveNamesWithWhitespace = arrayOf(
+            " .git",
+            "config.json ",
+            "\tsecrets.yml",
+            ".npmrc\r"
+        )
+        val safeNames = arrayOf(" public.txt ", "image.png")
+
+        val excluded = process_ignore_file(tempDir, sensitiveNamesWithWhitespace + safeNames)
+
+        sensitiveNamesWithWhitespace.forEach { name ->
+            assertTrue(excluded.contains(name.trim()), "'$name' must be excluded after trimming")
+        }
+        safeNames.forEach { name ->
+            assertFalse(excluded.contains(name.trim()), "'$name' must remain visible")
+        }
+    }
+
+    @Test
     fun testGoIgnoresHiddenFilesAndDirectories() {
         val hiddenFile = File(tempDir, ".hidden_file.txt")
         hiddenFile.createNewFile()
