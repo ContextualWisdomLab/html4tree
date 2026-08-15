@@ -16,6 +16,10 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- Require `--cleanup` whenever `--dry-run` is supplied, bound generated-index
+  ownership inspection to the configured prefix instead of reading the whole
+  file, and retain/report the recovery backup when both publication and
+  automatic restoration fail.
 - Remove the README `find ... -name index.html -delete` cleanup command. That
   command cannot distinguish generated pages from customer home pages.
 - Improve generated directory-index readability with adjacent-row separators,
@@ -31,7 +35,8 @@ All notable changes to this project are documented in this file.
 ### Tests
 
 - Add ownership regressions for user-authored preservation, owned replacement,
-  cleanup/dry-run selection, atomic-conflict refusal, and backup restore.
+  cleanup/dry-run selection, CLI misuse rejection, bounded prefix EOF handling,
+  atomic-conflict refusal, backup restore, and retained-backup reporting.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
