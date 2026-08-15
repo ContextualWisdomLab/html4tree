@@ -128,6 +128,26 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileExcludesSensitiveNamesWithWhitespace() {
+        val sensitiveNamesWithWhitespace = arrayOf(
+            " .git",
+            "config.json ",
+            "\tsecrets.yml",
+            ".npmrc\r"
+        )
+        val safeNames = arrayOf(" public.txt ", "image.png")
+
+        val excluded = process_ignore_file(tempDir, sensitiveNamesWithWhitespace + safeNames)
+
+        sensitiveNamesWithWhitespace.forEach { name ->
+            assertTrue(excluded.contains(name.trim()), "'$name' must be excluded after trimming")
+        }
+        safeNames.forEach { name ->
+            assertFalse(excluded.contains(name.trim()), "'$name' must remain visible")
+        }
+    }
+
+    @Test
     fun testGoIgnoresHiddenFilesAndDirectories() {
         val hiddenFile = File(tempDir, ".hidden_file.txt")
         hiddenFile.createNewFile()
@@ -943,7 +963,23 @@ class MainTest {
         assertTrue(indexHtml.exists())
         val content = indexHtml.readText()
         assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
-        assertTrue(content.contains("<h1>Root</h1>"))
+        assertTrue(content.contains("<h1 dir=\"auto\">Root</h1>"))
     }
 
+    @Test
+    fun testCrawlDirectoriesRespectsMaxSafeDepth() {
+        val maxSafeDepth = Class.forName("html4tree.MainKt").getDeclaredField("MAX_SAFE_DEPTH").apply { isAccessible = true }.get(null) as Int
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(tempDir, maxSafeDepth))
+
+        var processDirectoryCalled = false
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { _, _, _ -> processDirectoryCalled = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() }
+        )
+        assertFalse(processDirectoryCalled, "processDirectory should not be called when currentLevel >= MAX_SAFE_DEPTH")
+    }
 }
