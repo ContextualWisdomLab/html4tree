@@ -285,7 +285,7 @@ fun String.urlEncodePath(): String {
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
- 
+
     val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
 
     val ignore_file = File(ignore_file_path)
@@ -368,14 +368,6 @@ fun write_index_file(
         Unit
     }
 ) {
-    // 🛡️ Sentinel: Re-validate that the target directory is not a symlink immediately before file operations
-    val attrs = try {
-        Files.readAttributes(curr_dir.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-    } catch (e: Exception) {
-        null
-    }
-    if (attrs == null || attrs.isSymbolicLink || !attrs.isDirectory) return
-
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
@@ -399,9 +391,9 @@ fun write_index_file(
         Files.deleteIfExists(tempPath)
     }
 }
- 
+
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
+
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
 
@@ -427,9 +419,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
-""" 
+"""
 
-    val index_middle = fun():String{ 
+    val index_middle = fun():String{
         val l = StringBuilder()
 
         val filesList = dirFiles ?: curr_dir.listFiles()
@@ -471,7 +463,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         }
 
         return l.toString();
-     } 
+     }
 
    val index_bottom="""
          </ul>
