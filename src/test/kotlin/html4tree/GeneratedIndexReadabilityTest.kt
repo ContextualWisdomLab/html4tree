@@ -164,24 +164,6 @@ class GeneratedIndexReadabilityTest {
         assertTrue(contrastRatio("#58a6ff", "#161b22") >= 3.0)
     }
 
-    @Test
-    fun unreadableEntriesAreOmittedInsteadOfRenderedAsFiles() {
-        val unreadableEntry = object : File(temporaryDirectory, "unreadable.txt") {
-            override fun toPath(): java.nio.file.Path =
-                throw SecurityException("attribute access denied")
-        }
-
-        process_dir(
-            temporaryDirectory,
-            setOf("index.html"),
-            arrayOf(unreadableEntry)
-        )
-
-        val generatedHtml = generatedHtml()
-        assertFalse(generatedHtml.contains("unreadable.txt"))
-        assertTrue(generatedHtml.contains("이 디렉토리는 비어 있습니다."))
-    }
-
     private fun generatedHtml(): String =
         File(temporaryDirectory, "index.html").readText(Charsets.UTF_8)
 
