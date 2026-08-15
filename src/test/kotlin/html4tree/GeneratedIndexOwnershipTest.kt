@@ -245,6 +245,12 @@ class GeneratedIndexOwnershipTest {
             }
         }
         assertEquals(ownedIndexFixture("original"), indexFile.readText())
+        assertTrue(reports.any { it.startsWith("backup-retained:") })
+        val retainedBackups = tempDir.listFiles()?.filter {
+            it.name.startsWith(".index-owned-backup-")
+        } ?: emptyList()
+        assertEquals(1, retainedBackups.size)
+        assertEquals(ownedIndexFixture("original"), retainedBackups.single().readText())
     }
 
     @Test
@@ -277,17 +283,21 @@ class GeneratedIndexOwnershipTest {
         owned.writeText(ownedIndexFixture("generated"))
         Assume.assumeTrue(tempDir.setWritable(false, false))
         try {
-            val failed = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
-            if (!failed) {
+            val cleanupSucceeded = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
+            if (!cleanupSucceeded) {
                 assertTrue(reports.any { it.startsWith("failed:") })
             }
         } finally {
             tempDir.setWritable(true, false)
         }
+        owned.writeText(ownedIndexFixture("generated"))
         default_index_reporter("noop-report")
         generated_index_file(tempDir)
         assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)
         assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)
+        val shortPrefix = File(tempDir, "short-prefix.html")
+        shortPrefix.writeText("abc")
+        assertEquals("abc", String(read_index_prefix(shortPrefix.toPath(), 10)!!, Charsets.UTF_8))
         assertEquals(null, read_index_prefix(File(tempDir, "missing-prefix.html").toPath()))
         cleanup_owned_index(tempDir, true)
 
