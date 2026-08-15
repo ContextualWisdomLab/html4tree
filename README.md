@@ -75,9 +75,9 @@ Do not run `find ... -name index.html -delete`. That command cannot tell generat
 
 To preview or remove only html4tree-owned pages:
 
-```
-$ java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
-$ java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
+```sh
+java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
+java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
 ```
 
 Pre-marker pages from older html4tree versions are treated as unowned. Do not guess ownership from arbitrary HTML. If you must replace a known unmarked page, use `--force-overwrite` on that tree after a backup.
