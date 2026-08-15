@@ -27,9 +27,15 @@ java -jar ./build/libs/html4tree.jar -h
 Usage: html4tree [OPTIONS] TOPDIR
 
 Options:
-  --max-level INT  Number of levels deep for which to generate an index.html
-                   file
-  -h, --help       Show this message and exit
+  --max-level INT     Number of levels deep for which to generate an
+                      index.html file
+  --force-overwrite   Destructively replace an unmarked existing index.html.
+                      Symlinks and directories are still refused.
+  --cleanup           Delete only html4tree-owned index.html files under
+                      TOPDIR. Unowned files are preserved.
+  --dry-run           With --cleanup, report owned artifacts that would be
+                      deleted without deleting them.
+  -h, --help          Show this message and exit
 
 Arguments:
   TOPDIR  Top directory to crawl
@@ -51,9 +57,30 @@ For example, to exclude files ending in `.txt`:
 
 `*.txt`
 
-## Other
+## Generated index ownership
 
-To delete all the index.html files generated with one command, do:
+html4tree owns only the files it generated. Every new `index.html` includes:
 
-`$ find <top directory to crawl> -name index.html -delete`
+```html
+<meta name="generator" content="html4tree/1">
+```
+
+- A missing `index.html` is created.
+- An existing file is replaced only when that marker is present and supported.
+- A user-authored, malformed, unsupported, or late-marker `index.html` is left untouched.
+- Symbolic links and directories occupying `index.html` are never replaced, even with `--force-overwrite`.
+- `--force-overwrite` is an explicit, destructive opt-in for unmarked regular files.
+
+Do not run `find ... -name index.html -delete`. That command cannot tell generated pages from customer home pages.
+
+To preview or remove only html4tree-owned pages:
+
+```
+$ java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
+$ java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
+```
+
+Pre-marker pages from older html4tree versions are treated as unowned. Do not guess ownership from arbitrary HTML. If you must replace a known unmarked page, use `--force-overwrite` on that tree after a backup.
+
+See `docs/doctoring/generated-index-ownership.md`.
 
