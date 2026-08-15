@@ -1,1 +1,0 @@
-Trigger file for the one-shot owned-index repair workflow. The workflow removes itself after a verified build; this file is deleted in the follow-up cleanup if the workflow succeeds.
