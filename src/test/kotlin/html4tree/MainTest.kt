@@ -946,4 +946,65 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+
+    @Test
+    fun testWriteIndexFileFallback() {
+        val subdir = File(tempDir, "testWriteIndexFileFallback")
+        subdir.mkdir()
+
+        // Mocking a moveFile function that throws AtomicMoveNotSupportedException
+        // and falls back to REPLACE_EXISTING
+        var atomicFailed = false
+        var replaced = false
+        val customMoveFile: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> Unit = { source, target, options ->
+            if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                atomicFailed = true
+                throw java.nio.file.AtomicMoveNotSupportedException(source.toString(), target.toString(), "Mocked")
+            } else {
+                replaced = true
+                java.nio.file.Files.move(source, target, *options)
+            }
+        }
+
+        write_index_file(subdir, "fallback", customMoveFile)
+        assertTrue(atomicFailed)
+        assertTrue(replaced)
+        assertEquals("fallback", File(subdir, "index.html").readText())
+    }
+
+    @Test(expected = java.io.IOException::class)
+    fun testWriteIndexFileError() {
+        val subdir = File(tempDir, "testWriteIndexFileError")
+        subdir.mkdir()
+
+        // Mocking a moveFile function that throws IOException
+        val customMoveFile: (java.nio.file.Path, java.nio.file.Path, Array<out java.nio.file.CopyOption>) -> Unit = { _, _, _ ->
+            throw java.io.IOException("Mocked")
+        }
+
+        write_index_file(subdir, "error", customMoveFile)
+    }
+
+
+    @Test
+    fun testWriteIndexFileFailsIfDirectoryIsSymlink() {
+        val subdir = File(tempDir, "symlink_dir_test")
+        subdir.mkdir()
+        val symlink = File(tempDir, "linked_dir")
+        try {
+            Files.createSymbolicLink(symlink.toPath(), subdir.toPath())
+            write_index_file(symlink, "test content")
+            assertFalse(File(symlink, "index.html").exists())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported", false)
+        }
+    }
+
+    @Test
+    fun testWriteIndexFileFailsIfAttrsNull() {
+        val nonExistent = File(tempDir, "non_existent")
+        write_index_file(nonExistent, "test content")
+        assertFalse(File(nonExistent, "index.html").exists())
+    }
+
 }
