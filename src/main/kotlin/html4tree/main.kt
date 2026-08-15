@@ -98,6 +98,7 @@ li + li {
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
+private const val MAX_SAFE_DEPTH: Int = 100 // Defense-in-depth: hard limit on directory traversal to prevent resource exhaustion
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -173,6 +174,11 @@ internal fun crawl_directories(
         }
 
         val currentLevel: Int = lle.level
+        // Defense-in-depth: prevent excessive resource consumption by limiting directory traversal depth
+        if (currentLevel >= MAX_SAFE_DEPTH) {
+            lle = ll.pull()
+            continue
+        }
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)

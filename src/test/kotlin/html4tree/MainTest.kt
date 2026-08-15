@@ -966,4 +966,20 @@ class MainTest {
         assertTrue(content.contains("<h1 dir=\"auto\">Root</h1>"))
     }
 
+    @Test
+    fun testCrawlDirectoriesRespectsMaxSafeDepth() {
+        val maxSafeDepth = Class.forName("html4tree.MainKt").getDeclaredField("MAX_SAFE_DEPTH").apply { isAccessible = true }.get(null) as Int
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(tempDir, maxSafeDepth))
+
+        var processDirectoryCalled = false
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { _, _, _ -> processDirectoryCalled = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() }
+        )
+        assertFalse(processDirectoryCalled, "processDirectory should not be called when currentLevel >= MAX_SAFE_DEPTH")
+    }
 }
