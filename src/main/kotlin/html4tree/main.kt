@@ -442,7 +442,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                    val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
                    isLinkedDirectory = attrs.isDirectory
                    isSymbolicLink = attrs.isSymbolicLink
-               } catch (e: Exception) {
+               } catch (e: java.io.IOException) {
+                   return@forEach
+               } catch (e: SecurityException) {
+                   return@forEach
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
