@@ -31,158 +31,108 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Apply review fixes
+      - name: Apply review fixes idempotently
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
+          import re
 
-          def replace_once(path: str, old: str, new: str) -> None:
+          def rewrite(path: str, transform):
               file_path = Path(path)
-              text = file_path.read_text()
-              if old not in text:
-                  raise SystemExit(f"missing expected text in {path}: {old[:120]!r}")
-              file_path.write_text(text.replace(old, new, 1))
+              before = file_path.read_text()
+              after = transform(before)
+              if after != before:
+                  file_path.write_text(after)
 
-          replace_once(
-              "README.md",
-              """```
-          $ java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
-          $ java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
-          ```""".replace("          ", ""),
-              """```sh
-          java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
-          java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
-          ```""".replace("          ", ""),
-          )
+          def update_readme(text: str) -> str:
+              text = re.sub(
+                  r"```\n\$ java -jar (\./build/libs/html4tree\.jar --cleanup --dry-run <top directory to crawl>)\n\$ java -jar (\./build/libs/html4tree\.jar --cleanup <top directory to crawl>)\n```",
+                  r"```sh\njava -jar \1\njava -jar \2\n```",
+                  text,
+                  count=1,
+              )
+              return text
 
-          replace_once(
-              "src/main/kotlin/html4tree/main.kt",
-              "import com.github.ajalt.clikt.core.CliktCommand\n",
-              "import com.github.ajalt.clikt.core.CliktCommand\nimport com.github.ajalt.clikt.core.UsageError\n",
-          )
-          replace_once(
-              "src/main/kotlin/html4tree/main.kt",
-              """    override fun run() {
-                  go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
-              }
-          }
-          """.replace("          ", ""),
-              """    override fun run() {
-                  validate_cleanup_options(cleanup, dryRun)
-                  go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
-              }
-          }
-          
-          internal fun validate_cleanup_options(cleanup: Boolean, dryRun: Boolean) {
-              if (dryRun && !cleanup) {
-                  throw UsageError("--dry-run requires --cleanup")
-              }
-          }
-          """.replace("          ", ""),
-          )
-          replace_once(
-              "src/main/kotlin/html4tree/main.kt",
-              """internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
-              return try {
-                  if (Files.isSymbolicLink(path)) {
-                      null
-                  } else if (limit <= 0) {
-                      ByteArray(0)
-                  } else {
-                      val bytes = Files.readAllBytes(path)
-                      if (bytes.size <= limit) {
-                          bytes
-                      } else {
-                          bytes.copyOf(limit)
-                      }
-                  }
-              } catch (e: Exception) {
-                  null
-              }
-          }
-          """.replace("          ", ""),
-              """internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
-              return try {
-                  if (Files.isSymbolicLink(path)) {
-                      null
-                  } else if (limit <= 0) {
-                      ByteArray(0)
-                  } else {
-                      Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { stream ->
-                          val buffer = ByteArray(limit)
-                          var offset = 0
-                          while (offset < limit) {
-                              val read = stream.read(buffer, offset, limit - offset)
-                              if (read == -1) {
-                                  break
-                              }
-                              offset += read
-                          }
-                          buffer.copyOf(offset)
-                      }
-                  }
-              } catch (e: Exception) {
-                  null
-              }
-          }
-          """.replace("          ", ""),
-          )
+          def update_main(text: str) -> str:
+              if "import com.github.ajalt.clikt.core.UsageError\n" not in text:
+                  text = text.replace(
+                      "import com.github.ajalt.clikt.core.CliktCommand\n",
+                      "import com.github.ajalt.clikt.core.CliktCommand\nimport com.github.ajalt.clikt.core.UsageError\n",
+                      1,
+                  )
+              if "internal fun validate_cleanup_options" not in text:
+                  text = text.replace(
+                      "    override fun run() {\n        go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)\n    }\n}\n",
+                      "    override fun run() {\n        validate_cleanup_options(cleanup, dryRun)\n        go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)\n    }\n}\n\ninternal fun validate_cleanup_options(cleanup: Boolean, dryRun: Boolean) {\n    if (dryRun && !cleanup) {\n        throw UsageError(\"--dry-run requires --cleanup\")\n    }\n}\n",
+                      1,
+                  )
+              replacement = """internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
+    return try {
+        if (Files.isSymbolicLink(path)) {
+            null
+        } else if (limit <= 0) {
+            ByteArray(0)
+        } else {
+            Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { stream ->
+                val buffer = ByteArray(limit)
+                var offset = 0
+                while (offset < limit) {
+                    val read = stream.read(buffer, offset, limit - offset)
+                    if (read == -1) {
+                        break
+                    }
+                    offset += read
+                }
+                buffer.copyOf(offset)
+            }
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+"""
+              text, count = re.subn(
+                  r"internal fun read_index_prefix\(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT\): ByteArray\? \{.*?\n\}\n\ninternal fun classify_index_prefix",
+                  replacement + "\ninternal fun classify_index_prefix",
+                  text,
+                  count=1,
+                  flags=re.S,
+              )
+              if count != 1:
+                  raise SystemExit("expected one read_index_prefix function to rewrite")
+              return text
 
-          replace_once(
-              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
-              "import org.junit.Test\n",
-              "import com.github.ajalt.clikt.core.UsageError\nimport org.junit.Test\n",
-          )
-          replace_once(
-              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
-              """    @Test
-              fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {
-          """.replace("          ", ""),
-              """    @Test
-              fun dryRunRequiresCleanup() {
-                  assertFailsWith<UsageError> {
-                      validate_cleanup_options(cleanup = false, dryRun = true)
-                  }
-                  validate_cleanup_options(cleanup = false, dryRun = false)
-                  validate_cleanup_options(cleanup = true, dryRun = false)
-                  validate_cleanup_options(cleanup = true, dryRun = true)
-              }
-          
-              @Test
-              fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {
-          """.replace("          ", ""),
-          )
-          replace_once(
-              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
-              """            val failed = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
-                  if (!failed) {
-                      assertTrue(reports.any { it.startsWith("failed:") })
-                  }
-          """.replace("          ", ""),
-              """            val cleanupSucceeded = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
-                  if (!cleanupSucceeded) {
-                      assertTrue(reports.any { it.startsWith("failed:") })
-                  } else {
-                      owned.writeText(ownedIndexFixture("generated"))
-                  }
-          """.replace("          ", ""),
-          )
-          replace_once(
-              "src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt",
-              """        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)
-                  assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)
-                  assertEquals(null, read_index_prefix(File(tempDir, "missing-prefix.html").toPath()))
-          """.replace("          ", ""),
-              """        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)
-                  assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)
-                  val short = File(tempDir, "short-prefix.html")
-                  short.writeText("abc")
-                  assertEquals("abc", String(read_index_prefix(short.toPath(), 64)!!, Charsets.UTF_8))
-                  assertEquals(null, read_index_prefix(File(tempDir, "missing-prefix.html").toPath()))
-          """.replace("          ", ""),
-          )
+          def update_tests(text: str) -> str:
+              if "import com.github.ajalt.clikt.core.UsageError\n" not in text:
+                  text = text.replace(
+                      "package html4tree\n\n",
+                      "package html4tree\n\nimport com.github.ajalt.clikt.core.UsageError\n",
+                      1,
+                  )
+              if "fun dryRunRequiresCleanup()" not in text:
+                  text = text.replace(
+                      "    @Test\n    fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {\n",
+                      "    @Test\n    fun dryRunRequiresCleanup() {\n        assertFailsWith<UsageError> {\n            validate_cleanup_options(cleanup = false, dryRun = true)\n        }\n        validate_cleanup_options(cleanup = false, dryRun = false)\n        validate_cleanup_options(cleanup = true, dryRun = false)\n        validate_cleanup_options(cleanup = true, dryRun = true)\n    }\n\n    @Test\n    fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {\n",
+                      1,
+                  )
+              text = text.replace(
+                  "            val failed = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })\n            if (!failed) {\n                assertTrue(reports.any { it.startsWith(\"failed:\") })\n            }\n",
+                  "            val cleanupSucceeded = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })\n            if (!cleanupSucceeded) {\n                assertTrue(reports.any { it.startsWith(\"failed:\") })\n            } else {\n                owned.writeText(ownedIndexFixture(\"generated\"))\n            }\n",
+                  1,
+              )
+              if "short-prefix.html" not in text:
+                  text = text.replace(
+                      "        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)\n        assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)\n        assertEquals(null, read_index_prefix(File(tempDir, \"missing-prefix.html\").toPath()))\n",
+                      "        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)\n        assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)\n        val short = File(tempDir, \"short-prefix.html\")\n        short.writeText(\"abc\")\n        assertEquals(\"abc\", String(read_index_prefix(short.toPath(), 64)!!, Charsets.UTF_8))\n        assertEquals(null, read_index_prefix(File(tempDir, \"missing-prefix.html\").toPath()))\n",
+                      1,
+                  )
+              return text
+
+          rewrite("README.md", update_readme)
+          rewrite("src/main/kotlin/html4tree/main.kt", update_main)
+          rewrite("src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt", update_tests)
           PY
 
       - name: Verify exact branch
@@ -199,5 +149,9 @@ jobs:
           rm .github/workflows/repair-owned-index-review.yml
           git status --short
           git add README.md src/main/kotlin/html4tree/main.kt src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt .github/workflows/repair-owned-index-review.yml
+          if git diff --cached --quiet; then
+            echo "No repair diff produced"
+            exit 1
+          fi
           git commit -m "fix: address owned index review findings"
           git push origin "HEAD:${GITHUB_REF_NAME}"
