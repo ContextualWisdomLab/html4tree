@@ -70,17 +70,20 @@ html4tree owns only the files it generated. Every new `index.html` includes:
 - A user-authored, malformed, unsupported, or late-marker `index.html` is left untouched.
 - Symbolic links and directories occupying `index.html` are never replaced, even with `--force-overwrite`.
 - `--force-overwrite` is an explicit, destructive opt-in for unmarked regular files.
+- `--dry-run` is valid only with `--cleanup`; using it by itself is rejected before generation starts.
 
 Do not run `find ... -name index.html -delete`. That command cannot tell generated pages from customer home pages.
 
 To preview or remove only html4tree-owned pages:
 
-```sh
+```bash
 java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
 java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
 ```
 
 Pre-marker pages from older html4tree versions are treated as unowned. Do not guess ownership from arbitrary HTML. If you must replace a known unmarked page, use `--force-overwrite` on that tree after a backup.
+
+If publication and automatic restoration both fail, html4tree keeps the same-directory `.index-owned-backup-*` recovery file and reports its exact path. Recover that file before rerunning cleanup or generation.
 
 See `docs/doctoring/generated-index-ownership.md`.
 
