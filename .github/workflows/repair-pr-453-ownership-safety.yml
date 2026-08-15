@@ -1,0 +1,311 @@
+name: Repair PR 453 ownership safety review findings
+
+on:
+  push:
+    branches:
+      - feat/owned-index-preservation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repair-pr-453-ownership-safety
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: feat/owned-index-preservation
+          fetch-depth: 0
+
+      - name: Use preinstalled Temurin JDK 11
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_11_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_11_X64/bin" >> "$GITHUB_PATH"
+
+      - name: Apply review fixes and safety regression
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected exactly one {label} match, found {count}")
+              return text.replace(old, new, 1)
+
+          main_path = Path('src/main/kotlin/html4tree/main.kt')
+          main = main_path.read_text(encoding='utf-8')
+          main = replace_once(
+              main,
+              '''    override fun run() {
+        go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
+    }
+''',
+              '''    override fun run() {
+        if (dryRun && !cleanup) {
+            throw com.github.ajalt.clikt.core.UsageError("--dry-run requires --cleanup")
+        }
+        go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
+    }
+''',
+              'dry-run CLI validation',
+          )
+          main = replace_once(
+              main,
+              '''internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
+    return try {
+        if (Files.isSymbolicLink(path)) {
+            null
+        } else if (limit <= 0) {
+            ByteArray(0)
+        } else {
+            val bytes = Files.readAllBytes(path)
+            if (bytes.size <= limit) {
+                bytes
+            } else {
+                bytes.copyOf(limit)
+            }
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+''',
+              '''internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
+    return try {
+        if (Files.isSymbolicLink(path)) {
+            null
+        } else if (limit <= 0) {
+            ByteArray(0)
+        } else {
+            Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { input ->
+                val buffer = ByteArray(limit)
+                var offset = 0
+                while (offset < limit) {
+                    val read = input.read(buffer, offset, limit - offset)
+                    if (read == -1) {
+                        break
+                    }
+                    offset += read
+                }
+                if (offset == buffer.size) {
+                    buffer
+                } else {
+                    buffer.copyOf(offset)
+                }
+            }
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+''',
+              'bounded ownership prefix reader',
+          )
+          main = replace_once(
+              main,
+              '''    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    var backupPath: Path? = null
+    try {
+''',
+              '''    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    var backupPath: Path? = null
+    var preserveBackupAfterRestoreFailure = false
+    try {
+''',
+              'backup preservation flag',
+          )
+          main = replace_once(
+              main,
+              '''    } catch (error: Exception) {
+        val restoreFrom = backupPath
+        if (restoreFrom != null && Files.exists(restoreFrom, LinkOption.NOFOLLOW_LINKS)) {
+            try {
+                moveFile(restoreFrom, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+                backupPath = null
+            } catch (_: Exception) {
+            }
+        }
+        throw error
+    } finally {
+        Files.deleteIfExists(tempPath)
+        val leftoverBackup = backupPath
+        if (leftoverBackup != null) {
+            Files.deleteIfExists(leftoverBackup)
+        }
+    }
+}
+''',
+              '''    } catch (error: Exception) {
+        val restoreFrom = backupPath
+        if (restoreFrom != null && Files.exists(restoreFrom, LinkOption.NOFOLLOW_LINKS)) {
+            try {
+                moveFile(restoreFrom, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+                backupPath = null
+            } catch (_: Exception) {
+                preserveBackupAfterRestoreFailure = true
+            }
+        }
+        throw error
+    } finally {
+        Files.deleteIfExists(tempPath)
+        val leftoverBackup = backupPath
+        if (leftoverBackup != null && !preserveBackupAfterRestoreFailure) {
+            Files.deleteIfExists(leftoverBackup)
+        }
+    }
+}
+''',
+              'restore failure backup retention',
+          )
+          main_path.write_text(main, encoding='utf-8')
+
+          test_path = Path('src/test/kotlin/html4tree/GeneratedIndexOwnershipTest.kt')
+          tests = test_path.read_text(encoding='utf-8')
+          tests = replace_once(
+              tests,
+              '''        try {
+            val failed = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
+            if (!failed) {
+                assertTrue(reports.any { it.startsWith("failed:") })
+            }
+        } finally {
+            tempDir.setWritable(true, false)
+        }
+        default_index_reporter("noop-report")
+        generated_index_file(tempDir)
+        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)
+        assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)
+''',
+              '''        try {
+            val cleanupSucceeded = cleanup_owned_index(tempDir, dryRun = false, reporter = { reports.add(it) })
+            if (!cleanupSucceeded) {
+                assertTrue(reports.any { it.startsWith("failed:") })
+            }
+        } finally {
+            tempDir.setWritable(true, false)
+        }
+        if (!owned.exists()) {
+            owned.writeText(ownedIndexFixture("generated"))
+        }
+        default_index_reporter("noop-report")
+        generated_index_file(tempDir)
+        assertEquals(0, read_index_prefix(owned.toPath(), 0)!!.size)
+        assertEquals(4, read_index_prefix(owned.toPath(), 4)!!.size)
+        val shortPrefix = File(tempDir, "short-prefix.html")
+        shortPrefix.writeText("abc")
+        assertEquals("abc", String(read_index_prefix(shortPrefix.toPath(), 16)!!, Charsets.UTF_8))
+''',
+              'cleanup permission test repair',
+          )
+          tests = replace_once(
+              tests,
+              '''    @Test
+    fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {
+''',
+              '''    @Test
+    fun publicationAndRestoreFailureKeepsRecoverableBackup() {
+        val indexFile = File(tempDir, "index.html")
+        indexFile.writeText(ownedIndexFixture("original"))
+        var restoreAttempt = false
+        assertFailsWith<java.io.IOException> {
+            write_index_file(
+                tempDir,
+                ownedIndexFixture("new"),
+                reporter = { reports.add(it) }
+            ) { _, target, options ->
+                if (!restoreAttempt && options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                    Files.write(target, "clobbered".toByteArray())
+                    throw java.io.IOException("publication failed")
+                }
+                restoreAttempt = true
+                throw java.io.IOException("restore failed")
+            }
+        }
+        assertEquals("clobbered", indexFile.readText())
+        val backups = tempDir.listFiles()?.filter {
+            it.name.startsWith(".index-owned-backup-")
+        } ?: emptyList()
+        assertEquals(1, backups.size)
+        assertEquals(ownedIndexFixture("original"), backups.single().readText())
+    }
+
+    @Test
+    fun cleanupDeletesOwnedOnlyAndDryRunSelectsTheSameSet() {
+''',
+              'backup restore failure regression',
+          )
+          test_path.write_text(tests, encoding='utf-8')
+
+          main_test_path = Path('src/test/kotlin/html4tree/MainTest.kt')
+          main_tests = main_test_path.read_text(encoding='utf-8')
+          main_tests = replace_once(
+              main_tests,
+              '''    @Test
+    fun testCliMainParsing() {
+''',
+              '''    @Test
+    fun testDryRunRequiresCleanup() {
+        val cli = Html4tree()
+        val error = assertFailsWith<com.github.ajalt.clikt.core.UsageError> {
+            cli.parse(arrayOf("--dry-run", tempDir.absolutePath))
+        }
+        assertTrue(error.message.orEmpty().contains("--dry-run requires --cleanup"))
+        assertFalse(File(tempDir, "index.html").exists())
+    }
+
+    @Test
+    fun testCliMainParsing() {
+''',
+              'dry-run usage regression',
+          )
+          main_test_path.write_text(main_tests, encoding='utf-8')
+
+          readme_path = Path('README.md')
+          readme = readme_path.read_text(encoding='utf-8')
+          readme = replace_once(
+              readme,
+              '''```
+$ java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
+$ java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
+```
+''',
+              '''```sh
+java -jar ./build/libs/html4tree.jar --cleanup --dry-run <top directory to crawl>
+java -jar ./build/libs/html4tree.jar --cleanup <top directory to crawl>
+```
+''',
+              'README cleanup command block',
+          )
+          readme_path.write_text(readme, encoding='utf-8')
+          PY
+
+      - name: Verify Gradle wrapper integrity
+        shell: bash
+        run: |
+          expected_sha256="76b12da7f4a7cdd025e5996811a2e49bf5df0fb62d72554ab555c0e434b63aae"
+          actual_sha256="$(sha256sum gradle/wrapper/gradle-wrapper.jar | awk '{print $1}')"
+          test "$actual_sha256" = "$expected_sha256"
+
+      - name: Run the complete build and coverage gate
+        run: ./gradlew clean build --no-daemon
+
+      - name: Commit verified repair and remove this workflow
+        shell: bash
+        run: |
+          rm .github/workflows/repair-pr-453-ownership-safety.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: bound ownership reads and retain failed-restore backups"
+          git push origin HEAD:feat/owned-index-preservation
