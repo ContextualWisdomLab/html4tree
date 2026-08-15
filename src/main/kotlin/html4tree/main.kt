@@ -75,17 +75,6 @@ li + li {
   color: #656d76;
   font-style: italic;
 }
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #0d1117;
@@ -427,10 +416,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
      <body>
        <main>
          <h1>${directoryName.escapeHtml()}</h1>
-         <nav aria-labelledby="nav-label">
-         <span id="nav-label" class="visually-hidden">디렉토리 목록</span>
+         <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span><span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
+            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span>..</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -460,7 +448,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span aria-hidden="true">${fileName.escapeHtml()}</span><span class="visually-hidden">${ariaLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span></a></li>""")
                   l.append('\n')
                }
            }
