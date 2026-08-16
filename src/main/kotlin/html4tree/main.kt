@@ -7,6 +7,9 @@ import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -26,6 +29,8 @@ private val CSS_CONTENT = """
   --listing-dark-surface-hover: #161b22;
   --listing-dark-row-rule: #21262d;
   --listing-dark-empty-text: #8b949e;
+  --listing-meta: #656d76;
+  --listing-dark-meta: #8b949e;
 }
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -101,6 +106,23 @@ li + li {
   white-space: nowrap;
   border: 0;
 }
+.entry-meta {
+  margin-left: auto;
+  display: flex;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  color: var(--listing-meta);
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+.entry-size,
+.entry-mtime {
+  direction: ltr;
+}
+.entry-size {
+  min-width: 4.5rem;
+  text-align: right;
+}
 @media (prefers-color-scheme: dark) {
   body {
     background-color: var(--listing-dark-bg);
@@ -119,12 +141,20 @@ li + li {
   .empty-dir {
     color: var(--listing-dark-empty-text);
   }
+  .entry-meta {
+    color: var(--listing-dark-meta);
+  }
 }
 """.trimIndent()
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
 private const val MAX_SAFE_DEPTH: Int = 100 // Defense-in-depth: hard limit on directory traversal to prevent resource exhaustion
+private const val KIBIBYTE: Long = 1024L
+private const val MEBIBYTE: Long = 1024L * 1024L
+private const val GIBIBYTE: Long = 1024L * 1024L * 1024L
+private val UTC_MINUTE_FORMATTER: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneOffset.UTC)
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -139,6 +169,8 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
+
+internal data class EntryListingMeta(val sizeBytes: Long, val mtimeMillis: Long)
 
 
 internal fun read_file_identity(file: File): FileIdentity {
@@ -289,6 +321,76 @@ fun String.escapeHtml(): String {
  */
 internal fun isolate_bidi_plain_text(value: String): String {
     return "\u2068$value\u2069"
+}
+
+/**
+ * True for Unicode bidirectional format controls that can reorder
+ * neighboring glyphs (embeddings, overrides, isolates, and marks).
+ *
+ * These are neutralized in the *display* name only. The real
+ * filesystem name stays in `href` so the generated link still opens.
+ */
+internal fun is_bidi_control(character: Char): Boolean {
+    val code = character.toInt()
+    return code == 0x061C ||
+        code == 0x200E ||
+        code == 0x200F ||
+        code in 0x202A..0x202E ||
+        code in 0x2066..0x2069
+}
+
+/**
+ * Replaces bidirectional format controls with U+FFFD so a filename
+ * cannot hide its extension (Trojan Source) while still showing that
+ * something was removed. Does not strip the FSI/PDI marks that
+ * [isolate_bidi_plain_text] later wraps around the cleaned name.
+ */
+internal fun neutralize_bidi_controls(value: String): String {
+    var builder: StringBuilder? = null
+    for (index in 0 until value.length) {
+        val character = value[index]
+        if (is_bidi_control(character)) {
+            if (builder == null) {
+                builder = StringBuilder(value.length)
+                builder.append(value as CharSequence, 0, index)
+            }
+            builder.append('\uFFFD')
+        } else {
+            builder?.append(character)
+        }
+    }
+    return builder?.toString() ?: value
+}
+
+internal fun format_byte_size(size: Long): String {
+    if (size < KIBIBYTE) {
+        val bounded = if (size < 0L) 0L else size
+        return "$bounded B"
+    }
+    if (size < MEBIBYTE) {
+        return format_scaled_size(size, KIBIBYTE, "KiB")
+    }
+    if (size < GIBIBYTE) {
+        return format_scaled_size(size, MEBIBYTE, "MiB")
+    }
+    return format_scaled_size(size, GIBIBYTE, "GiB")
+}
+
+internal fun format_scaled_size(size: Long, unit: Long, label: String): String {
+    val tenths = (size * 10L + unit / 2L) / unit
+    return "${tenths / 10L}.${tenths % 10L} $label"
+}
+
+internal fun format_iso_instant(millis: Long): String {
+    return Instant.ofEpochMilli(millis).toString()
+}
+
+internal fun format_utc_minute(millis: Long): String {
+    return UTC_MINUTE_FORMATTER.format(Instant.ofEpochMilli(millis))
+}
+
+internal fun directory_size_label(): String {
+    return "\u2014"
 }
 
 fun String.urlEncodePath(): String {
@@ -483,20 +585,41 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            if (!fileName.isHiddenFile() && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
+               var listingMeta: EntryListingMeta? = null
                try {
                    // ⚡ Bolt Performance Optimization: Replace 3 separate OS stat calls (isDirectory, it.isDirectory(), isSymbolicLink)
                    // with a single readAttributes call to reduce I/O overhead.
                    val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
                    isLinkedDirectory = attrs.isDirectory
                    isSymbolicLink = attrs.isSymbolicLink
+                   listingMeta = EntryListingMeta(attrs.size(), attrs.lastModifiedTime().toMillis())
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
+                  val displayName = neutralize_bidi_controls(fileName)
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val titleText = "${isolate_bidi_plain_text(fileName)} $typeLabel".escapeHtml()
+                  val titleText = "${isolate_bidi_plain_text(displayName)} $typeLabel".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleText}"><span class="icon" aria-hidden="true">${icon}</span> <span class="entry-name" dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  val bidiWarning = if (displayName != fileName) {
+                      """ <span class="visually-hidden">이름에 방향 제어 문자가 있습니다</span>"""
+                  } else {
+                      ""
+                  }
+                  val observedMeta = listingMeta
+                  val entryMeta = if (observedMeta != null) {
+                      val isoTime = format_iso_instant(observedMeta.mtimeMillis)
+                      val displayTime = format_utc_minute(observedMeta.mtimeMillis)
+                      val sizeText = if (isLinkedDirectory) {
+                          directory_size_label()
+                      } else {
+                          format_byte_size(observedMeta.sizeBytes)
+                      }
+                      """ <span class="entry-meta"><span class="entry-size">$sizeText</span> <time class="entry-mtime" datetime="$isoTime" dir="ltr">$displayTime</time></span>"""
+                  } else {
+                      ""
+                  }
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleText}"><span class="icon" aria-hidden="true">${icon}</span> <span class="entry-name" dir="auto">${displayName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span>${bidiWarning}${entryMeta}</a></li>""")
                   l.append('\n')
                }
            }
