@@ -30,7 +30,7 @@ class SensitiveWhitespaceRegressionTest {
             "\tsecrets.yml",
             ".npmrc\r",
             " public.txt ",
-            "image.png",
+            "image.png"
         )
 
         val excluded = process_ignore_file(tempDir, observedNames)
