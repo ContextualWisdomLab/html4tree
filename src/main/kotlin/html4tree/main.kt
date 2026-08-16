@@ -318,19 +318,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            }
        }
 
-       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+       // Compare a normalized candidate, but always retain the exact observed filesystem entry
+       // in the exclusion set because downstream admission compares against File.name verbatim.
        val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
-           val current = it.trim()
+       list?.forEach { observedName ->
+           val normalizedCandidate = observedName.trim()
            val pathCurrent = try {
-               java.nio.file.Paths.get(current)
+               java.nio.file.Paths.get(normalizedCandidate)
            } catch (_: java.nio.file.InvalidPathException) {
-               files_to_exclude.add(current)
+               files_to_exclude.add(observedName)
                return@forEach
            }
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
+                 files_to_exclude.add(observedName)
                  break
               }
            }
@@ -344,19 +345,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
-    // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
-    (dirFilesNames ?: curr_dir.list())?.forEach {
-        val fileName = it.trim()
-        val normalizedName = fileName.toLowerCase(java.util.Locale.ROOT)
+    // 보안 향상: match sensitive aliases after trimming/case normalization, but exclude the exact
+    // observed entry name so padded filesystem names cannot bypass downstream exact membership.
+    (dirFilesNames ?: curr_dir.list())?.forEach { observedName ->
+        val normalizedCandidate = observedName.trim()
+        val normalizedName = normalizedCandidate.toLowerCase(java.util.Locale.ROOT)
         if (
-            fileName.isHiddenFile() ||
+            normalizedCandidate.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
             Constants.defaultSensitiveExtensions.any { extension ->
                 normalizedName.endsWith(extension)
             }
         ) {
-            files_to_exclude.add(fileName)
+            files_to_exclude.add(observedName)
         }
     }
 
