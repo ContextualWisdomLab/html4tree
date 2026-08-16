@@ -86,6 +86,7 @@ class BidiIsolationTest {
 
         val generatedHtml = File(arabicDirectory, "index.html").readText(Charsets.UTF_8)
         assertTrue(generatedHtml.contains("<h1 dir=\"auto\">الفواتير</h1>"))
+        assertTrue(generatedHtml.contains("<title>${isolate_bidi_plain_text("الفواتير")} - 디렉토리 목록</title>"))
         assertTrue(generatedHtml.contains("<span class=\"entry-name\" aria-hidden=\"true\">..</span>"))
         assertTrue(generatedHtml.contains("<span class=\"visually-hidden\">상위 디렉토리로 이동</span>"))
         assertTrue(generatedHtml.contains("<span class=\"entry-name\" dir=\"auto\">note.txt</span>"))

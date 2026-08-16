@@ -2,6 +2,8 @@ package html4tree
 
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.attribute.BasicFileAttributes
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -113,9 +115,14 @@ class IgnoreDirectoryListingTest {
         val temporaryDirectory = Files.createTempDirectory("ignore_listing_html").toFile()
         try {
             File(temporaryDirectory, ".html4ignore").writeText("*.tmp\n")
-            File(temporaryDirectory, "minutes.txt").writeText("meeting notes")
+            val minutes = File(temporaryDirectory, "minutes.txt").apply { writeText("meeting notes") }
             File(temporaryDirectory, "scratch.tmp").writeText("scratch")
             File(temporaryDirectory, ".env").writeText("SECRET=1")
+            val minutesAttributes = Files.readAttributes(
+                minutes.toPath(),
+                BasicFileAttributes::class.java,
+                LinkOption.NOFOLLOW_LINKS
+            )
 
             val countingDirectory = CountingDirectory(temporaryDirectory.absolutePath)
             process_dir(countingDirectory)
@@ -125,6 +132,12 @@ class IgnoreDirectoryListingTest {
             assertEquals(1, countingDirectory.listFilesCallCount)
             assertTrue(html.contains("href=\"./minutes.txt\""))
             assertTrue(html.contains("title=\"${isolate_bidi_plain_text("minutes.txt")} 파일\""))
+            assertTrue(html.contains("<span class=\"entry-size\">${format_byte_size(minutes.length())}</span>"))
+            assertTrue(
+                html.contains(
+                    """<time class="entry-mtime" datetime="${format_iso_instant(minutesAttributes.lastModifiedTime().toMillis())}""""
+                )
+            )
             assertFalse(html.contains("scratch.tmp"))
             assertFalse(html.contains(".env"))
             assertFalse(html.contains(".html4ignore"))

@@ -54,7 +54,8 @@ expressions (Oracle, 2021). Invalid globs are skipped.
 3. no ignore file → one listing, `.env` hidden, `minutes.txt` kept
 4. `list()` returns null → default exclusions, no crash
 5. `process_dir` fallback writes HTML with `href="./minutes.txt"` and
-   the isolated `minutes.txt` file title, omits `scratch.tmp` / `.env`,
+   the isolated `minutes.txt` file title, the notes file's IEC size and
+   UTC `<time datetime>`, omits `scratch.tmp` / `.env`,
    calls `File.listFiles()` once, and does not call `File.list()`
 6. `process_dir` with a null `listFiles()` result writes the empty-directory
    status and does not call `File.list()`
