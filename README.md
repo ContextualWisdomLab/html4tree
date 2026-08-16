@@ -43,6 +43,11 @@ To only generate the index.html file for the top directory:
 
 `$ java -jar ./build/libs/html4tree.jar <top directory to index> --max-level 0`
 
+After upgrading, run the same command again on the live tree. New pages isolate
+Arabic and Hebrew names so the Korean "파일" / "디렉토리" labels stay readable.
+Open one generated `index.html` that contains a right-to-left name before you
+publish the tree.
+
 ## To exclude files from the generated index.html file
 
 To exclude files, place a `.html4ignore` file in the directory. Each non-empty line is a Java file-system glob pattern matched against an entry name. Patterns longer than 100 characters and lines after the first 1,000 are ignored.
