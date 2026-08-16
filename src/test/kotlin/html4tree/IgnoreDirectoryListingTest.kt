@@ -156,4 +156,49 @@ class IgnoreDirectoryListingTest {
             temporaryDirectory.deleteRecursively()
         }
     }
+
+    @Test
+    fun crawlNullListFilesPassesEmptySnapshotAndDoesNotCallList() {
+        val temporaryDirectory = Files.createTempDirectory("crawl_null_listfiles").toFile()
+        try {
+            File(temporaryDirectory, "minutes.txt").writeText("meeting notes")
+            val countingDirectory = CountingDirectory(temporaryDirectory.absolutePath)
+            val queue = LinkedList()
+            queue.push(
+                LinkedListEntry(
+                    countingDirectory,
+                    0,
+                    read_file_identity(countingDirectory).key
+                )
+            )
+
+            var capturedNames: Array<String>? = arrayOf("sentinel")
+            var capturedFiles: Array<File>? = arrayOf(File("sentinel"))
+
+            crawl_directories(
+                queue,
+                0,
+                processDirectory = { file, exclude, files ->
+                    capturedFiles = files
+                    process_dir(file, exclude, files)
+                },
+                processIgnoreFile = { file, names ->
+                    capturedNames = names
+                    process_ignore_file(file, names)
+                },
+                listFiles = { null }
+            )
+
+            val html = File(temporaryDirectory, "index.html").readText(Charsets.UTF_8)
+            assertTrue(capturedNames != null && capturedNames!!.isEmpty())
+            assertTrue(capturedFiles != null && capturedFiles!!.isEmpty())
+            assertEquals(0, countingDirectory.listCallCount)
+            assertEquals(0, countingDirectory.listFilesCallCount)
+            assertTrue(html.contains("이 디렉토리는 비어 있습니다."))
+            assertFalse(html.contains("href=\"./minutes.txt\""))
+            assertFalse(html.contains("title=\"minutes.txt 파일\""))
+        } finally {
+            temporaryDirectory.deleteRecursively()
+        }
+    }
 }

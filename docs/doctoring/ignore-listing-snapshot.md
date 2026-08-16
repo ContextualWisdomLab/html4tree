@@ -23,7 +23,10 @@ secret and ignored temp file. Operators should run `java -jar html4tree.jar
 file appears as `href="./minutes.txt"` with `title="minutes.txt 파일"`.
 
 The CLI crawl (`go` → `crawl_directories`) already passes names from one
-`listFiles()` snapshot. Direct `process_dir(dir)` calls now share that same
+`listFiles()` snapshot. When that snapshot is null, the crawl now passes
+an empty name array and an empty `File` array so `process_ignore_file`
+does not call `File.list()` and `process_dir` does not call
+`File.listFiles()` again. Direct `process_dir(dir)` calls share the same
 snapshot instead of listing once for ignore and again for render.
 
 ## Threat and failure model
@@ -50,14 +53,18 @@ expressions (Oracle, 2021). Invalid globs are skipped.
    `File.listFiles()` once, and does not call `File.list()`
 6. `process_dir` with a null `listFiles()` result writes the empty-directory
    status and does not call `File.list()`
+7. `crawl_directories` with a null `listFiles()` snapshot passes empty
+   name and file arrays, writes the empty-directory status, and does not
+   call `File.list()` or `File.listFiles()` on the directory object
 
 ## Rollback and recovery
 
 Rollback restores the two Elvis `list()` evaluations, restores the
 `process_dir` fallback that listed ignore names separately from render
-files, removes the snapshot tests, and updates this record plus
-`CHANGELOG.md`. Filtering rules stay the same; only listing cardinality
-and snapshot identity change.
+files, restores the crawl path that forwarded a null `listFiles()`
+snapshot as `null` names and `null` files, removes the snapshot tests,
+and updates this record plus `CHANGELOG.md`. Filtering rules stay the
+same; only listing cardinality and snapshot identity change.
 
 ## Reference
 

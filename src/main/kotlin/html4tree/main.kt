@@ -199,11 +199,11 @@ internal fun crawl_directories(
 
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
-        }
+        } ?: emptyArray()
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           processDirectory(lle.file, exclude, dirFiles)
+           processDirectory(lle.file, exclude, dirFiles ?: emptyArray())
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
@@ -297,11 +297,12 @@ fun String.urlEncodePath(): String {
  * Builds the exclusion set for one directory listing.
  *
  * Pass [dirFilesNames] from the same `listFiles()` snapshot used to render
- * and enqueue children. The CLI crawl already does this, and [process_dir]
- * does the same when the caller omits both the exclusion set and the file
- * array, so this function does not call [File.list] on those paths. When
- * names are omitted, the directory is listed at most once and that snapshot
- * is reused for both `.html4ignore` globs and default sensitive-name
+ * and enqueue children. The CLI crawl already does this, including when
+ * that snapshot is null (it then passes an empty name array so this
+ * function does not call [File.list]). [process_dir] does the same when
+ * the caller omits both the exclusion set and the file array. When names
+ * are omitted, the directory is listed at most once and that snapshot is
+ * reused for both `.html4ignore` globs and default sensitive-name
  * filtering.
  *
  * Next action: open the generated `index.html` and confirm kept names appear
@@ -425,8 +426,10 @@ fun write_index_file(
  * When [excludeSet] is omitted, this function lists the directory once with
  * [File.listFiles] (or reuses [dirFiles]) and builds the exclusion set from
  * those names so ignore globs and the rendered page observe the same
- * snapshot. Next action: open the generated page and confirm kept files
- * appear as `href="./name"` links while ignored and secret names do not.
+ * snapshot. The CLI crawl passes [dirFiles] as an empty array when its
+ * `listFiles()` snapshot is null so this function does not list again.
+ * Next action: open the generated page and confirm kept files appear as
+ * `href="./name"` links while ignored and secret names do not.
  */
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
     val filesList = dirFiles ?: curr_dir.listFiles()
