@@ -8,7 +8,8 @@ The generated `index.html` page is html4tree's primary user-facing artifact. Its
 - the empty-directory status uses explicit foreground colors in light and dark color schemes instead of inherited color plus opacity;
 - hover and keyboard-focus states underline `.entry-name` (the visible filename), while the existing two-CSS-pixel outline continues to surround the complete interactive target;
 - reduced-motion behavior remains unchanged; and
-- dark-mode overrides appear after their corresponding base declarations so the cascade is deterministic.
+- dark-mode overrides appear after their corresponding base declarations so the cascade is deterministic; and
+- size and last-modified metadata use `--listing-meta` / `--listing-dark-meta`, the same contrast-tested pair as empty-state text.
 
 The empty-directory information icon remains decorative, is hidden from assistive technology with `aria-hidden="true"`, and stays inside the existing `role="status"` container. No new emoji is selected solely for visual appearance.
 

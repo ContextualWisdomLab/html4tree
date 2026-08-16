@@ -21,10 +21,10 @@ TOPDIR
 | Safe HTML/CSS for mixed-script names | Psychometrics, GPU kernels, or LLM orchestration |
 | Local CLI used alone or wrapped by another repo | A required central service |
 
-The generated row (icon + isolated name + translatable type label) is the
-repeating web object. Its colors live in `--listing-*` tokens inside
-`CSS_CONTENT`. Do not add a second stylesheet copy; `CspHashTest` hashes
-the exact emitted bytes.
+The generated row (icon + isolated name + translatable type label +
+size + UTC mtime) is the repeating web object. Its colors live in
+`--listing-*` tokens inside `CSS_CONTENT`. Do not add a second
+stylesheet copy; `CspHashTest` hashes the exact emitted bytes.
 
 ## Modular use
 
@@ -36,7 +36,9 @@ the exact emitted bytes.
 ## Security and accessibility invariants
 
 See `CLAUDE.md`. Bidirectional isolation is recorded in
-`docs/doctoring/bidi-isolation.md`.
+`docs/doctoring/bidi-isolation.md`. Control neutralization is recorded
+in `docs/doctoring/bidi-control-neutralization.md`. Size and mtime are
+recorded in `docs/doctoring/listing-entry-metadata.md`.
 
 ## Data model
 
@@ -48,4 +50,5 @@ are no database identifiers to rename.
 
 Ship directory listings that a buyer can open on a phone or desktop and
 immediately find the next file, including when names are Arabic, Hebrew,
-or mixed with Korean chrome.
+or mixed with Korean chrome, when two files share a similar name, and
+when a filename tries to hide its extension with bidirectional controls.

@@ -21,8 +21,8 @@ The contract is:
    translatable-label change, `span:last-child` is the hidden type text
    and must not be the underline subject.
 
-This decision does not strip Trojan-Source control characters from
-filenames. That remains a separate security boundary.
+Filename bidirectional format controls are neutralized before isolation.
+See `docs/doctoring/bidi-control-neutralization.md`.
 
 ## Why `dir="auto"` alone is not enough
 

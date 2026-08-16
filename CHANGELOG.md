@@ -15,14 +15,16 @@ All notable changes to this project are documented in this file.
   directory page, with the explicit boundary that supporting crawlers must
   first fetch the page and that confidential data still requires server-side
   protection.
+- Show each file's exact byte size (IEC binary prefixes above 1023 bytes)
+  and UTC last-modified time so similarly named files can be distinguished.
+- Replace bidirectional format controls in displayed names with U+FFFD
+  and keep the real filesystem name in `href`, so Trojan Source extension
+  hiding cannot look like a safe file.
 
 ### Changed
 
 - Keep `#459` translatable `.visually-hidden` type labels and underline
   `.entry-name` on hover/focus instead of the hidden last child.
-
-### Changed
-
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
@@ -37,6 +39,12 @@ All notable changes to this project are documented in this file.
 
 - Add generated-page regressions that open real Arabic and Hebrew filenames
   and assert isolated markup, percent-encoded hrefs, and FSI/PDI titles.
+- Add a generated-page regression that a real `invoice.txt` + RLO + `exe`
+  file shows U+FFFD, keeps the encoded `href`, and does not strip FSI/PDI
+  from `escapeHtml()`.
+- Add a generated-page regression that `minutes.txt` containing
+  `hello world` emits `11 B` and a `<time datetime>` matching the
+  filesystem mtime.
 - Add a listing-boundary test that padded sensitive names stay out of
   `index.html` while ordinary padded names remain visible.
 - Add a real generated-file regression test that independently recomputes the
@@ -56,3 +64,7 @@ All notable changes to this project are documented in this file.
   contrast calculations, scope boundaries, and verification contract.
 - Record the bidirectional isolation decision, HTML `dir=auto` mapping, and
   Unicode UAX #9 citations in `docs/doctoring/bidi-isolation.md`.
+- Record bidirectional-control neutralization (UTS #39, UTR #36, Trojan
+  Source) in `docs/doctoring/bidi-control-neutralization.md`.
+- Record size and last-modified listing metadata (Apache FancyIndexing,
+  IEC 80000-13, ISO 8601-1) in `docs/doctoring/listing-entry-metadata.md`.

@@ -31,9 +31,9 @@ Single package `html4tree`, two source files plus mirrored tests:
 - `src/main/kotlin/html4tree/main.kt` — everything of substance:
   - `Html4tree : CliktCommand` (Clikt 2.7.1) parses `TOPDIR` and `--max-level`; `main()` is the entry point (`Main-Class: html4tree.MainKt`).
   - `go(topDir, maxLevel)` validates the top directory (must exist, must not be a symlink, must not be filesystem root) and iteratively walks the tree breadth-first using the queue from `util.kt`, calling `process_dir` per directory up to `maxLevel` (`-1` = unlimited).
-  - `process_dir(dir)` builds the HTML listing (sorted entries, folder/file icons, aria-labels, CSP meta tag, empty-state message) and writes it via `write_index_file`, which writes to a temp file then `Files.move(..., REPLACE_EXISTING)` so a symlinked `index.html` is replaced, never followed.
-  - `process_ignore_file(dir)` returns the exclusion set: `.html4ignore` regexes (anchored `^...$`) plus `index.html` plus a hardcoded sensitive-file list (`.git`, `.env`, `.ssh`, etc.).
-  - `escapeHtml()` / `urlEncodePath()` string extensions sanitize every filename placed into HTML text or `href`s.
+  - `process_dir(dir)` builds the HTML listing (sorted entries, folder/file icons, translatable type labels, IEC size, UTC mtime, CSP meta tag, empty-state message) and writes it via `write_index_file`, which writes to a temp file then `Files.move(..., REPLACE_EXISTING)` so a symlinked `index.html` is replaced, never followed.
+  - `process_ignore_file(dir)` returns the exclusion set: `.html4ignore` globs plus `index.html` plus a hardcoded sensitive-file list (`.git`, `.env`, `.ssh`, etc.).
+  - `escapeHtml()` / `urlEncodePath()` string extensions sanitize every filename placed into HTML text or `href`s. `neutralize_bidi_controls()` runs on the display name only.
 - `src/main/kotlin/html4tree/util.kt` — hand-rolled FIFO `LinkedList` of `LinkedListEntry(file, level)` used as the traversal queue.
 
 ## Conventions and invariants
@@ -45,5 +45,5 @@ The commit history (Sentinel/Bolt/Palette bots; learnings logged in `.jules/*.md
 - **Generated HTML stays safe by default**: HTML-escape all names, URL-encode `href`s, keep the CSP meta tag (`default-src 'none'; style-src 'sha256-...'` from `CSS_CONTENT` bytes — never `unsafe-inline`), keep the default sensitive-file exclusions. Compare sensitive aliases after trim/case normalization, but store the exact observed `File.name` in the exclusion set.
 - **Handle `null`** from `File.listFiles()`/`list()` (unreadable directories).
 - **Hot paths avoid intermediate string allocations** — single-pass escaping with lazy `StringBuilder`, direct hex-char mapping in URL encoding. Keep it that way when touching these functions.
-- **Accessibility of generated HTML**: decorative icons wrapped in `<span aria-hidden="true">`, translatable `.visually-hidden` type labels (not `aria-label` on entries), `<nav aria-label>` landmark, `prefers-reduced-motion` override. Dynamic names use `dir="auto"` plus `unicode-bidi: isolate`; plain-text `title`s use U+2068/U+2069. Hover underline targets `.entry-name`.
+- **Accessibility of generated HTML**: decorative icons wrapped in `<span aria-hidden="true">`, translatable `.visually-hidden` type labels (not `aria-label` on entries), `<nav aria-label>` landmark, `prefers-reduced-motion` override. Dynamic names use `dir="auto"` plus `unicode-bidi: isolate`; plain-text `title`s use U+2068/U+2069. Hover underline targets `.entry-name`. Bidirectional format controls in filenames are replaced with U+FFFD before isolation. File rows include size and a UTC `<time>`.
 - Existing function names use `snake_case` (`process_dir`, `write_index_file`); comments are mixed English/Korean. Follow the surrounding style.
