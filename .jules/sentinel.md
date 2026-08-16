@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-15 - [MEDIUM] 시각적 스푸핑 방지를 위한 Bidi 제어 문자 제거
+**Vulnerability:** 파일 이름에 유니코드 양방향(Bidi) 제어 문자가 포함될 경우(Trojan Source), 디렉토리 목록을 렌더링할 때 확장자나 파일명의 방향성이 조작되어 악성 파일(예: `exe.[RLO]txt`)이 안전한 파일(예: `exe.txt`)로 표시되는 시각적 스푸핑 공격이 가능합니다.
+**Learning:** `escapeHtml`과 같은 기본적인 이스케이핑은 HTML 특수 문자만 처리하며, 브라우저가 화면에 문자를 렌더링할 때 방향을 재설정할 수 있는 보이지 않는 유니코드 제어 문자를 필터링하지 못합니다.
+**Prevention:** 출력되는 모든 문자열을 HTML로 이스케이프할 때 시각적 스푸핑에 사용될 수 있는 잘 알려진 Bidi 포맷 제어 문자(예: U+202E 등)를 명시적으로 제거(strip)해야 합니다.

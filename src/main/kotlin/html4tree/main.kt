@@ -243,6 +243,8 @@ fun String.escapeHtml(): String {
             '"' -> "&quot;"
             '\'' -> "&#x27;"
             '`' -> "&#x60;"
+            // 보안 향상: Trojan Source(Bidi) 공격 방지를 위해 양방향 제어 문자 제거
+            '\u202A', '\u202B', '\u202C', '\u202D', '\u202E', '\u2066', '\u2067', '\u2068', '\u2069' -> ""
             else -> null
         }
         if (replacement != null) {
