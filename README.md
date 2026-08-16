@@ -65,7 +65,7 @@ html4tree owns only the files it generated. Every new `index.html` includes:
 <meta name="generator" content="html4tree/1">
 ```
 
-- A missing `index.html` is created.
+- A missing `index.html` is created with a create-only move. html4tree does not use `ATOMIC_MOVE` or `REPLACE_EXISTING` for first-time creates, so a customer page that appears during generation is kept.
 - An existing file is replaced only when that marker is present and supported.
 - A user-authored, malformed, unsupported, or late-marker `index.html` is left untouched.
 - Symbolic links and directories occupying `index.html` are never replaced, even with `--force-overwrite`.

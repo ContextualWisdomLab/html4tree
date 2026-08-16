@@ -37,6 +37,19 @@ other coding agent). html4tree is a Kotlin CLI (Gradle build) that generates
   callers/callees/impact that text search misses.
 <!-- END cwl-agent-guidance -->
 
+## Generated index ownership
+
+- Filename `index.html` is not ownership. Only a near-start `html4tree/1`
+  generator marker authorizes replace or `--cleanup` delete.
+- First-time creates must use a create-only `Files.move` with no
+  `ATOMIC_MOVE` and no `REPLACE_EXISTING`. POSIX `rename` / Java
+  `ATOMIC_MOVE` may replace a customer page that appeared after the absent
+  check.
+- Cleanup must classify again immediately before delete.
+- Do not restore the README `find ... -name index.html -delete` command.
+- This repo is a Kotlin CLI listing generator. Do not add Storybook, Figma,
+  or a Rust/GPU compute layer.
+
 ## Code-owner review gates — disabled (on hold)
 
 As of 2026-08-04, code-owner review requirements (`require_code_owner_reviews` in branch

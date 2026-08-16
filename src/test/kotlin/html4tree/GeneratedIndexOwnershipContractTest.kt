@@ -116,4 +116,89 @@ class GeneratedIndexOwnershipContractTest {
             directory.deleteRecursively()
         }
     }
+
+    /** A first-time create must not use replace-capable move options. */
+    @Test
+    fun createRefusesAtomicOrReplacingMoveWhenUserPageAppears() {
+        val directory = Files.createTempDirectory("html4tree-create-race-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        try {
+            val result = write_index_file(
+                directory,
+                ownedIndexFixture("generated"),
+                reporter = { reports.add(it) }
+            ) { _, target, options ->
+                Files.write(target, "<html>customer home</html>".toByteArray())
+                if (options.isEmpty()) {
+                    throw java.nio.file.FileAlreadyExistsException(target.toString())
+                }
+                throw AssertionError("create must not use ATOMIC_MOVE or REPLACE_EXISTING: ${options.toList()}")
+            }
+            assertEquals(IndexWriteResult.PRESERVED, result)
+            assertEquals("<html>customer home</html>", indexFile.readText())
+            assertTrue(reports.any { it.startsWith("preserved:") && it.contains("unowned") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** Reclassification after the absent check still preserves a late occupant. */
+    @Test
+    fun createReclassificationPreservesLateUnownedOccupant() {
+        val directory = Files.createTempDirectory("html4tree-create-reclassify-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        var classifyCalls = 0
+        try {
+            val result = write_index_file(
+                directory,
+                ownedIndexFixture("generated"),
+                reporter = { reports.add(it) },
+                classifyTarget = {
+                    classifyCalls += 1
+                    if (classifyCalls == 1) {
+                        IndexTargetClassification(IndexTargetKind.ABSENT, "absent")
+                    } else {
+                        IndexTargetClassification(IndexTargetKind.UNOWNED, "unowned")
+                    }
+                }
+            )
+            assertEquals(IndexWriteResult.PRESERVED, result)
+            assertTrue(!indexFile.exists())
+            assertTrue(reports.any { it.startsWith("preserved:") && it.contains("unowned") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** Cleanup must re-read ownership immediately before deleting. */
+    @Test
+    fun cleanupReclassificationPreservesTargetThatStoppedBeingOwned() {
+        val directory = Files.createTempDirectory("html4tree-cleanup-reclassify-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        var classifyCalls = 0
+        try {
+            indexFile.writeText("<html>customer home</html>")
+            val deleted = cleanup_owned_index(
+                directory,
+                dryRun = false,
+                reporter = { reports.add(it) },
+                classifyTarget = {
+                    classifyCalls += 1
+                    if (classifyCalls == 1) {
+                        IndexTargetClassification(IndexTargetKind.OWNED, "owned")
+                    } else {
+                        IndexTargetClassification(IndexTargetKind.UNOWNED, "unowned")
+                    }
+                }
+            )
+            assertTrue(!deleted)
+            assertEquals("<html>customer home</html>", indexFile.readText())
+            assertTrue(reports.any { it.startsWith("preserved:") && it.contains("unowned") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
 }

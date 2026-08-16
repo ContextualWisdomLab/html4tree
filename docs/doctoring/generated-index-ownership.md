@@ -14,16 +14,18 @@ Filename identity is not ownership. Atomic replacement is not ownership. An exis
 
 ## Generation
 
-- Absent targets may be created.
+- Absent targets may be created. Create-only publication reclassifies immediately before the move and then uses `Files.move` with no `ATOMIC_MOVE` and no `REPLACE_EXISTING`. If a customer page appears in that window, publication is aborted and the occupant is preserved.
+- Do not use `ATOMIC_MOVE` for first-time creates. POSIX `rename` and Java `ATOMIC_MOVE` may replace an existing target; that is a replace primitive, not a create-exclusive primitive.
 - Valid owned regular files may be replaced. The writer copies the owned file to a hidden same-directory backup, publishes the new document, revalidates the occupant, and deletes the backup only after publication completes.
-- Ownership inspection reads only the configured prefix through a no-follow input stream. It does not read an arbitrarily large existing page into memory merely to find the marker.
-- `ATOMIC_MOVE` is attempted first. `REPLACE_EXISTING` is used only after the current occupant is reclassified as replaceable (owned, or unmarked with `--force-overwrite`). An unowned occupant that appears during that window aborts the write.
+- Ownership inspection reads only the configured prefix through a no-follow input stream. The prefix reader copies at most that many bytes and does not call `InputStream.readNBytes`, which is absent on JDK 8.
+- For owned or `--force-overwrite` replacement, `ATOMIC_MOVE` is attempted first. `REPLACE_EXISTING` is used only after the current occupant is reclassified as replaceable. An unowned occupant that appears during that window aborts the write.
 - `--force-overwrite` is an opt-in destructive switch for unmarked regular files. It never authorizes replacing a symbolic link or a directory.
 - If publication fails, html4tree attempts to restore the backup. If restoration also fails, the backup is retained and its exact path is reported as `backup-retained:` so an operator can recover it explicitly. Recover the retained backup before another destructive operation.
 
 ## Cleanup and migration
 
 - `--cleanup` deletes only files whose prefix contains a valid `html4tree/1` marker.
+- Cleanup reclassifies the same path immediately before delete. A target that stopped being owned is preserved.
 - `--dry-run` reports the same owned set without deleting and is rejected unless `--cleanup` is also supplied.
 - Pre-marker outputs are intentionally unowned. Ownership is not inferred from HTML structure, titles, or CSS. Operators who must adopt a known unmarked page use `--force-overwrite` after an independent backup.
 
@@ -33,12 +35,16 @@ Removing the marker emission and the classify-before-write gate restores the pre
 
 ## Verification
 
-`GeneratedIndexOwnershipTest` and `GeneratedIndexOwnershipContractTest` cover user-authored preservation, owned replacement, late and malformed markers, symlink refusal, bounded-prefix EOF handling, CLI misuse rejection, atomic-conflict refusal, backup failure, publication restore, retained-backup reporting, mixed nested sites, and cleanup/dry-run selection of the same owned set.
+`GeneratedIndexOwnershipTest` and `GeneratedIndexOwnershipContractTest` cover user-authored preservation, owned replacement, late and malformed markers, symlink refusal, bounded-prefix EOF handling, CLI misuse rejection, atomic-conflict refusal, backup failure, publication restore, retained-backup reporting, mixed nested sites, cleanup/dry-run selection of the same owned set, create-only refusal of replace-capable moves, late-occupant reclassification, and cleanup revalidation before delete.
 
 ## References
 
+IEEE and The Open Group. (2018). *rename — rename a file* (IEEE Std 1003.1-2017). https://pubs.opengroup.org/onlinepubs/9699919799/functions/rename.html
+
 MITRE. (n.d.). *CWE-73: External control of file name or path*. https://cwe.mitre.org/data/definitions/73.html
 
-Oracle. (n.d.). *Enum class StandardCopyOption*. Java SE 21. https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/file/StandardCopyOption.html
+Oracle. (n.d.). *Enum class StandardCopyOption*. Java SE 11. https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/StandardCopyOption.html
+
+Oracle. (n.d.). *Files.move*. Java SE 11. https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/Files.html#move(java.nio.file.Path,java.nio.file.Path,java.nio.file.CopyOption...)
 
 Oracle. (n.d.). *Moving, copying, and deleting files*. Dev.java. https://dev.java/learn/java-io/file-system/move-copy-delete/

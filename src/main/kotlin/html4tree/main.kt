@@ -194,7 +194,20 @@ internal fun read_index_prefix(
             ByteArray(0)
         } else {
             openStream(path).use { input ->
-                input.readNBytes(limit)
+                val buffer = ByteArray(limit)
+                var offset = 0
+                while (offset < limit) {
+                    val n = input.read(buffer, offset, limit - offset)
+                    if (n <= 0) {
+                        break
+                    }
+                    offset += n
+                }
+                if (offset == limit) {
+                    buffer
+                } else {
+                    buffer.copyOf(offset)
+                }
             }
         }
     } catch (e: Exception) {
@@ -252,23 +265,31 @@ internal fun default_index_reporter(message: String) {
 internal fun cleanup_owned_index(
     curr_dir: File,
     dryRun: Boolean,
-    reporter: (String) -> Unit = ::default_index_reporter
+    reporter: (String) -> Unit = ::default_index_reporter,
+    classifyTarget: (File) -> IndexTargetClassification = ::classify_index_target,
+    deleteFile: (Path) -> Unit = { Files.delete(it) }
 ): Boolean {
     val indexFile = generated_index_file(curr_dir)
-    val classification = classify_index_target(indexFile)
+    val classification = classifyTarget(indexFile)
     return when (classification.kind) {
         IndexTargetKind.OWNED -> {
             if (dryRun) {
                 reporter("would-delete: ${indexFile.absolutePath}")
                 true
             } else {
-                try {
-                    Files.delete(indexFile.toPath())
-                    reporter("deleted: ${indexFile.absolutePath}")
-                    true
-                } catch (e: Exception) {
-                    reporter("failed: ${indexFile.absolutePath}")
+                val confirmed = classifyTarget(indexFile)
+                if (confirmed.kind != IndexTargetKind.OWNED) {
+                    reporter("preserved: ${indexFile.absolutePath} (${confirmed.reason})")
                     false
+                } else {
+                    try {
+                        deleteFile(indexFile.toPath())
+                        reporter("deleted: ${indexFile.absolutePath}")
+                        true
+                    } catch (e: Exception) {
+                        reporter("failed: ${indexFile.absolutePath}")
+                        false
+                    }
                 }
             }
         }
@@ -552,10 +573,11 @@ fun write_index_file(
     ) -> Unit = { source, target, options ->
         Files.move(source, target, *options)
         Unit
-    }
+    },
+    classifyTarget: (File) -> IndexTargetClassification = ::classify_index_target
 ): IndexWriteResult {
     val indexPath = curr_dir.toPath().resolve(GENERATED_INDEX_NAME)
-    val existing = classify_index_target(indexPath.toFile())
+    val existing = classifyTarget(indexPath.toFile())
     val replacingOwned = existing.kind == IndexTargetKind.OWNED
     val replacingForced = existing.kind == IndexTargetKind.UNOWNED && forceOverwrite
     if (existing.kind == IndexTargetKind.UNSAFE ||
@@ -580,36 +602,53 @@ fun write_index_file(
                 reporter("preserved: ${indexPath.toAbsolutePath()} (backup-failed)")
                 return IndexWriteResult.PRESERVED
             }
-            val stillAllowed = classify_index_target(indexPath.toFile())
+            val stillAllowed = classifyTarget(indexPath.toFile())
             val stillReplaceable = stillAllowed.kind == IndexTargetKind.OWNED ||
                 (forceOverwrite && stillAllowed.kind == IndexTargetKind.UNOWNED)
             if (!stillReplaceable) {
                 reporter("preserved: ${indexPath.toAbsolutePath()} (${stillAllowed.reason})")
                 return IndexWriteResult.PRESERVED
             }
-        }
-        try {
-            // With ATOMIC_MOVE, Java ignores every other copy option and the
-            // existing-target policy is provider-specific.
-            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.ATOMIC_MOVE))
-        } catch (error: java.io.IOException) {
-            if (
-                error !is java.nio.file.AtomicMoveNotSupportedException &&
-                error !is java.nio.file.FileAlreadyExistsException
-            ) {
-                throw error
+            try {
+                // With ATOMIC_MOVE, Java ignores every other copy option and the
+                // existing-target policy is provider-specific. Replacement is
+                // allowed only after the occupant was reclassified as owned or
+                // force-overwritable.
+                moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.ATOMIC_MOVE))
+            } catch (error: java.io.IOException) {
+                if (
+                    error !is java.nio.file.AtomicMoveNotSupportedException &&
+                    error !is java.nio.file.FileAlreadyExistsException
+                ) {
+                    throw error
+                }
+                val now = classifyTarget(indexPath.toFile())
+                val canReplace = now.kind == IndexTargetKind.ABSENT ||
+                    now.kind == IndexTargetKind.OWNED ||
+                    (forceOverwrite && now.kind == IndexTargetKind.UNOWNED)
+                if (!canReplace) {
+                    reporter("preserved: ${indexPath.toAbsolutePath()} (${now.reason})")
+                    return IndexWriteResult.PRESERVED
+                }
+                // Owned/forced replacement may use the documented non-atomic fallback.
+                // Unowned existing targets never take this path.
+                moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
             }
-            val now = classify_index_target(indexPath.toFile())
-            val canReplace = now.kind == IndexTargetKind.ABSENT ||
-                now.kind == IndexTargetKind.OWNED ||
-                (forceOverwrite && now.kind == IndexTargetKind.UNOWNED)
-            if (!canReplace) {
+        } else {
+            val now = classifyTarget(indexPath.toFile())
+            if (now.kind != IndexTargetKind.ABSENT) {
                 reporter("preserved: ${indexPath.toAbsolutePath()} (${now.reason})")
                 return IndexWriteResult.PRESERVED
             }
-            // Owned/forced replacement may use the documented non-atomic fallback.
-            // Unowned existing targets never take this path.
-            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+            try {
+                // Create-only publication must not use ATOMIC_MOVE or
+                // REPLACE_EXISTING. POSIX rename and Java ATOMIC_MOVE may
+                // replace an occupant that appeared after the absent check.
+                moveFile(tempPath, indexPath, arrayOf<java.nio.file.CopyOption>())
+            } catch (error: java.nio.file.FileAlreadyExistsException) {
+                reporter("preserved: ${indexPath.toAbsolutePath()} (unowned)")
+                return IndexWriteResult.PRESERVED
+            }
         }
         if (backupPath != null) {
             Files.deleteIfExists(backupPath)
