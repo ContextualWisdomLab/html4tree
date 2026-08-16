@@ -50,8 +50,8 @@ expressions (Oracle, 2021). Invalid globs are skipped.
 3. no ignore file → one listing, `.env` hidden, `minutes.txt` kept
 4. `list()` returns null → default exclusions, no crash
 5. `process_dir` fallback writes HTML with `href="./minutes.txt"` and
-   `title="minutes.txt 파일"`, omits `scratch.tmp` / `.env`, calls
-   `File.listFiles()` once, and does not call `File.list()`
+   an FSI/PDI `title` for `minutes.txt`, omits `scratch.tmp` / `.env`,
+   calls `File.listFiles()` once, and does not call `File.list()`
 6. `process_dir` with a null `listFiles()` result writes the empty-directory
    status and does not call `File.list()`
 7. `crawl_directories` with a null `listFiles()` snapshot passes empty

@@ -50,7 +50,8 @@ All notable changes to this project are documented in this file.
 - Lock the ignore-listing snapshot: at most one `File.list()` when names are
   omitted, zero listings when names are supplied, default exclusions when
   `list()` is null, a generated page that keeps `minutes.txt` as
-  `href="./minutes.txt"` while hiding `scratch.tmp` and `.env`, one
+  `href="./minutes.txt"` with an isolated `title` while hiding
+  `scratch.tmp` and `.env`, one
   `listFiles()` and zero `list()` on the `process_dir` fallback, an
   empty page when `listFiles()` returns null, and the same empty page
   with zero `list()` / `listFiles()` when the crawl snapshot is null.
