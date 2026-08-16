@@ -101,7 +101,7 @@
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
 
 ## 2026-08-16 - 공백 우회를 방지하기 위한 파일 이름 유효성 검사
-**학습:** 보안 목적으로 파일 이름이나 확장자를 민감한 파일 목록(예: `defaultSensitiveFiles`)과 비교하여 제외할 때, 화이트스페이스(공백 등)가 포함된 이름(예: ` .git` 또는 `config.json `)은 단순 문자열 비교를 우회할 수 있습니다.
+**학습:** 보안 목적으로 파일 이름이나 확장자를 민감한 파일 목록(예: `defaultSensitiveFiles`)과 비교하여 제외할 때, 화이트스페이스(공백 등)가 포함된 이름(예: `␠.git` 또는 `config.json␠`)은 단순 문자열 비교를 우회할 수 있습니다.
 **조치:** 블랙리스트나 필터링 규칙과 비교하기 전에 파일 이름에 대해 `.trim()`을 호출하여, 우발적이거나 악의적인 화이트스페이스 패딩으로 인한 우회를 방지하고 정확한 보안 정책을 적용하십시오.
 
 ## 2026-08-16 - 디렉토리 순회 깊이 하드 리밋(Hard Limit) 추가
