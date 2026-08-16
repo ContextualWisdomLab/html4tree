@@ -20,7 +20,8 @@ A directory that contains meeting notes, a leaked `.env`, and a `*.tmp` ignore
 rule must generate an `index.html` that lists the notes file and omits the
 secret and ignored temp file. Operators should run `java -jar html4tree.jar
 <topdir>` and open the generated page before publishing. Confirm the notes
-file appears as `href="./minutes.txt"` with `title="minutes.txt 파일"`.
+file appears as `href="./minutes.txt"` with a First Strong Isolate
+`title` of `minutes.txt` plus the Korean type label.
 
 The CLI crawl (`go` → `crawl_directories`) already passes names from one
 `listFiles()` snapshot. When that snapshot is null, the crawl now passes

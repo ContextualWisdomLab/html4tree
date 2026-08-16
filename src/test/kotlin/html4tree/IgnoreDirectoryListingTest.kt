@@ -124,7 +124,7 @@ class IgnoreDirectoryListingTest {
             assertEquals(0, countingDirectory.listCallCount)
             assertEquals(1, countingDirectory.listFilesCallCount)
             assertTrue(html.contains("href=\"./minutes.txt\""))
-            assertTrue(html.contains("title=\"minutes.txt 파일\""))
+            assertTrue(html.contains("title=\"${isolate_bidi_plain_text("minutes.txt")} 파일\""))
             assertFalse(html.contains("scratch.tmp"))
             assertFalse(html.contains(".env"))
             assertFalse(html.contains(".html4ignore"))
@@ -151,7 +151,7 @@ class IgnoreDirectoryListingTest {
             val html = File(temporaryDirectory, "index.html").readText(Charsets.UTF_8)
             assertTrue(html.contains("이 디렉토리는 비어 있습니다."))
             assertFalse(html.contains("href=\"./minutes.txt\""))
-            assertFalse(html.contains("title=\"minutes.txt 파일\""))
+            assertFalse(html.contains("title=\"${isolate_bidi_plain_text("minutes.txt")} 파일\""))
         } finally {
             temporaryDirectory.deleteRecursively()
         }
@@ -196,7 +196,7 @@ class IgnoreDirectoryListingTest {
             assertEquals(0, countingDirectory.listFilesCallCount)
             assertTrue(html.contains("이 디렉토리는 비어 있습니다."))
             assertFalse(html.contains("href=\"./minutes.txt\""))
-            assertFalse(html.contains("title=\"minutes.txt 파일\""))
+            assertFalse(html.contains("title=\"${isolate_bidi_plain_text("minutes.txt")} 파일\""))
         } finally {
             temporaryDirectory.deleteRecursively()
         }

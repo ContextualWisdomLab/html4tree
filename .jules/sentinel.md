@@ -99,3 +99,15 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-16 - 공백 우회를 방지하기 위한 파일 이름 유효성 검사
+**학습:** 보안 목적으로 파일 이름이나 확장자를 민감한 파일 목록(예: `defaultSensitiveFiles`)과 비교하여 제외할 때, 화이트스페이스(공백 등)가 포함된 이름(예: 선행 공백 + `.git`, 또는 `config.json` + 후행 공백)은 단순 문자열 비교를 우회할 수 있습니다.
+**조치:** 블랙리스트나 필터링 규칙과 비교하기 전에 파일 이름에 대해 `.trim()`을 호출하여, 우발적이거나 악의적인 화이트스페이스 패딩으로 인한 우회를 방지하고 정확한 보안 정책을 적용하십시오.
+
+## 2026-08-16 - Trojan Source 파일명 표시 무력화
+**학습:** `escapeHtml()`에서 U+2066–U+2069를 전역 삭제하면 `title`에 넣는 FSI/PDI(U+2068/U+2069)가 함께 사라진다. 표시 이름에서만 bidirectional format control을 U+FFFD로 치환한 뒤 격리를 적용하고, `href`는 실제 `File.name`을 유지해야 한다.
+**조치:** `neutralize_bidi_controls()`를 표시 경로에만 두고, `TrojanSourceSecurityTest`로 실제 RLO 파일의 생성 페이지를 검증한다. `#454`처럼 `escapeHtml()`에서 isolate 문자를 제거하지 않는다.
+
+## 2026-08-16 - 디렉토리 순회 깊이 하드 리밋(Hard Limit) 추가
+**학습:** 디렉토리를 순회할 때 사용자가 지정한 깊이(`maxLevel`)가 무제한(`-1`)인 경우, 악의적으로 또는 실수로 생성된 매우 깊은 디렉토리 구조를 만나면 시스템 리소스 고갈(Resource Exhaustion)이나 스택 오버플로우가 발생할 수 있습니다.
+**조치:** 무제한 깊이를 허용하는 옵션이 있더라도 백엔드 방어(defense-in-depth) 차원에서 시스템의 안전을 보장하는 최대 허용 깊이(예: `MAX_SAFE_DEPTH = 100`)를 상수로 정의하여 루프 또는 재귀 호출 시 체크함으로써 리소스 고갈을 사전에 차단해야 합니다.
