@@ -88,4 +88,19 @@ class TrojanSourceSecurityTest {
         assertFalse(generatedHtml.contains("invoice.txt\u202Eexe</span>"))
         assertFalse(generatedHtml.contains("title=\"${isolate_bidi_plain_text(spoofedName)}"))
     }
+
+    @Test
+    fun directoryHeadingAndTabTitleNeutralizeControls() {
+        val spoofedDirectory = File(temporaryDirectory, "invoices\u202E")
+        spoofedDirectory.mkdir()
+        File(spoofedDirectory, "note.txt").writeText("note")
+
+        process_dir(spoofedDirectory, setOf("index.html"), arrayOf(File(spoofedDirectory, "note.txt")))
+
+        val generatedHtml = File(spoofedDirectory, "index.html").readText(Charsets.UTF_8)
+        val displayName = "invoices\uFFFD"
+        assertTrue(generatedHtml.contains("<h1 dir=\"auto\">$displayName</h1>"))
+        assertTrue(generatedHtml.contains("<title>${isolate_bidi_plain_text(displayName)} - 디렉토리 목록</title>"))
+        assertFalse(generatedHtml.contains("<h1 dir=\"auto\">invoices\u202E</h1>"))
+    }
 }

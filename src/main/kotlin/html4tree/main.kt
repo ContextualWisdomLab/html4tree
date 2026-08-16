@@ -154,7 +154,7 @@ private const val KIBIBYTE: Long = 1024L
 private const val MEBIBYTE: Long = 1024L * 1024L
 private const val GIBIBYTE: Long = 1024L * 1024L * 1024L
 private val UTC_MINUTE_FORMATTER: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneOffset.UTC)
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", java.util.Locale.ROOT).withZone(ZoneOffset.UTC)
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -377,6 +377,12 @@ internal fun format_byte_size(size: Long): String {
 }
 
 internal fun format_scaled_size(size: Long, unit: Long, label: String): String {
+    if (size < 0L || unit <= 0L) {
+        return "0 B"
+    }
+    if (size > Long.MAX_VALUE / 10L) {
+        return "${size / unit}.0 $label"
+    }
     val tenths = (size * 10L + unit / 2L) / unit
     return "${tenths / 10L}.${tenths % 10L} $label"
 }
@@ -386,7 +392,7 @@ internal fun format_iso_instant(millis: Long): String {
 }
 
 internal fun format_utc_minute(millis: Long): String {
-    return UTC_MINUTE_FORMATTER.format(Instant.ofEpochMilli(millis))
+    return UTC_MINUTE_FORMATTER.format(Instant.ofEpochMilli(millis)) + " UTC"
 }
 
 internal fun directory_size_label(): String {
@@ -578,6 +584,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         } ?: emptyArray()
     )
     val directoryName = curr_dir.name.ifEmpty { "Root" }
+    val displayDirectoryName = neutralize_bidi_controls(directoryName)
+    val directoryTitle = "${isolate_bidi_plain_text(displayDirectoryName)} - 디렉토리 목록".escapeHtml()
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -592,12 +600,12 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <meta name="robots" content="noindex, nofollow">
-        <title>${directoryName.escapeHtml()} - 디렉토리 목록</title>
+        <title>${directoryTitle}</title>
         <style>${CSS_CONTENT}</style>
      </head>
      <body>
        <main>
-         <h1 dir="auto">${directoryName.escapeHtml()}</h1>
+         <h1 dir="auto">${displayDirectoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span class="entry-name" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
