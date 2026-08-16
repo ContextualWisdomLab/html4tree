@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-14 - [검증 불가능한 항목이 있는 디렉토리의 부분 인덱스 노출]
+**Vulnerability:** 파일 속성을 읽지 못한 항목만 누락한 부분 목록은 항목별 가독성 상태를 외부 출력에 반영하고, 기존 index.html이 남으면 더 이상 검증되지 않은 이름도 계속 노출할 수 있음.
+**Learning:** 디렉토리 인덱스는 항목별 best-effort 출력이 아니라 하나의 원자적 보안 산출물이어야 함. 모든 포함 후보의 메타데이터를 검증한 경우에만 완전한 목록을 게시해야 함.
+**Prevention:** 한 항목의 속성 검증이라도 실패하면 새 목록 생성을 중단하고 기존 생성 인덱스를 제거하며, 파일명·실패 항목 수·오류 상세를 대체 HTML에 기록하지 않음.
