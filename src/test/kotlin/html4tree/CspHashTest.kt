@@ -38,6 +38,7 @@ class CspHashTest {
             assertEquals(declaredHash, actualHash)
             assertTrue(styleContent.startsWith(":root {"))
             assertTrue(styleContent.endsWith("}"))
+            assertTrue(html.contains(GENERATED_OWNERSHIP_MARKER))
         } finally {
             directory.listFiles()?.forEach { it.delete() }
             directory.delete()

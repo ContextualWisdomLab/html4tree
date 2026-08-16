@@ -16,6 +16,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+internal fun ownedIndexFixture(body: String): String {
+    return "<!doctype html><html><head>$GENERATED_OWNERSHIP_MARKER</head><body>$body</body></html>"
+}
+
 class MainTest {
     private lateinit var tempDir: File
 
@@ -395,30 +399,29 @@ class MainTest {
 
     @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
-        // Files.move cannot replace a non-empty directory, so this drives the
-        // exception path through write_index_file's finally block.
+        // A directory occupying index.html is unsafe to replace. The write
+        // path must preserve it and still delete any temporary payload.
         val indexDir = File(tempDir, "index.html")
         indexDir.mkdir()
         File(indexDir, "occupant.txt").writeText("keep")
 
-        assertFailsWith<Exception> {
-            write_index_file(tempDir, "content")
-        }
+        val result = write_index_file(tempDir, "content")
 
+        assertEquals(IndexWriteResult.PRESERVED, result)
         assertTrue(indexDir.isDirectory)
         assertEquals("keep", File(indexDir, "occupant.txt").readText())
         val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
-        assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+        assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up when the target is preserved")
     }
 
     @Test
     fun testWriteIndexFileFallsBackWhenAtomicMoveIsUnsupported() {
         val indexFile = File(tempDir, "index.html")
-        indexFile.writeText("old content")
+        indexFile.writeText(ownedIndexFixture("old content"))
         var attemptedAtomic = false
         var attemptedFallback = false
 
-        write_index_file(tempDir, "atomic fallback content") { source, target, options ->
+        write_index_file(tempDir, ownedIndexFixture("atomic fallback content")) { source, target, options ->
             if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
                 attemptedAtomic = true
                 throw java.nio.file.AtomicMoveNotSupportedException(
@@ -434,16 +437,16 @@ class MainTest {
 
         assertTrue(attemptedAtomic, "atomic replacement must be attempted first")
         assertTrue(attemptedFallback, "unsupported atomic replacement must use the documented fallback")
-        assertEquals("atomic fallback content", indexFile.readText())
+        assertEquals(ownedIndexFixture("atomic fallback content"), indexFile.readText())
     }
 
     @Test
     fun testWriteIndexFileFallsBackWhenAtomicReplacementRejectsExistingTarget() {
         val indexFile = File(tempDir, "index.html")
-        indexFile.writeText("old content")
+        indexFile.writeText(ownedIndexFixture("old content"))
         var attemptedFallback = false
 
-        write_index_file(tempDir, "replacement content") { source, target, options ->
+        write_index_file(tempDir, ownedIndexFixture("replacement content")) { source, target, options ->
             if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
                 throw java.nio.file.FileAlreadyExistsException(target.toString())
             }
@@ -453,11 +456,11 @@ class MainTest {
         }
 
         assertTrue(attemptedFallback, "existing-target atomic conflicts must use the replacement fallback")
-        assertEquals("replacement content", indexFile.readText())
+        assertEquals(ownedIndexFixture("replacement content"), indexFile.readText())
     }
 
     @Test
-    fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
+    fun testProcessDirPreservesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
 
@@ -471,9 +474,8 @@ class MainTest {
         process_dir(tempDir)
 
         assertEquals("original content", targetFile.readText())
-        assertTrue(indexFile.exists())
-        assertFalse(Files.isSymbolicLink(indexFile.toPath()))
-        assertTrue(indexFile.readText().contains("<html lang=\"ko\">"))
+        assertTrue(Files.isSymbolicLink(indexFile.toPath()))
+        assertEquals("original content", indexFile.readText())
     }
 
     @Test
@@ -574,6 +576,9 @@ class MainTest {
         cli.parse(arrayOf("--max-level", "2", tempDir.absolutePath))
         assertEquals(2, cli.maxLevel)
         assertEquals(tempDir.absolutePath, cli.topDir)
+        assertFalse(cli.forceOverwrite)
+        assertFalse(cli.cleanup)
+        assertFalse(cli.dryRun)
     }
 
     @Test

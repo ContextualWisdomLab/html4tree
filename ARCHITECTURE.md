@@ -10,7 +10,8 @@ TOPDIR
   -> crawl_directories() BFS queue (util.kt)
        -> process_ignore_file() builds the exact-name exclusion set
        -> process_dir() renders one listing
-       -> write_index_file() temp file + move (never follows a symlinked index.html)
+       -> write_index_file() classify-before-write, owned backup, temp + move
+       (never follows a symlink; unmarked pages stay in place)
 ```
 
 ## Product boundary
@@ -38,17 +39,22 @@ stylesheet copy; `CspHashTest` hashes the exact emitted bytes.
 See `CLAUDE.md`. Bidirectional isolation is recorded in
 `docs/doctoring/bidi-isolation.md`. Control neutralization is recorded
 in `docs/doctoring/bidi-control-neutralization.md`. Size and mtime are
-recorded in `docs/doctoring/listing-entry-metadata.md`.
+recorded in `docs/doctoring/listing-entry-metadata.md`. Generated-index
+ownership is recorded in `docs/doctoring/generated-index-ownership.md`.
 
 ## Data model
 
 html4tree has no persistent schema. The only durable objects are
-generated `index.html` files and optional `.html4ignore` inputs. There
-are no database identifiers to rename.
+generated `index.html` files (owned when they carry
+`html4tree/1`) and optional `.html4ignore` inputs. There
+are no database identifiers to rename. Ownership is not inferred from
+filename alone.
 
 ## Goal
 
 Ship directory listings that a buyer can open on a phone or desktop and
 immediately find the next file, including when names are Arabic, Hebrew,
 or mixed with Korean chrome, when two files share a similar name, and
-when a filename tries to hide its extension with bidirectional controls.
+when a filename tries to hide its extension with bidirectional controls,
+and without overwriting a customer home page that happens to be named
+`index.html`.

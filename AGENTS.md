@@ -56,9 +56,14 @@ other coding agent). html4tree is a Kotlin CLI (Gradle build) that generates
 - CSS colors belong in `--listing-*` tokens. `CspHashTest` must keep
   passing after any stylesheet edit.
 
+- Generated pages emit `<meta name="generator" content="html4tree/1">`.
+  Unmarked, late, malformed, symlink, and directory `index.html` targets
+  are preserved. `--cleanup` deletes only owned pages.
+
 Decision records: `docs/doctoring/bidi-isolation.md`,
 `docs/doctoring/bidi-control-neutralization.md`,
-`docs/doctoring/listing-entry-metadata.md`.
+`docs/doctoring/listing-entry-metadata.md`,
+`docs/doctoring/generated-index-ownership.md`.
 
 ## Code-owner review gates — disabled (on hold)
 

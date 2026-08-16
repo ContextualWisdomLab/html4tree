@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- Mark generated pages with `<meta name="generator" content="html4tree/1">`
+  and replace only owned regular files. Unmarked customer home pages,
+  late or malformed markers, symlinks, and directories stay in place.
+  `--force-overwrite` is an explicit opt-in for unmarked regular files.
+  `--cleanup` / `--cleanup --dry-run` delete or report only owned artifacts.
 - Isolate Arabic, Hebrew, and mixed-script filenames with `dir="auto"`,
   `unicode-bidi: isolate`, and First Strong Isolate marks in `title`
   attributes so Korean type labels stay readable.
@@ -33,6 +38,9 @@ All notable changes to this project are documented in this file.
   `listFiles()` returns null, so ignore filtering and render do not open
   the directory again and a later successful listing cannot appear on the
   page.
+- Stop recommending `find … -name index.html -delete`. That command also
+  deletes hand-written home pages. Use `--cleanup --dry-run` then
+  `--cleanup` after this release.
 - Keep `#459` translatable `.visually-hidden` type labels and underline
   `.entry-name` on hover/focus instead of the hidden last child.
 - Improve generated directory-index readability with adjacent-row separators,
@@ -65,6 +73,10 @@ All notable changes to this project are documented in this file.
   filesystem mtime.
 - Add a listing-boundary test that padded sensitive names stay out of
   `index.html` while ordinary padded names remain visible.
+- Add ownership regressions for user-authored preservation, owned replacement,
+  cleanup/dry-run selection of the same set, CLI `--dry-run` rejection,
+  bounded prefix EOF and failed-stream reads, atomic-conflict refusal,
+  backup failure, publication restore, and retained-backup reporting.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
@@ -90,3 +102,6 @@ All notable changes to this project are documented in this file.
   Source) in `docs/doctoring/bidi-control-neutralization.md`.
 - Record size and last-modified listing metadata (Apache FancyIndexing,
   IEC 80000-13, ISO 8601-1) in `docs/doctoring/listing-entry-metadata.md`.
+- Record generated-index ownership, overwrite, cleanup, and recovery
+  (CWE-73; Oracle `StandardCopyOption`; Dev.java move/copy/delete) in
+  `docs/doctoring/generated-index-ownership.md`.
