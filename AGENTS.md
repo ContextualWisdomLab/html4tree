@@ -53,12 +53,17 @@ other coding agent). html4tree is a Kotlin CLI (Gradle build) that generates
   use an em dash for size. Omit metadata when attributes cannot be read.
 - Sensitive-name matching may trim/lowercase; the exclusion set stores
   the exact observed `File.name`.
+- Ignore and render share one directory snapshot. A null crawl
+  `listFiles()` becomes empty name and file arrays so neither function
+  lists again. `process_dir` fallback lists once with `listFiles()` and
+  passes those names into `process_ignore_file`.
 - CSS colors belong in `--listing-*` tokens. `CspHashTest` must keep
   passing after any stylesheet edit.
 
 Decision records: `docs/doctoring/bidi-isolation.md`,
 `docs/doctoring/bidi-control-neutralization.md`,
-`docs/doctoring/listing-entry-metadata.md`.
+`docs/doctoring/listing-entry-metadata.md`,
+`docs/doctoring/ignore-listing-snapshot.md`.
 
 ## Code-owner review gates — disabled (on hold)
 
