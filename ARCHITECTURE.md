@@ -23,12 +23,14 @@ the jar usable alone; do not add a service mesh, Storybook, or Figma surface.
 classify index.html
         │
         ├─ UNSAFE / UNOWNED (no --force-overwrite) → preserve
-        ├─ ABSENT → reclassify → create-only move (no ATOMIC_MOVE, no REPLACE)
+        ├─ ABSENT → reclassify → exclusive publish
+        │            (`createLink` / `link(2)`, else create-only move)
         └─ OWNED or forced UNOWNED
                 → same-directory backup
                 → reclassify
                 → ATOMIC_MOVE, then REPLACE_EXISTING only if still replaceable
-                → on failure, restore backup or report backup-retained:
+                → on failure, reclassify then restore only ABSENT/OWNED
+                → otherwise report backup-retained:
 ```
 
 Cleanup classifies, then classifies again immediately before `Files.delete`.

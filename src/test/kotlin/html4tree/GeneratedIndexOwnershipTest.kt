@@ -217,7 +217,6 @@ class GeneratedIndexOwnershipTest {
                 reporter = { reports.add(it) }
             ) { source, target, options ->
                 if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
-                    Files.write(target, "clobbered".toByteArray())
                     throw java.io.IOException("publication failed")
                 }
                 Files.move(source, target, *options)
@@ -229,6 +228,102 @@ class GeneratedIndexOwnershipTest {
             it.name.startsWith(".index-") || it.name.startsWith(".index-owned-backup-")
         } ?: emptyList()
         assertTrue(leftovers.isEmpty(), leftovers.toString())
+    }
+
+    @Test
+    fun publicationFailurePreservesLateCustomerPageAndRetainsBackup() {
+        val indexFile = File(tempDir, "index.html")
+        indexFile.writeText(ownedIndexFixture("original"))
+        assertFailsWith<java.io.IOException> {
+            write_index_file(
+                tempDir,
+                ownedIndexFixture("new"),
+                reporter = { reports.add(it) }
+            ) { _, target, options ->
+                if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                    Files.write(target, "<html>customer home</html>".toByteArray())
+                    throw java.io.IOException("publication failed")
+                }
+                throw AssertionError("must not restore over an unowned occupant: ${options.toList()}")
+            }
+        }
+        assertEquals("<html>customer home</html>", indexFile.readText())
+        assertTrue(reports.any { it.startsWith("backup-retained:") })
+        val retainedBackups = tempDir.listFiles()?.filter {
+            it.name.startsWith(".index-owned-backup-")
+        } ?: emptyList()
+        assertEquals(1, retainedBackups.size)
+        assertEquals(ownedIndexFixture("original"), retainedBackups.single().readText())
+    }
+
+    @Test
+    fun publicationFailureRestoresBackupWhenTargetVanished() {
+        val indexFile = File(tempDir, "index.html")
+        indexFile.writeText(ownedIndexFixture("original"))
+        var classifyCalls = 0
+        assertFailsWith<java.io.IOException> {
+            write_index_file(
+                tempDir,
+                ownedIndexFixture("new"),
+                reporter = { reports.add(it) },
+                classifyTarget = {
+                    classifyCalls += 1
+                    if (classifyCalls <= 2) {
+                        IndexTargetClassification(IndexTargetKind.OWNED, "owned")
+                    } else {
+                        IndexTargetClassification(IndexTargetKind.ABSENT, "absent")
+                    }
+                }
+            ) { _, target, options ->
+                if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                    Files.deleteIfExists(target)
+                    throw java.io.IOException("publication failed")
+                }
+                throw AssertionError("absent restore must use exclusive publish, not replace: ${options.toList()}")
+            }
+        }
+        assertEquals(ownedIndexFixture("original"), indexFile.readText())
+        val leftovers = tempDir.listFiles()?.filter {
+            it.name.startsWith(".index-owned-backup-")
+        } ?: emptyList()
+        assertTrue(leftovers.isEmpty(), leftovers.toString())
+    }
+
+    @Test
+    fun publicationFailureRetainsBackupWhenAbsentRestoreConflicts() {
+        val indexFile = File(tempDir, "index.html")
+        indexFile.writeText(ownedIndexFixture("original"))
+        var classifyCalls = 0
+        assertFailsWith<java.io.IOException> {
+            write_index_file(
+                tempDir,
+                ownedIndexFixture("new"),
+                reporter = { reports.add(it) },
+                classifyTarget = {
+                    classifyCalls += 1
+                    if (classifyCalls <= 2) {
+                        IndexTargetClassification(IndexTargetKind.OWNED, "owned")
+                    } else {
+                        IndexTargetClassification(IndexTargetKind.ABSENT, "absent")
+                    }
+                },
+                createLink = { _, link ->
+                    throw java.nio.file.FileAlreadyExistsException(link.toString())
+                }
+            ) { _, _, options ->
+                if (options.contains(java.nio.file.StandardCopyOption.ATOMIC_MOVE)) {
+                    throw java.io.IOException("publication failed")
+                }
+                throw AssertionError("conflicting exclusive restore must not replace")
+            }
+        }
+        assertEquals(ownedIndexFixture("original"), indexFile.readText())
+        assertTrue(reports.any { it.startsWith("backup-retained:") })
+        val retainedBackups = tempDir.listFiles()?.filter {
+            it.name.startsWith(".index-owned-backup-")
+        } ?: emptyList()
+        assertEquals(1, retainedBackups.size)
+        assertEquals(ownedIndexFixture("original"), retainedBackups.single().readText())
     }
 
     @Test
@@ -251,6 +346,31 @@ class GeneratedIndexOwnershipTest {
         } ?: emptyList()
         assertEquals(1, retainedBackups.size)
         assertEquals(ownedIndexFixture("original"), retainedBackups.single().readText())
+    }
+
+    @Test
+    fun cleanupPreservesSymlinkAndDirectoryOccupants() {
+        val linkedDir = File(tempDir, "linked")
+        val directoryOccupant = File(tempDir, "dir-occ")
+        linkedDir.mkdir()
+        directoryOccupant.mkdir()
+        val target = File(tempDir, "keep.txt")
+        target.writeText("keep")
+        val link = File(linkedDir, "index.html")
+        try {
+            Files.createSymbolicLink(link.toPath(), target.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+        File(directoryOccupant, "index.html").mkdir()
+
+        go(tempDir.absolutePath, -1, cleanup = true, reporter = { reports.add(it) })
+
+        assertTrue(Files.isSymbolicLink(link.toPath()))
+        assertEquals("keep", target.readText())
+        assertTrue(File(directoryOccupant, "index.html").isDirectory)
+        assertTrue(reports.any { it.contains("symlink") })
+        assertTrue(reports.any { it.contains("directory") })
     }
 
     @Test

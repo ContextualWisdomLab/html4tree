@@ -41,11 +41,13 @@ other coding agent). html4tree is a Kotlin CLI (Gradle build) that generates
 
 - Filename `index.html` is not ownership. Only a near-start `html4tree/1`
   generator marker authorizes replace or `--cleanup` delete.
-- First-time creates must use a create-only `Files.move` with no
-  `ATOMIC_MOVE` and no `REPLACE_EXISTING`. POSIX `rename` / Java
-  `ATOMIC_MOVE` may replace a customer page that appeared after the absent
-  check.
-- Cleanup must classify again immediately before delete.
+- First-time creates must use exclusive publish: `Files.createLink`
+  (`link(2)` fails with `EEXIST` and does not replace), then a create-only
+  `Files.move` only when hard links are unavailable. Never `ATOMIC_MOVE`
+  or `REPLACE_EXISTING` on that path. POSIX `rename` / Java `ATOMIC_MOVE`
+  may replace a customer page that appeared after the absent check.
+- Cleanup must classify again immediately before delete. Failure restore
+  must classify again and must not replace `UNOWNED` or `UNSAFE` occupants.
 - Do not restore the README `find ... -name index.html -delete` command.
 - This repo is a Kotlin CLI listing generator. Do not add Storybook, Figma,
   or a Rust/GPU compute layer.

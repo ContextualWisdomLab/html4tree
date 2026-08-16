@@ -117,9 +117,9 @@ class GeneratedIndexOwnershipContractTest {
         }
     }
 
-    /** A first-time create must not use replace-capable move options. */
+    /** Exclusive create must fail closed when the destination name already exists. */
     @Test
-    fun createRefusesAtomicOrReplacingMoveWhenUserPageAppears() {
+    fun createRefusesLinkWhenUserPageAppears() {
         val directory = Files.createTempDirectory("html4tree-create-race-").toFile()
         val indexFile = File(directory, GENERATED_INDEX_NAME)
         val reports = mutableListOf<String>()
@@ -127,7 +127,34 @@ class GeneratedIndexOwnershipContractTest {
             val result = write_index_file(
                 directory,
                 ownedIndexFixture("generated"),
-                reporter = { reports.add(it) }
+                reporter = { reports.add(it) },
+                createLink = { _, link ->
+                    Files.write(link, "<html>customer home</html>".toByteArray())
+                    throw java.nio.file.FileAlreadyExistsException(link.toString())
+                }
+            )
+            assertEquals(IndexWriteResult.PRESERVED, result)
+            assertEquals("<html>customer home</html>", indexFile.readText())
+            assertTrue(reports.any { it.startsWith("preserved:") && it.contains("unowned") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** Hard-link fallback must still be create-only, never ATOMIC_MOVE or REPLACE_EXISTING. */
+    @Test
+    fun createFallbackMoveRefusesReplaceOptionsWhenUserPageAppears() {
+        val directory = Files.createTempDirectory("html4tree-create-fallback-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        try {
+            val result = write_index_file(
+                directory,
+                ownedIndexFixture("generated"),
+                reporter = { reports.add(it) },
+                createLink = { _, _ ->
+                    throw UnsupportedOperationException("hard links unavailable")
+                }
             ) { _, target, options ->
                 Files.write(target, "<html>customer home</html>".toByteArray())
                 if (options.isEmpty()) {
@@ -138,6 +165,88 @@ class GeneratedIndexOwnershipContractTest {
             assertEquals(IndexWriteResult.PRESERVED, result)
             assertEquals("<html>customer home</html>", indexFile.readText())
             assertTrue(reports.any { it.startsWith("preserved:") && it.contains("unowned") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** A real occupant must survive the default exclusive publisher when classify lies ABSENT. */
+    @Test
+    fun defaultExclusivePublishPreservesExistingCustomerPage() {
+        val directory = Files.createTempDirectory("html4tree-create-real-occupant-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        try {
+            indexFile.writeText("<html>customer home</html>")
+            val result = write_index_file(
+                directory,
+                ownedIndexFixture("generated"),
+                reporter = { reports.add(it) },
+                classifyTarget = {
+                    IndexTargetClassification(IndexTargetKind.ABSENT, "absent")
+                }
+            )
+            assertEquals(IndexWriteResult.PRESERVED, result)
+            assertEquals("<html>customer home</html>", indexFile.readText())
+            assertTrue(reports.any { it.startsWith("preserved:") && it.contains("unowned") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** `link(2)` success publishes without a replace-capable move. */
+    @Test
+    fun publishExclusiveLinksWhenFilesystemAllows() {
+        val directory = Files.createTempDirectory("html4tree-exclusive-link-").toFile()
+        try {
+            val source = File(directory, "payload.html")
+            val target = File(directory, GENERATED_INDEX_NAME)
+            source.writeText(ownedIndexFixture("linked"))
+            publish_exclusive(source.toPath(), target.toPath())
+            assertEquals(ownedIndexFixture("linked"), target.readText())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** Filesystems without hard links still publish through a create-only move. */
+    @Test
+    fun publishExclusiveFallsBackToCreateOnlyMove() {
+        val directory = Files.createTempDirectory("html4tree-exclusive-fallback-").toFile()
+        try {
+            val source = File(directory, "payload.html")
+            val target = File(directory, GENERATED_INDEX_NAME)
+            source.writeText(ownedIndexFixture("moved"))
+            publish_exclusive(
+                source.toPath(),
+                target.toPath(),
+                createLink = { _, _ -> throw UnsupportedOperationException("no hard links") }
+            )
+            assertEquals(ownedIndexFixture("moved"), target.readText())
+            assertTrue(!source.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** First-time create still succeeds when hard links are unavailable. */
+    @Test
+    fun createFallbackMovePublishesWhenTargetStaysAbsent() {
+        val directory = Files.createTempDirectory("html4tree-create-fallback-ok-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        try {
+            val result = write_index_file(
+                directory,
+                ownedIndexFixture("generated"),
+                reporter = { reports.add(it) },
+                createLink = { _, _ ->
+                    throw UnsupportedOperationException("hard links unavailable")
+                }
+            )
+            assertEquals(IndexWriteResult.CREATED, result)
+            assertEquals(ownedIndexFixture("generated"), indexFile.readText())
+            assertTrue(reports.any { it.startsWith("created:") })
         } finally {
             directory.deleteRecursively()
         }

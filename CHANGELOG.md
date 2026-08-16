@@ -20,9 +20,11 @@ All notable changes to this project are documented in this file.
   ownership inspection to the configured prefix instead of reading the whole
   file, and retain/report the recovery backup when both publication and
   automatic restoration fail.
-- Publish first-time `index.html` files with a create-only move (no
-  `ATOMIC_MOVE`, no `REPLACE_EXISTING`) and reclassify immediately before
-  cleanup delete so a late customer page is not replaced or removed.
+- Publish first-time `index.html` files with an exclusive hard link
+  (`Files.createLink` / POSIX `link(2)`), falling back to a create-only
+  move (no `ATOMIC_MOVE`, no `REPLACE_EXISTING`) when hard links are
+  unavailable. Reclassify immediately before cleanup delete and before
+  failure restore so a late customer page is not replaced or removed.
 - Remove the README `find ... -name index.html -delete` cleanup command. That
   command cannot distinguish generated pages from customer home pages.
 - Improve generated directory-index readability with adjacent-row separators,
@@ -40,8 +42,10 @@ All notable changes to this project are documented in this file.
 - Add ownership regressions for user-authored preservation, owned replacement,
   cleanup/dry-run selection, CLI misuse rejection, bounded prefix EOF handling,
   opened-stream read failure, vanished-backup publication failure, atomic-conflict
-  refusal, backup restore, retained-backup reporting, create-only race refusal,
-  late-occupant reclassification, and cleanup revalidation before delete.
+  refusal, backup restore, retained-backup reporting, exclusive-create
+  refusal of a real occupant, hard-link fallback, late-occupant
+  reclassification, restore reclassification, and cleanup revalidation
+  before delete.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS

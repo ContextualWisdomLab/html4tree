@@ -262,6 +262,36 @@ internal fun default_index_reporter(message: String) {
     System.err.println(message)
 }
 
+/**
+ * Publishes [source] to an absent [target] without replacing an occupant.
+ *
+ * `Files.createLink` maps to POSIX `link(2)`, which fails with `EEXIST` and
+ * does not replace. Filesystems that cannot hard-link fall back to a
+ * create-only `Files.move` (no `ATOMIC_MOVE`, no `REPLACE_EXISTING`).
+ */
+internal fun publish_exclusive(
+    source: Path,
+    target: Path,
+    createLink: (Path, Path) -> Unit = { existing, link ->
+        Files.createLink(link, existing)
+        Unit
+    },
+    moveFile: (
+        Path,
+        Path,
+        Array<out java.nio.file.CopyOption>
+    ) -> Unit = { from, to, options ->
+        Files.move(from, to, *options)
+        Unit
+    }
+) {
+    try {
+        createLink(source, target)
+    } catch (unsupported: UnsupportedOperationException) {
+        moveFile(source, target, arrayOf<java.nio.file.CopyOption>())
+    }
+}
+
 internal fun cleanup_owned_index(
     curr_dir: File,
     dryRun: Boolean,
@@ -567,6 +597,13 @@ fun write_index_file(
         )
         Unit
     },
+    createLink: (
+        java.nio.file.Path,
+        java.nio.file.Path
+    ) -> Unit = { existing, link ->
+        Files.createLink(link, existing)
+        Unit
+    },
     moveFile: (
         java.nio.file.Path,
         java.nio.file.Path,
@@ -641,10 +678,9 @@ fun write_index_file(
                 return IndexWriteResult.PRESERVED
             }
             try {
-                // Create-only publication must not use ATOMIC_MOVE or
-                // REPLACE_EXISTING. POSIX rename and Java ATOMIC_MOVE may
-                // replace an occupant that appeared after the absent check.
-                moveFile(tempPath, indexPath, arrayOf<java.nio.file.CopyOption>())
+                // Exclusive create: hard-link first (EEXIST does not replace).
+                // Fall back to a create-only move when hard links are unavailable.
+                publish_exclusive(tempPath, indexPath, createLink, moveFile)
             } catch (error: java.nio.file.FileAlreadyExistsException) {
                 reporter("preserved: ${indexPath.toAbsolutePath()} (unowned)")
                 return IndexWriteResult.PRESERVED
@@ -669,10 +705,23 @@ fun write_index_file(
     } catch (error: Exception) {
         val restoreFrom = backupPath
         if (restoreFrom != null && Files.exists(restoreFrom, LinkOption.NOFOLLOW_LINKS)) {
-            try {
-                moveFile(restoreFrom, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
-                backupPath = null
-            } catch (_: Exception) {
+            val occupant = classifyTarget(indexPath.toFile())
+            var restored = false
+            if (occupant.kind == IndexTargetKind.ABSENT || occupant.kind == IndexTargetKind.OWNED) {
+                try {
+                    if (occupant.kind == IndexTargetKind.ABSENT) {
+                        publish_exclusive(restoreFrom, indexPath, createLink, moveFile)
+                        Files.deleteIfExists(restoreFrom)
+                    } else {
+                        moveFile(restoreFrom, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+                    }
+                    restored = true
+                    backupPath = null
+                } catch (_: Exception) {
+                    restored = false
+                }
+            }
+            if (!restored) {
                 preserveBackupAfterRestoreFailure = true
                 reporter("backup-retained: ${restoreFrom.toAbsolutePath()}")
             }
