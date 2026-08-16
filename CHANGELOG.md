@@ -33,6 +33,9 @@ All notable changes to this project are documented in this file.
   `listFiles()` returns null, so ignore filtering and render do not open
   the directory again and a later successful listing cannot appear on the
   page.
+- Omit the parent `..` row on the CLI crawl root so a published tree does
+  not offer a link that leaves the generated site. Nested listings keep
+  `..`. Direct `process_dir` callers still default to showing it.
 - Keep `#459` translatable `.visually-hidden` type labels and underline
   `.entry-name` on hover/focus instead of the hidden last child.
 - Improve generated directory-index readability with adjacent-row separators,
@@ -62,6 +65,11 @@ All notable changes to this project are documented in this file.
 - Add a generated-page regression that `minutes.txt` containing
   `hello world` emits `11 B` and a `<time datetime>` matching the
   filesystem mtime.
+- Add one `go()` buyer tree (`minutes.txt`, `scratch.tmp`, `.env`,
+  `*.tmp`, `تقرير.pdf`, `invoices/note.txt`) that asserts keep/hide,
+  isolation, `11 B`, UTC `<time>`, no root `..`, and a nested `..`.
+- Assert IEC size and UTC `<time>` on the ignore-listing fallback page,
+  and FSI/PDI in the Arabic directory `<title>`.
 - Add a listing-boundary test that padded sensitive names stay out of
   `index.html` while ordinary padded names remain visible.
 - Add a real generated-file regression test that independently recomputes the
@@ -89,3 +97,5 @@ All notable changes to this project are documented in this file.
   Source) in `docs/doctoring/bidi-control-neutralization.md`.
 - Record size and last-modified listing metadata (Apache FancyIndexing,
   IEC 80000-13, ISO 8601-1) in `docs/doctoring/listing-entry-metadata.md`.
+- Record crawl-root parent omission (WCAG 2.2 SC 2.4.4, WHATWG URL,
+  RFC 3986) in `docs/doctoring/crawl-root-parent-navigation.md`.

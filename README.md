@@ -48,7 +48,8 @@ Arabic and Hebrew names so the Korean "파일" / "디렉토리" labels stay read
 show each file's size and UTC last-modified time, and replace bidirectional
 format controls in displayed names with a visible replacement character.
 Open one generated `index.html` that contains a right-to-left name, and confirm
-one file's size matches `wc -c` / `stat`, before you publish the tree. If a
+one file's size matches `wc -c` / `stat`, before you publish the tree. The top
+page must not contain a parent `..` link; nested pages should. If a
 row shows replacement characters, inspect the real name on disk before opening
 the file.
 

@@ -198,13 +198,25 @@ fun go(topDir: String, maxLevel: Int)  {
 
     val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
     ll.push(topEntry)
-    crawl_directories(ll, maxLevel)
+    crawl_directories(ll, maxLevel, listingRoot = top_dir)
+}
+
+internal fun same_normalized_path(left: File, right: File): Boolean {
+    return left.absoluteFile.toPath().normalize() == right.absoluteFile.toPath().normalize()
 }
 
 internal fun crawl_directories(
     ll: LinkedList,
     maxLevel: Int,
-    processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
+    listingRoot: File? = null,
+    processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files ->
+        process_dir(
+            file,
+            exclude,
+            files,
+            includeParentLink = listingRoot == null || !same_normalized_path(file, listingRoot)
+        )
+    },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
     readAttributes: (File) -> BasicFileAttributes? = {
@@ -572,10 +584,19 @@ fun write_index_file(
  * those names so ignore globs and the rendered page observe the same
  * snapshot. The CLI crawl passes [dirFiles] as an empty array when its
  * `listFiles()` snapshot is null so this function does not list again.
+ * [includeParentLink] is true for nested directories and for direct
+ * `process_dir` callers. The CLI crawl sets it false on the listing root
+ * so a published tree does not offer `href="./.."` that leaves the site.
  * Next action: open the generated page and confirm kept files appear as
- * `href="./name"` links while ignored and secret names do not.
+ * `href="./name"` links while ignored and secret names do not. On the
+ * crawl root, confirm there is no parent `..` row.
  */
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+fun process_dir(
+    curr_dir: File,
+    excludeSet: Set<String>? = null,
+    dirFiles: Array<File>? = null,
+    includeParentLink: Boolean = true
+){
     val filesList = dirFiles ?: curr_dir.listFiles()
     val exclude: Set<String> = excludeSet ?: process_ignore_file(
         curr_dir,
@@ -586,6 +607,12 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     val directoryName = curr_dir.name.ifEmpty { "Root" }
     val displayDirectoryName = neutralize_bidi_controls(directoryName)
     val directoryTitle = "${isolate_bidi_plain_text(displayDirectoryName)} - 디렉토리 목록".escapeHtml()
+    val parentRow = if (includeParentLink) {
+        """            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span class="entry-name" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
+"""
+    } else {
+        ""
+    }
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -608,8 +635,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <h1 dir="auto">${displayDirectoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span class="entry-name" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
-""" 
+$parentRow""" 
 
     val index_middle = fun():String{ 
         val l = StringBuilder()

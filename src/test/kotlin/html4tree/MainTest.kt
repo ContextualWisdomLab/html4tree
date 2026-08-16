@@ -516,7 +516,9 @@ class MainTest {
 
         go(tempDir.absolutePath, 0)
 
+        val rootHtml = File(tempDir, "index.html").readText()
         assertTrue(File(tempDir, "index.html").exists())
+        assertFalse(rootHtml.contains("href=\"./..\""), "crawl root must not offer a parent link that leaves the published tree")
         assertFalse(File(subdir, "index.html").exists())
         assertFalse(File(subsubdir, "index.html").exists())
     }
@@ -533,6 +535,10 @@ class MainTest {
 
         assertTrue(File(tempDir, "index.html").exists())
         assertTrue(File(subdir, "index.html").exists())
+        assertTrue(
+            File(subdir, "index.html").readText().contains("href=\"./..\""),
+            "nested listings must keep the parent directory link"
+        )
         assertFalse(File(gitDir, "index.html").exists())
     }
 

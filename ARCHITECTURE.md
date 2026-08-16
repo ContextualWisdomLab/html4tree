@@ -11,6 +11,7 @@ TOPDIR
        -> one listFiles() snapshot (null becomes empty name + file arrays)
        -> process_ignore_file() builds the exact-name exclusion set
        -> process_dir() renders one listing from the same snapshot
+       -> crawl root omits href="./.."; nested directories keep it
        -> write_index_file() temp file + move (never follows a symlinked index.html)
 ```
 
@@ -54,4 +55,5 @@ are no database identifiers to rename.
 Ship directory listings that a buyer can open on a phone or desktop and
 immediately find the next file, including when names are Arabic, Hebrew,
 or mixed with Korean chrome, when two files share a similar name, and
-when a filename tries to hide its extension with bidirectional controls.
+when a filename tries to hide its extension with bidirectional controls,
+and without a parent link that leaves the published tree.

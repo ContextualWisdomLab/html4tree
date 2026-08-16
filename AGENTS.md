@@ -55,13 +55,17 @@ other coding agent). html4tree is a Kotlin CLI (Gradle build) that generates
   the exact observed `File.name`.
 - Ignore filtering and render must share one directory snapshot. A null
   `listFiles()` result is an empty page, not a second `File.list()`.
+- The CLI crawl omits the parent `..` row on the listing root and keeps
+  it on nested directories. Compare roots with
+  `absoluteFile.toPath().normalize()`, not `canonicalFile`.
 - CSS colors belong in `--listing-*` tokens. `CspHashTest` must keep
   passing after any stylesheet edit.
 
 Decision records: `docs/doctoring/bidi-isolation.md`,
 `docs/doctoring/bidi-control-neutralization.md`,
 `docs/doctoring/listing-entry-metadata.md`,
-`docs/doctoring/ignore-listing-snapshot.md`.
+`docs/doctoring/ignore-listing-snapshot.md`,
+`docs/doctoring/crawl-root-parent-navigation.md`.
 
 ## Code-owner review gates — disabled (on hold)
 
