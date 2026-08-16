@@ -65,7 +65,7 @@ html4tree owns only the files it generated. Every new `index.html` includes:
 <meta name="generator" content="html4tree/1">
 ```
 
-- A missing `index.html` is created with an exclusive hard link (`link(2)`). If the filesystem cannot hard-link, html4tree falls back to a create-only move with no `ATOMIC_MOVE` and no `REPLACE_EXISTING`. A customer page that already occupies the name is kept. After a failed replace, html4tree reclassifies before restore so a late customer page is not overwritten.
+- A missing `index.html` is created with an exclusive hard link (`link(2)`). If the filesystem cannot hard-link (including vfat, exFAT, and many CIFS mounts, where Java reports `FileSystemException` rather than "unsupported"), html4tree falls back to a create-only move with no `ATOMIC_MOVE` and no `REPLACE_EXISTING`. A customer page that already occupies the name is kept. After a failed replace, html4tree reclassifies before restore so a late customer page is not overwritten.
 - An existing file is replaced only when that marker is present and supported.
 - A user-authored, malformed, unsupported, or late-marker `index.html` is left untouched.
 - Symbolic links and directories occupying `index.html` are never replaced, even with `--force-overwrite`.

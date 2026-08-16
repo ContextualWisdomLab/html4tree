@@ -23,7 +23,10 @@ All notable changes to this project are documented in this file.
 - Publish first-time `index.html` files with an exclusive hard link
   (`Files.createLink` / POSIX `link(2)`), falling back to a create-only
   move (no `ATOMIC_MOVE`, no `REPLACE_EXISTING`) when hard links are
-  unavailable. Reclassify immediately before cleanup delete and before
+  unavailable. The fallback now treats OpenJDK Unix `FileSystemException`
+  / `AccessDeniedException` (`EPERM`, `ENOTSUP`) as "no hard links", not
+  only `UnsupportedOperationException`. `FileAlreadyExistsException` is
+  still exclusive. Reclassify immediately before cleanup delete and before
   failure restore so a late customer page is not replaced or removed.
 - Remove the README `find ... -name index.html -delete` cleanup command. That
   command cannot distinguish generated pages from customer home pages.
@@ -43,9 +46,10 @@ All notable changes to this project are documented in this file.
   cleanup/dry-run selection, CLI misuse rejection, bounded prefix EOF handling,
   opened-stream read failure, vanished-backup publication failure, atomic-conflict
   refusal, backup restore, retained-backup reporting, exclusive-create
-  refusal of a real occupant, hard-link fallback, late-occupant
-  reclassification, restore reclassification, and cleanup revalidation
-  before delete.
+  refusal of a real occupant, hard-link identity, hard-link fallback for
+  both `UnsupportedOperationException` and `FileSystemException`,
+  late-occupant reclassification, restore reclassification, and cleanup
+  revalidation before delete.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS

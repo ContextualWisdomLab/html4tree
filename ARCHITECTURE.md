@@ -24,7 +24,9 @@ classify index.html
         │
         ├─ UNSAFE / UNOWNED (no --force-overwrite) → preserve
         ├─ ABSENT → reclassify → exclusive publish
-        │            (`createLink` / `link(2)`, else create-only move)
+        │            (`createLink` / `link(2)`; on UnsupportedOperationException
+        │             or IOException except FileAlreadyExistsException,
+        │             create-only move)
         └─ OWNED or forced UNOWNED
                 → same-directory backup
                 → reclassify

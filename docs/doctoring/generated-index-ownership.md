@@ -14,7 +14,7 @@ Filename identity is not ownership. Atomic replacement is not ownership. An exis
 
 ## Generation
 
-- Absent targets may be created. Publication reclassifies immediately before the exclusive publish. The first attempt is `Files.createLink` (POSIX `link(2)`), which fails with `EEXIST` and does not replace an occupant. If the filesystem cannot hard-link, html4tree falls back to `Files.move` with no `ATOMIC_MOVE` and no `REPLACE_EXISTING`.
+- Absent targets may be created. Publication reclassifies immediately before the exclusive publish. The first attempt is `Files.createLink` (POSIX `link(2)`), which fails with `EEXIST` and does not replace an occupant. `UnsupportedOperationException` is only the provider "not implemented" case. OpenJDK's Unix provider implements `createLink`, so a no-hard-link volume (`EPERM`, `ENOTSUP`, `EOPNOTSUPP` on vfat, exFAT, or many CIFS mounts) surfaces as `FileSystemException` or `AccessDeniedException`. `publish_exclusive` falls back to `Files.move` with no `ATOMIC_MOVE` and no `REPLACE_EXISTING` for those I/O failures. `FileAlreadyExistsException` is rethrown so `EEXIST` stays exclusive.
 - Do not use `ATOMIC_MOVE` or `REPLACE_EXISTING` for first-time creates. POSIX `rename` and Java `ATOMIC_MOVE` may replace an existing target; that is a replace primitive, not a create-exclusive primitive. The hard-link fallback still has an intra-call `rename` window after the provider `lstat`; treat that as residual risk on filesystems without `link(2)`.
 - Valid owned regular files may be replaced. The writer copies the owned file to a hidden same-directory backup, publishes the new document, revalidates the occupant, and deletes the backup only after publication completes.
 - Ownership inspection reads only the configured prefix through a no-follow input stream. The prefix reader copies at most that many bytes and does not call `InputStream.readNBytes`, which is absent on JDK 8.
@@ -35,7 +35,7 @@ Removing the marker emission and the classify-before-write gate restores the pre
 
 ## Verification
 
-`GeneratedIndexOwnershipTest` and `GeneratedIndexOwnershipContractTest` cover user-authored preservation, owned replacement, late and malformed markers, symlink refusal, bounded-prefix EOF handling, CLI misuse rejection, atomic-conflict refusal, backup failure, publication restore, retained-backup reporting, mixed nested sites, cleanup/dry-run selection of the same owned set, exclusive-create refusal when a customer page appears, default-publisher refusal of a real occupant, hard-link fallback, late-occupant reclassification, restore reclassification (owned / absent / late customer), and cleanup revalidation before delete including symlink and directory occupants.
+`GeneratedIndexOwnershipTest` and `GeneratedIndexOwnershipContractTest` cover user-authored preservation, owned replacement, late and malformed markers, symlink refusal, bounded-prefix EOF handling, CLI misuse rejection, atomic-conflict refusal, backup failure, publication restore, retained-backup reporting, mixed nested sites, cleanup/dry-run selection of the same owned set, exclusive-create refusal when a customer page appears, default-publisher refusal of a real occupant, hard-link identity (`fileKey` / source retained), hard-link fallback for both `UnsupportedOperationException` and `FileSystemException`, late-occupant reclassification, restore reclassification (owned / absent / late customer), and cleanup revalidation before delete including symlink and directory occupants.
 
 ## References
 
@@ -48,6 +48,8 @@ MITRE. (n.d.). *CWE-73: External control of file name or path*. https://cwe.mitr
 Oracle. (n.d.). *Enum class StandardCopyOption*. Java SE 11. https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/StandardCopyOption.html
 
 Oracle. (n.d.). *Files.createLink*. Java SE 11. https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/Files.html#createLink(java.nio.file.Path,java.nio.file.Path)
+
+Oracle. (n.d.). *Class FileSystemException*. Java SE 11. https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/FileSystemException.html
 
 Oracle. (n.d.). *Files.move*. Java SE 11. https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/file/Files.html#move(java.nio.file.Path,java.nio.file.Path,java.nio.file.CopyOption...)
 

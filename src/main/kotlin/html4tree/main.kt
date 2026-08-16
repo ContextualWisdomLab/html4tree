@@ -266,8 +266,13 @@ internal fun default_index_reporter(message: String) {
  * Publishes [source] to an absent [target] without replacing an occupant.
  *
  * `Files.createLink` maps to POSIX `link(2)`, which fails with `EEXIST` and
- * does not replace. Filesystems that cannot hard-link fall back to a
- * create-only `Files.move` (no `ATOMIC_MOVE`, no `REPLACE_EXISTING`).
+ * does not replace. `UnsupportedOperationException` is only the provider
+ * "not implemented" case. OpenJDK's Unix provider implements `createLink`,
+ * so a no-hard-link volume (`EPERM`, `ENOTSUP`, `EOPNOTSUPP`) surfaces as
+ * `FileSystemException` or `AccessDeniedException`. Fall back to a
+ * create-only `Files.move` (no `ATOMIC_MOVE`, no `REPLACE_EXISTING`) for
+ * those I/O failures. `FileAlreadyExistsException` is rethrown so `EEXIST`
+ * stays exclusive.
  */
 internal fun publish_exclusive(
     source: Path,
@@ -287,7 +292,11 @@ internal fun publish_exclusive(
 ) {
     try {
         createLink(source, target)
+    } catch (exists: java.nio.file.FileAlreadyExistsException) {
+        throw exists
     } catch (unsupported: UnsupportedOperationException) {
+        moveFile(source, target, arrayOf<java.nio.file.CopyOption>())
+    } catch (io: java.io.IOException) {
         moveFile(source, target, arrayOf<java.nio.file.CopyOption>())
     }
 }

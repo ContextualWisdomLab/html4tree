@@ -3,6 +3,8 @@ package html4tree
 import com.github.ajalt.clikt.core.UsageError
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.attribute.BasicFileAttributes
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -204,6 +206,20 @@ class GeneratedIndexOwnershipContractTest {
             source.writeText(ownedIndexFixture("linked"))
             publish_exclusive(source.toPath(), target.toPath())
             assertEquals(ownedIndexFixture("linked"), target.readText())
+            assertTrue(source.exists(), "link success must leave the source; a move would delete it")
+            val sourceKey = Files.readAttributes(
+                source.toPath(),
+                BasicFileAttributes::class.java,
+                LinkOption.NOFOLLOW_LINKS
+            ).fileKey()
+            val targetKey = Files.readAttributes(
+                target.toPath(),
+                BasicFileAttributes::class.java,
+                LinkOption.NOFOLLOW_LINKS
+            ).fileKey()
+            if (sourceKey != null) {
+                assertEquals(sourceKey, targetKey)
+            }
         } finally {
             directory.deleteRecursively()
         }
@@ -229,6 +245,65 @@ class GeneratedIndexOwnershipContractTest {
         }
     }
 
+    /** OpenJDK Unix `createLink` maps `ENOTSUP` to `FileSystemException`, not `UnsupportedOperationException`. */
+    @Test
+    fun publishExclusiveFallsBackWhenCreateLinkThrowsFileSystemException() {
+        val directory = Files.createTempDirectory("html4tree-exclusive-fs-ex-").toFile()
+        try {
+            val source = File(directory, "payload.html")
+            val target = File(directory, GENERATED_INDEX_NAME)
+            source.writeText(ownedIndexFixture("moved"))
+            publish_exclusive(
+                source.toPath(),
+                target.toPath(),
+                createLink = { _, link ->
+                    throw java.nio.file.FileSystemException(
+                        link.toString(),
+                        null,
+                        "Operation not supported"
+                    )
+                }
+            )
+            assertEquals(ownedIndexFixture("moved"), target.readText())
+            assertTrue(!source.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** A no-hard-link `FileSystemException` must still use a create-only move. */
+    @Test
+    fun createFallbackMoveRefusesReplaceOptionsWhenFileSystemExceptionAndUserPageAppears() {
+        val directory = Files.createTempDirectory("html4tree-create-fs-ex-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        try {
+            val result = write_index_file(
+                directory,
+                ownedIndexFixture("generated"),
+                reporter = { reports.add(it) },
+                createLink = { _, link ->
+                    throw java.nio.file.FileSystemException(
+                        link.toString(),
+                        null,
+                        "Operation not supported"
+                    )
+                }
+            ) { _, target, options ->
+                Files.write(target, "<html>customer home</html>".toByteArray())
+                if (options.isEmpty()) {
+                    throw java.nio.file.FileAlreadyExistsException(target.toString())
+                }
+                throw AssertionError("create must not use ATOMIC_MOVE or REPLACE_EXISTING: ${options.toList()}")
+            }
+            assertEquals(IndexWriteResult.PRESERVED, result)
+            assertEquals("<html>customer home</html>", indexFile.readText())
+            assertTrue(reports.any { it.startsWith("preserved:") && it.contains("unowned") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     /** First-time create still succeeds when hard links are unavailable. */
     @Test
     fun createFallbackMovePublishesWhenTargetStaysAbsent() {
@@ -242,6 +317,33 @@ class GeneratedIndexOwnershipContractTest {
                 reporter = { reports.add(it) },
                 createLink = { _, _ ->
                     throw UnsupportedOperationException("hard links unavailable")
+                }
+            )
+            assertEquals(IndexWriteResult.CREATED, result)
+            assertEquals(ownedIndexFixture("generated"), indexFile.readText())
+            assertTrue(reports.any { it.startsWith("created:") })
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** First-time create still succeeds when `createLink` fails with `FileSystemException`. */
+    @Test
+    fun createFallbackMovePublishesWhenFileSystemExceptionAndTargetStaysAbsent() {
+        val directory = Files.createTempDirectory("html4tree-create-fs-ex-ok-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val reports = mutableListOf<String>()
+        try {
+            val result = write_index_file(
+                directory,
+                ownedIndexFixture("generated"),
+                reporter = { reports.add(it) },
+                createLink = { _, link ->
+                    throw java.nio.file.FileSystemException(
+                        link.toString(),
+                        null,
+                        "Operation not supported"
+                    )
                 }
             )
             assertEquals(IndexWriteResult.CREATED, result)
