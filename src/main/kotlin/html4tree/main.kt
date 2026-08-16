@@ -160,14 +160,14 @@ internal const val OWNERSHIP_PREFIX_LIMIT = 4096
 internal const val OWNERSHIP_NEAR_START_LIMIT = 1024
 private val OWNERSHIP_MARKER_REGEX = Regex("""<meta\s+name="generator"\s+content="html4tree/(\d+)">""")
 
-internal enum class IndexTargetKind {
+enum class IndexTargetKind {
     ABSENT,
     OWNED,
     UNOWNED,
     UNSAFE
 }
 
-internal data class IndexTargetClassification(
+data class IndexTargetClassification(
     val kind: IndexTargetKind,
     val reason: String
 )
