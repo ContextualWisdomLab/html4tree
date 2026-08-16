@@ -14,8 +14,8 @@ That same snapshot now supplies:
    `size()` is an implementation-defined inode value, not payload size.
 2. **Last modified** as a `<time datetime>` whose `datetime` is the
    ISO 8601 instant (`Instant.toString()`) and whose visible text is
-   `yyyy-MM-dd HH:mm` in UTC. Static pages have no viewer timezone, so
-   UTC is the portable choice.
+   `yyyy-MM-dd HH:mm UTC` formatted with `Locale.ROOT`. Static pages
+   have no viewer timezone, so the visible `UTC` label is required.
 3. Both values live in a sibling `.entry-meta` group *outside* the
    isolated `.entry-name`, with `direction: ltr` and
    `unicode-bidi: isolate`, so Arabic or Hebrew names cannot reorder

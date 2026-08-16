@@ -40,14 +40,18 @@ class ListingMetadataTest {
         assertEquals("1.0 GiB", format_byte_size(1024L * 1024L * 1024L))
         assertEquals("2.0 GiB", format_byte_size(2L * 1024L * 1024L * 1024L))
         assertEquals("1.0 KiB", format_scaled_size(1024L, 1024L, "KiB"))
+        assertEquals("0 B", format_scaled_size(-1L, 1024L, "KiB"))
+        assertEquals("0 B", format_scaled_size(2048L, 0L, "KiB"))
+        assertEquals("0 B", format_scaled_size(2048L, -1024L, "KiB"))
+        assertEquals("${Long.MAX_VALUE / (1024L * 1024L * 1024L)}.0 GiB", format_scaled_size(Long.MAX_VALUE, 1024L * 1024L * 1024L, "GiB"))
     }
 
     @Test
     fun formatUtcMinuteAndIsoInstantUseKnownEpoch() {
         assertEquals("1970-01-01T00:00:00Z", format_iso_instant(0L))
-        assertEquals("1970-01-01 00:00", format_utc_minute(0L))
+        assertEquals("1970-01-01 00:00 UTC", format_utc_minute(0L))
         assertEquals("2024-08-18T16:53:20Z", format_iso_instant(1_724_000_000_000L))
-        assertEquals("2024-08-18 16:53", format_utc_minute(1_724_000_000_000L))
+        assertEquals("2024-08-18 16:53 UTC", format_utc_minute(1_724_000_000_000L))
         assertEquals("\u2014", directory_size_label())
     }
 

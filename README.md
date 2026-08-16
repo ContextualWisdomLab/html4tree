@@ -62,7 +62,7 @@ For example, to exclude files ending in `.txt`:
 
 ## Other
 
-To delete all the index.html files generated with one command, do:
-
-`$ find <top directory to crawl> -name index.html -delete`
+Do not run `find … -name index.html -delete` on a mixed tree. That
+command also deletes hand-written home pages. Delete only listings you
+generated, or wait for the owned-index cleanup in a later release.
 

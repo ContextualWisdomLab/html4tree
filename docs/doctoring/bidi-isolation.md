@@ -17,9 +17,10 @@ The contract is:
 4. `title` attributes have no `dir`, so the filename is wrapped with
    First Strong Isolate (U+2068) and Pop Directional Isolate (U+2069)
    before the Korean type label.
-5. Hover and keyboard-focus underlines target `.entry-name`. After the
-   translatable-label change, `span:last-child` is the hidden type text
-   and must not be the underline subject.
+5. Hover and keyboard-focus underlines target `.entry-name`. After size
+   and last-modified metadata landed, `span:last-child` may be
+   `.entry-meta` or the bidi-control warning. Do not underline
+   `span:last-child`.
 
 Filename bidirectional format controls are neutralized before isolation.
 See `docs/doctoring/bidi-control-neutralization.md`.
