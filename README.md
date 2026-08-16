@@ -43,6 +43,15 @@ To only generate the index.html file for the top directory:
 
 `$ java -jar ./build/libs/html4tree.jar <top directory to index> --max-level 0`
 
+After upgrading, run the same command again on the live tree. New pages isolate
+Arabic and Hebrew names so the Korean "파일" / "디렉토리" labels stay readable,
+show each file's size and UTC last-modified time, and replace bidirectional
+format controls in displayed names with a visible replacement character.
+Open one generated `index.html` that contains a right-to-left name, and confirm
+one file's size matches `wc -c` / `stat`, before you publish the tree. If a
+row shows replacement characters, inspect the real name on disk before opening
+the file.
+
 ## To exclude files from the generated index.html file
 
 To exclude files, place a `.html4ignore` file in the directory. Each non-empty line is a Java file-system glob pattern matched against an entry name. Patterns longer than 100 characters and lines after the first 1,000 are ignored.
@@ -53,7 +62,7 @@ For example, to exclude files ending in `.txt`:
 
 ## Other
 
-To delete all the index.html files generated with one command, do:
-
-`$ find <top directory to crawl> -name index.html -delete`
+Do not run `find … -name index.html -delete` on a mixed tree. That
+command also deletes hand-written home pages. Delete only listings you
+generated, or wait for the owned-index cleanup in a later release.
 
