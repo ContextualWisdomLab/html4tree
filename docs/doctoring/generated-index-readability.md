@@ -6,7 +6,7 @@ The generated `index.html` page is html4tree's primary user-facing artifact. Its
 
 - adjacent list rows are separated with `li + li`, so the first row has no unnecessary leading line and no special last-row override is required;
 - the empty-directory status uses explicit foreground colors in light and dark color schemes instead of inherited color plus opacity;
-- hover and keyboard-focus states underline only the link's textual span, while the existing two-CSS-pixel outline continues to surround the complete interactive target;
+- hover and keyboard-focus states underline `.entry-name` (the visible filename), while the existing two-CSS-pixel outline continues to surround the complete interactive target;
 - reduced-motion behavior remains unchanged; and
 - dark-mode overrides appear after their corresponding base declarations so the cascade is deterministic.
 
@@ -36,7 +36,7 @@ These deterministic source-level checks are regression evidence, not a declarati
 3. adjacent-row separators do not rely on a trailing-border exception;
 4. empty-state text uses explicit light and dark colors and no opacity declaration;
 5. dark-mode declarations follow their base declarations;
-6. hover and `:focus-visible` underline only the textual span while preserving the full-target outline;
+6. hover and `:focus-visible` underline `.entry-name` while preserving the full-target outline;
 7. reduced-motion styling remains present; and
 8. the authored text and focus colors meet the documented numeric thresholds.
 

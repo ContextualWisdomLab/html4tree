@@ -6,10 +6,20 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- Isolate Arabic, Hebrew, and mixed-script filenames with `dir="auto"`,
+  `unicode-bidi: isolate`, and First Strong Isolate marks in `title`
+  attributes so Korean type labels stay readable.
+- Publish listing color tokens (`--listing-*`) so the repeating directory
+  row can be restyled without copying hex values through the stylesheet.
 - Emit a `noindex, nofollow` robots meta preference on every generated
   directory page, with the explicit boundary that supporting crawlers must
   first fetch the page and that confidential data still requires server-side
   protection.
+
+### Changed
+
+- Keep `#459` translatable `.visually-hidden` type labels and underline
+  `.entry-name` on hover/focus instead of the hidden last child.
 
 ### Changed
 
@@ -25,6 +35,10 @@ All notable changes to this project are documented in this file.
 
 ### Tests
 
+- Add generated-page regressions that open real Arabic and Hebrew filenames
+  and assert isolated markup, percent-encoded hrefs, and FSI/PDI titles.
+- Add a listing-boundary test that padded sensitive names stay out of
+  `index.html` while ordinary padded names remain visible.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
@@ -40,3 +54,5 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+- Record the bidirectional isolation decision, HTML `dir=auto` mapping, and
+  Unicode UAX #9 citations in `docs/doctoring/bidi-isolation.md`.

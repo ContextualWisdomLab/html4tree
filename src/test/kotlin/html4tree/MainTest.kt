@@ -140,10 +140,10 @@ class MainTest {
         val excluded = process_ignore_file(tempDir, sensitiveNamesWithWhitespace + safeNames)
 
         sensitiveNamesWithWhitespace.forEach { name ->
-            assertTrue(excluded.contains(name.trim()), "'$name' must be excluded after trimming")
+            assertTrue(excluded.contains(name), "exact observed name must stay in the exclusion set: '$name'")
         }
         safeNames.forEach { name ->
-            assertFalse(excluded.contains(name.trim()), "'$name' must remain visible")
+            assertFalse(excluded.contains(name), "ordinary padded names must remain visible: '$name'")
         }
     }
 
@@ -355,13 +355,15 @@ class MainTest {
         assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("<main>"))
         assertTrue(htmlContent.contains("</main>"))
-        assertTrue(htmlContent.contains("aria-label=\"상위 디렉토리로 이동\""))
+        assertTrue(htmlContent.contains("<span class=\"visually-hidden\">상위 디렉토리로 이동</span>"))
         assertTrue(htmlContent.contains("title=\"상위 디렉토리로 이동\""))
         assertTrue(htmlContent.contains("aria-hidden=\"true\""))
-        assertTrue(htmlContent.contains("aria-label=\"file1.txt 파일\""))
-        assertTrue(htmlContent.contains("title=\"file1.txt 파일\""))
-        assertTrue(htmlContent.contains("aria-label=\"subdir 디렉토리\""))
-        assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
+        assertTrue(htmlContent.contains("<span class=\"visually-hidden\">파일</span>"))
+        assertTrue(htmlContent.contains("title=\"${isolate_bidi_plain_text("file1.txt")} 파일\""))
+        assertTrue(htmlContent.contains("<span class=\"entry-name\" dir=\"auto\">file1.txt</span>"))
+        assertTrue(htmlContent.contains("<span class=\"visually-hidden\">디렉토리</span>"))
+        assertTrue(htmlContent.contains("title=\"${isolate_bidi_plain_text("subdir")} 디렉토리\""))
+        assertTrue(htmlContent.contains("<span class=\"entry-name\" dir=\"auto\">subdir</span>"))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
@@ -386,7 +388,7 @@ class MainTest {
         assertTrue(htmlContent.contains("max-width: 800px;"))
         assertTrue(htmlContent.contains("margin: 0 auto;"))
         assertTrue(
-            Regex("""h1\s*\{[^}]*overflow-wrap:\s*anywhere;""").containsMatchIn(htmlContent),
+            Regex("""h1,\s*\.entry-name\s*\{[^}]*overflow-wrap:\s*anywhere;""").containsMatchIn(htmlContent),
             "long directory headings must wrap within narrow viewports"
         )
     }

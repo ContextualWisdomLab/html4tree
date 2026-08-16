@@ -37,6 +37,21 @@ other coding agent). html4tree is a Kotlin CLI (Gradle build) that generates
   callers/callees/impact that text search misses.
 <!-- END cwl-agent-guidance -->
 
+## Generated listing contract
+
+- Dynamic names (`<h1>`, `.entry-name`) use `dir="auto"` and
+  `unicode-bidi: isolate`.
+- Entry type text is a sibling `.visually-hidden` span so browser
+  translation can reach it. Do not put type text inside the name isolate.
+- `title` attributes wrap the filename with U+2068 / U+2069.
+- Hover/focus underline targets `.entry-name`, never `span:last-child`.
+- Sensitive-name matching may trim/lowercase; the exclusion set stores
+  the exact observed `File.name`.
+- CSS colors belong in `--listing-*` tokens. `CspHashTest` must keep
+  passing after any stylesheet edit.
+
+Decision record: `docs/doctoring/bidi-isolation.md`.
+
 ## Code-owner review gates — disabled (on hold)
 
 As of 2026-08-04, code-owner review requirements (`require_code_owner_reviews` in branch

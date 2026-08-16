@@ -14,18 +14,33 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
 private val CSS_CONTENT = """
+:root {
+  --listing-text: #1f2328;
+  --listing-link: #0969da;
+  --listing-surface-hover: #f6f8fa;
+  --listing-row-rule: #d0d7de;
+  --listing-empty-text: #656d76;
+  --listing-dark-bg: #0d1117;
+  --listing-dark-text: #c9d1d9;
+  --listing-dark-link: #58a6ff;
+  --listing-dark-surface-hover: #161b22;
+  --listing-dark-row-rule: #21262d;
+  --listing-dark-empty-text: #8b949e;
+}
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.5;
   padding: 1rem;
-  color: #1f2328;
+  color: var(--listing-text);
 }
 main {
   max-width: 800px;
   margin: 0 auto;
 }
-h1 {
+h1,
+.entry-name {
   overflow-wrap: anywhere;
+  unicode-bidi: isolate;
 }
 ul {
   list-style-type: none;
@@ -47,16 +62,16 @@ a.dir-link {
 a {
   padding: 0.75rem 0.5rem;
   text-decoration: none;
-  color: #0969da;
+  color: var(--listing-link);
   border-radius: 4px;
   transition: background-color 0.2s ease, outline-color 0.2s ease;
 }
 a:hover, a:focus-visible {
-  background-color: #f6f8fa;
-  outline: 2px solid #0969da;
+  background-color: var(--listing-surface-hover);
+  outline: 2px solid var(--listing-link);
   outline-offset: -2px;
 }
-a:hover span:last-child, a:focus-visible span:last-child {
+a:hover .entry-name, a:focus-visible .entry-name {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -65,33 +80,44 @@ a:hover span:last-child, a:focus-visible span:last-child {
   }
 }
 li + li {
-  border-top: 1px solid #d0d7de;
+  border-top: 1px solid var(--listing-row-rule);
 }
 .empty-dir {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem 0.5rem;
-  color: #656d76;
+  color: var(--listing-empty-text);
   font-style: italic;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #0d1117;
-    color: #c9d1d9;
+    background-color: var(--listing-dark-bg);
+    color: var(--listing-dark-text);
   }
   a {
-    color: #58a6ff;
+    color: var(--listing-dark-link);
   }
   a:hover, a:focus-visible {
-    background-color: #161b22;
-    outline-color: #58a6ff;
+    background-color: var(--listing-dark-surface-hover);
+    outline-color: var(--listing-dark-link);
   }
   li + li {
-    border-top-color: #21262d;
+    border-top-color: var(--listing-dark-row-rule);
   }
   .empty-dir {
-    color: #8b949e;
+    color: var(--listing-dark-empty-text);
   }
 }
 """.trimIndent()
@@ -251,6 +277,18 @@ fun String.escapeHtml(): String {
         }
     }
     return sb?.toString() ?: this
+}
+
+/**
+ * Wraps [value] in Unicode First Strong Isolate / Pop Directional Isolate
+ * so a filename used in a plain-text `title` cannot reorder adjacent
+ * Korean type labels. HTML `dir="auto"` already isolates element text;
+ * attributes have no `dir`, so they need explicit isolate characters.
+ *
+ * See Unicode Standard Annex #9 (Unicode 17.0.0, revision 51).
+ */
+internal fun isolate_bidi_plain_text(value: String): String {
+    return "\u2068$value\u2069"
 }
 
 fun String.urlEncodePath(): String {
@@ -427,7 +465,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <h1 dir="auto">${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span dir="auto">..</span></a></li>
+            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span class="entry-name" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -455,9 +493,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
+                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
+                  val titleText = "${isolate_bidi_plain_text(fileName)} $typeLabel".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${fileName.escapeHtml()}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleText}"><span class="icon" aria-hidden="true">${icon}</span> <span class="entry-name" dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
