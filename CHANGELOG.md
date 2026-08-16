@@ -13,6 +13,9 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- Reuse one directory-name snapshot in `process_ignore_file` when the caller
+  omits names, so `.html4ignore` globs and default sensitive-name filtering
+  observe the same listing instead of calling `File.list()` twice.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
@@ -25,6 +28,10 @@ All notable changes to this project are documented in this file.
 
 ### Tests
 
+- Lock the ignore-listing snapshot: at most one `File.list()` when names are
+  omitted, zero listings when names are supplied, default exclusions when
+  `list()` is null, and a generated page that keeps `minutes.txt` while hiding
+  `scratch.tmp` and `.env`.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
@@ -33,6 +40,9 @@ All notable changes to this project are documented in this file.
 
 ### Documentation
 
+- Record the ignore-listing snapshot decision, glob (not regex) contract,
+  TOCTOU rationale, and generated-page hide/keep verification in
+  `docs/doctoring/ignore-listing-snapshot.md`.
 - Record the generated-page robots indexing preference, crawler-access
   prerequisite, non-security boundary, rollback contract, and current Google
   Search Central reference in `docs/doctoring/robots-indexing-preference.md`.
