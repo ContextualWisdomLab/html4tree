@@ -210,7 +210,7 @@ internal data class IndexTargetClassification(
     val reason: String
 )
 
-internal enum class IndexWriteResult {
+enum class IndexWriteResult {
     CREATED,
     REPLACED,
     PRESERVED
