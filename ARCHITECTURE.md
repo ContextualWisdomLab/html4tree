@@ -8,8 +8,9 @@ database, no HTTP server, and no JavaScript runtime in the generated page.
 TOPDIR
   -> go() validates the root (exists, not a symlink, not filesystem root)
   -> crawl_directories() BFS queue (util.kt)
+       -> one listFiles() snapshot (null becomes empty name + file arrays)
        -> process_ignore_file() builds the exact-name exclusion set
-       -> process_dir() renders one listing
+       -> process_dir() renders one listing from the same snapshot
        -> write_index_file() temp file + move (never follows a symlinked index.html)
 ```
 
@@ -38,7 +39,9 @@ stylesheet copy; `CspHashTest` hashes the exact emitted bytes.
 See `CLAUDE.md`. Bidirectional isolation is recorded in
 `docs/doctoring/bidi-isolation.md`. Control neutralization is recorded
 in `docs/doctoring/bidi-control-neutralization.md`. Size and mtime are
-recorded in `docs/doctoring/listing-entry-metadata.md`.
+recorded in `docs/doctoring/listing-entry-metadata.md`. The shared
+ignore/render snapshot is recorded in
+`docs/doctoring/ignore-listing-snapshot.md`.
 
 ## Data model
 

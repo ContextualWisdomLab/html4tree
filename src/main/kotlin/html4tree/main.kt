@@ -252,11 +252,11 @@ internal fun crawl_directories(
 
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
-        }
+        } ?: emptyArray()
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           processDirectory(lle.file, exclude, dirFiles)
+           processDirectory(lle.file, exclude, dirFiles ?: emptyArray())
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
@@ -434,6 +434,21 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
+/**
+ * Builds the exclusion set for one directory listing.
+ *
+ * Pass [dirFilesNames] from the same `listFiles()` snapshot used to render
+ * and enqueue children. The CLI crawl already does this, including when
+ * that snapshot is null (it then passes an empty name array so this
+ * function does not call [File.list]). [process_dir] does the same when
+ * the caller omits both the exclusion set and the file array. When names
+ * are omitted, the directory is listed at most once and that snapshot is
+ * reused for both `.html4ignore` globs and default sensitive-name
+ * filtering.
+ *
+ * Next action: open the generated `index.html` and confirm kept names appear
+ * as `href="./name"` links while ignored and secret names do not.
+ */
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -444,8 +459,10 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
+    val cachedDirFilesNames = dirFilesNames ?: curr_dir.list()
+
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
-    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
+    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 패턴 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
@@ -466,7 +483,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
        // Compare a normalized candidate, but always retain the exact observed filesystem entry
        // in the exclusion set because downstream admission compares against File.name verbatim.
-       val list = dirFilesNames ?: curr_dir.list()
+       val list = cachedDirFilesNames
        list?.forEach { observedName ->
            val normalizedCandidate = observedName.trim()
            val pathCurrent = try {
@@ -493,7 +510,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: match sensitive aliases after trimming/case normalization, but exclude the exact
     // observed entry name so padded filesystem names cannot bypass downstream exact membership.
-    (dirFilesNames ?: curr_dir.list())?.forEach { observedName ->
+    cachedDirFilesNames?.forEach { observedName ->
         val normalizedCandidate = observedName.trim()
         val normalizedName = normalizedCandidate.toLowerCase(java.util.Locale.ROOT)
         if (
@@ -547,9 +564,25 @@ fun write_index_file(
     }
 }
  
+/**
+ * Writes one directory's `index.html` listing.
+ *
+ * When [excludeSet] is omitted, this function lists the directory once with
+ * [File.listFiles] (or reuses [dirFiles]) and builds the exclusion set from
+ * those names so ignore globs and the rendered page observe the same
+ * snapshot. The CLI crawl passes [dirFiles] as an empty array when its
+ * `listFiles()` snapshot is null so this function does not list again.
+ * Next action: open the generated page and confirm kept files appear as
+ * `href="./name"` links while ignored and secret names do not.
+ */
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
-    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
+    val filesList = dirFiles ?: curr_dir.listFiles()
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(
+        curr_dir,
+        filesList?.let { files ->
+            Array(files.size) { index -> files[index].name }
+        } ?: emptyArray()
+    )
     val directoryName = curr_dir.name.ifEmpty { "Root" }
     val displayDirectoryName = neutralize_bidi_controls(directoryName)
     val directoryTitle = "${isolate_bidi_plain_text(displayDirectoryName)} - 디렉토리 목록".escapeHtml()
@@ -581,7 +614,6 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     val index_middle = fun():String{ 
         val l = StringBuilder()
 
-        val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
         val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
