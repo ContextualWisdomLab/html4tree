@@ -11,10 +11,18 @@ class IgnoreDirectoryListingTest {
     private class CountingDirectory(path: String) : File(path) {
         var listCallCount: Int = 0
             private set
+        var listFilesCallCount: Int = 0
+            private set
 
         override fun list(): Array<String>? {
             listCallCount += 1
             return super.list()
+        }
+
+        override fun listFiles(): Array<File>? {
+            listFilesCallCount += 1
+            val names = super.list() ?: return null
+            return Array(names.size) { index -> File(this, names[index]) }
         }
     }
 
@@ -109,13 +117,41 @@ class IgnoreDirectoryListingTest {
             File(temporaryDirectory, "scratch.tmp").writeText("scratch")
             File(temporaryDirectory, ".env").writeText("SECRET=1")
 
-            process_dir(temporaryDirectory)
+            val countingDirectory = CountingDirectory(temporaryDirectory.absolutePath)
+            process_dir(countingDirectory)
 
             val html = File(temporaryDirectory, "index.html").readText(Charsets.UTF_8)
-            assertTrue(html.contains("minutes.txt"))
+            assertEquals(0, countingDirectory.listCallCount)
+            assertEquals(1, countingDirectory.listFilesCallCount)
+            assertTrue(html.contains("href=\"./minutes.txt\""))
+            assertTrue(html.contains("title=\"minutes.txt 파일\""))
             assertFalse(html.contains("scratch.tmp"))
             assertFalse(html.contains(".env"))
             assertFalse(html.contains(".html4ignore"))
+        } finally {
+            temporaryDirectory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun fallbackProcessDirWithUnreadableListingWritesEmptyPageWithoutCallingList() {
+        val temporaryDirectory = Files.createTempDirectory("ignore_null_listfiles").toFile()
+        try {
+            File(temporaryDirectory, "minutes.txt").writeText("meeting notes")
+            val unreadable = object : File(temporaryDirectory.absolutePath) {
+                override fun list(): Array<String>? {
+                    throw AssertionError("list() must not run after listFiles() returned null")
+                }
+
+                override fun listFiles(): Array<File>? = null
+            }
+
+            process_dir(unreadable)
+
+            val html = File(temporaryDirectory, "index.html").readText(Charsets.UTF_8)
+            assertTrue(html.contains("이 디렉토리는 비어 있습니다."))
+            assertFalse(html.contains("href=\"./minutes.txt\""))
+            assertFalse(html.contains("title=\"minutes.txt 파일\""))
         } finally {
             temporaryDirectory.deleteRecursively()
         }

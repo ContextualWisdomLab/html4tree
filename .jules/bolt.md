@@ -66,3 +66,7 @@
 ## 2026-08-14 - 중복된 OS I/O 호출 (curr_dir.list()) 캐싱
 **Learning:** `process_ignore_file`에서 `dirFilesNames ?: curr_dir.list()` 구문이 조건부로 여러 번 평가될 수 있어 `.html4ignore` 파일이 존재하는 경우 불필요하게 동일한 디렉토리에 대한 I/O `list()` 호출이 두 번 발생합니다.
 **Action:** `dirFilesNames ?: curr_dir.list()`의 평가 결과를 지역 변수(`cachedDirFilesNames`)에 캐싱하여 OS 수준의 파일 시스템 접근 횟수를 줄이고 중복 오버헤드를 제거합니다.
+
+## 2026-08-16 - process_dir fallback이 ignore와 render를 다른 스냅샷으로 봄
+**Learning:** `process_ignore_file` 내부 캐시만으로는 `process_dir(dir)`가 `list()` 한 번과 `listFiles()` 한 번을 따로 호출합니다. 두 호출 사이에 생긴 `.env`나 `*.tmp`는 한쪽 필터에만 보일 수 있습니다 (Bishop & Dilger, 1996).
+**Action:** `process_dir`은 `listFiles()`를 먼저 호출하고 그 이름을 `process_ignore_file`에 넘긴 뒤 같은 `File` 배열로 HTML을 씁니다. `listFiles()`가 null이면 빈 이름 배열을 넘겨 `list()`를 다시 호출하지 않고 빈 페이지를 남깁니다.
