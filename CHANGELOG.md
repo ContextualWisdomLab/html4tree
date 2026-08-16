@@ -23,6 +23,16 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- Reuse one directory-name snapshot in `process_ignore_file` when the caller
+  omits names, so `.html4ignore` globs and default sensitive-name filtering
+  observe the same listing instead of calling `File.list()` twice.
+- Share one `File.listFiles()` snapshot in the `process_dir` fallback so
+  ignore filtering and the generated page hide the same names. An unreadable
+  listing stays empty and does not call `File.list()`.
+- Pass an empty name and file snapshot from `crawl_directories` when
+  `listFiles()` returns null, so ignore filtering and render do not open
+  the directory again and a later successful listing cannot appear on the
+  page.
 - Keep `#459` translatable `.visually-hidden` type labels and underline
   `.entry-name` on hover/focus instead of the hidden last child.
 - Improve generated directory-index readability with adjacent-row separators,
@@ -37,6 +47,13 @@ All notable changes to this project are documented in this file.
 
 ### Tests
 
+- Lock the ignore-listing snapshot: at most one `File.list()` when names are
+  omitted, zero listings when names are supplied, default exclusions when
+  `list()` is null, a generated page that keeps `minutes.txt` as
+  `href="./minutes.txt"` while hiding `scratch.tmp` and `.env`, one
+  `listFiles()` and zero `list()` on the `process_dir` fallback, an
+  empty page when `listFiles()` returns null, and the same empty page
+  with zero `list()` / `listFiles()` when the crawl snapshot is null.
 - Add generated-page regressions that open real Arabic and Hebrew filenames
   and assert isolated markup, percent-encoded hrefs, and FSI/PDI titles.
 - Add a generated-page regression that a real `invoice.txt` + RLO + `exe`
@@ -55,6 +72,10 @@ All notable changes to this project are documented in this file.
 
 ### Documentation
 
+- Record the ignore-listing snapshot decision, glob (not regex) contract,
+  TOCTOU rationale, `process_dir` shared `listFiles()` snapshot, and
+  generated-page hide/keep verification in
+  `docs/doctoring/ignore-listing-snapshot.md`.
 - Record the generated-page robots indexing preference, crawler-access
   prerequisite, non-security boundary, rollback contract, and current Google
   Search Central reference in `docs/doctoring/robots-indexing-preference.md`.
