@@ -554,6 +554,7 @@ fun write_index_file(
     content: String,
     forceOverwrite: Boolean = false,
     reporter: (String) -> Unit = ::default_index_reporter,
+    classifyTarget: (File) -> IndexTargetClassification = ::classify_index_target,
     copyFile: (
         java.nio.file.Path,
         java.nio.file.Path
@@ -573,8 +574,7 @@ fun write_index_file(
     ) -> Unit = { source, target, options ->
         Files.move(source, target, *options)
         Unit
-    },
-    classifyTarget: (File) -> IndexTargetClassification = ::classify_index_target
+    }
 ): IndexWriteResult {
     val indexPath = curr_dir.toPath().resolve(GENERATED_INDEX_NAME)
     val existing = classifyTarget(indexPath.toFile())
