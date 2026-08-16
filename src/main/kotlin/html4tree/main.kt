@@ -171,14 +171,18 @@ internal fun generated_index_file(curr_dir: File): File {
     return File(curr_dir, GENERATED_INDEX_NAME)
 }
 
-internal fun read_index_prefix(path: Path, limit: Int = OWNERSHIP_PREFIX_LIMIT): ByteArray? {
+internal fun read_index_prefix(
+    path: Path,
+    limit: Int = OWNERSHIP_PREFIX_LIMIT,
+    openStream: (Path) -> java.io.InputStream = { Files.newInputStream(it, LinkOption.NOFOLLOW_LINKS) }
+): ByteArray? {
     return try {
         if (Files.isSymbolicLink(path)) {
             null
         } else if (limit <= 0) {
             ByteArray(0)
         } else {
-            Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { input ->
+            openStream(path).use { input ->
                 input.readNBytes(limit)
             }
         }

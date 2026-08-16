@@ -37,6 +37,54 @@ class GeneratedIndexOwnershipContractTest {
         }
     }
 
+    /** A stream that fails after open must not leak or misclassify the target. */
+    @Test
+    fun boundedPrefixReadReturnsNullWhenOpenedStreamFails() {
+        val directory = Files.createTempDirectory("html4tree-prefix-read-fail-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        try {
+            indexFile.writeText(ownedIndexFixture("readable"))
+            assertEquals(
+                null,
+                read_index_prefix(indexFile.toPath()) {
+                    object : java.io.InputStream() {
+                        override fun read(): Int {
+                            throw java.io.IOException("forced prefix read failure")
+                        }
+                    }
+                }
+            )
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    /** A vanished backup skips restore and still leaves the owned source in place. */
+    @Test
+    fun publicationFailureAfterLostBackupDoesNotRestoreFromMissingFile() {
+        val directory = Files.createTempDirectory("html4tree-lost-backup-").toFile()
+        val indexFile = File(directory, GENERATED_INDEX_NAME)
+        val original = ownedIndexFixture("original")
+        try {
+            indexFile.writeText(original)
+            assertFailsWith<java.io.IOException> {
+                write_index_file(directory, ownedIndexFixture("replacement")) { _, _, _ ->
+                    directory.listFiles().orEmpty()
+                        .filter { it.name.startsWith(".index-owned-backup-") }
+                        .forEach { it.delete() }
+                    throw java.io.IOException("publication failed after backup vanished")
+                }
+            }
+            assertEquals(original, indexFile.readText())
+            assertEquals(
+                0,
+                directory.listFiles().orEmpty().count { it.name.startsWith(".index-owned-backup-") }
+            )
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     /** A failed restore retains a recoverable backup and reports its exact path. */
     @Test
     fun failedRestoreRetainsAndReportsOwnedBackup() {

@@ -36,7 +36,8 @@ All notable changes to this project are documented in this file.
 
 - Add ownership regressions for user-authored preservation, owned replacement,
   cleanup/dry-run selection, CLI misuse rejection, bounded prefix EOF handling,
-  atomic-conflict refusal, backup restore, and retained-backup reporting.
+  opened-stream read failure, vanished-backup publication failure, atomic-conflict
+  refusal, backup restore, and retained-backup reporting.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
