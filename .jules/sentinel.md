@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-08-15 - [CRITICAL] 심볼릭 링크 스왑(TOCTOU) 취약점 완화 (useLines)
+**Vulnerability:** `.html4ignore` 파일 파싱 시, `isFile` 및 `!isSymbolicLink` 검증을 거친 직후 실제 파일을 읽기 위해 호출되는 `ignore_file.useLines` 사이에 파일이 심볼릭 링크로 교체될 경우(TOCTOU), `useLines` 내부적으로 심볼릭 링크를 따라가게 되어 권한 밖의 파일(예: 시스템 파일)을 읽어들이는 정보 노출(Information Exposure) 또는 DoS 취약점이 발생할 수 있었습니다.
+**Learning:** `File.useLines`는 기본적으로 파일 스트림을 열 때 대상이 심볼릭 링크라면 이를 해석(resolve)하여 대상 파일을 읽습니다. 사전 검증(Time-of-Check)과 실제 읽기(Time-of-Use) 사이의 짧은 시간 동안 심볼릭 링크 스왑 공격에 노출될 수 있으므로, 파일을 읽는 시점에도 심볼릭 링크를 명시적으로 따라가지 않도록 강제해야 합니다.
+**Prevention:** TOCTOU 공격을 통해 무단으로 심볼릭 링크가 열리는 것을 방지하려면, `File.useLines` 대신 `Files.newInputStream(ignore_file.toPath(), LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { ... }`를 사용하여 읽기 과정에서도 심볼릭 링크가 해석되지 않도록 원천 차단하십시오.
