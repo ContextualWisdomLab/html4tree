@@ -146,15 +146,15 @@ fun go(topDir: String, maxLevel: Int)  {
 
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
-    val ll = LinkedList()
+    val ll = java.util.ArrayDeque<LinkedListEntry>()
 
     val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
-    ll.push(topEntry)
+    ll.addLast(topEntry)
     crawl_directories(ll, maxLevel)
 }
 
 internal fun crawl_directories(
-    ll: LinkedList,
+    ll: java.util.ArrayDeque<LinkedListEntry>,
     maxLevel: Int,
     processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
@@ -168,18 +168,18 @@ internal fun crawl_directories(
     },
     readIdentity: (File) -> FileIdentity = ::read_file_identity
 ) {
-    var lle: LinkedListEntry? = ll.pull()
+    var lle: LinkedListEntry? = ll.pollFirst()
 
     while(lle != null){
         val attrs = readAttributes(lle.file)
         if (attrs == null || !attrs.isDirectory) {
-            lle = ll.pull()
+            lle = ll.pollFirst()
             continue
         }
 
         val currentIdentity = readIdentity(lle.file)
         if (!currentIdentity.readable || (lle.fileKey != null && currentIdentity.key != lle.fileKey)) {
-            lle = ll.pull()
+            lle = ll.pollFirst()
             continue
         }
 
@@ -193,7 +193,7 @@ internal fun crawl_directories(
         // snapshot whose post-listing identity is unreadable or different.
         val postListingIdentity = readIdentity(lle.file)
         if (!postListingIdentity.readable || currentIdentity.key != postListingIdentity.key) {
-            lle = ll.pull()
+            lle = ll.pollFirst()
             continue
         }
 
@@ -213,12 +213,12 @@ internal fun crawl_directories(
                     val childAttrs = readAttributes(it)
                     if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
                         val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
+                        ll.addLast(childEntry)
                     }
                 }
             }
         }
-        lle = ll.pull()
+        lle = ll.pollFirst()
     }
 }
 
