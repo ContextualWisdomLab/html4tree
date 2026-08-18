@@ -2,17 +2,20 @@
 
 ## Decision
 
-The generated `index.html` page is html4tree's primary user-facing artifact. Its embedded stylesheet therefore applies the following bounded presentation contract without changing file discovery, ordering, escaping, URLs, filesystem access, or the Content Security Policy mechanism:
+The generated `index.html` page is html4tree's primary user-facing artifact. Its embedded stylesheet and markup therefore apply the following bounded presentation contract without changing file discovery, ordering, escaping, URLs, filesystem access, or the Content Security Policy mechanism:
 
 - adjacent list rows are separated with `li + li`, so the first row has no unnecessary leading line and no special last-row override is required;
-- the empty-directory status uses explicit foreground colors in light and dark color schemes instead of inherited color plus opacity;
+- the empty-directory message uses explicit foreground colors in light and dark color schemes instead of inherited color plus opacity;
+- the build-time empty-directory message remains ordinary static list content and does not use the WAI-ARIA `status` live-region role;
 - hover and keyboard-focus states underline only the link's textual span, while the existing two-CSS-pixel outline continues to surround the complete interactive target;
 - reduced-motion behavior remains unchanged; and
 - dark-mode overrides appear after their corresponding base declarations so the cascade is deterministic.
 
-The empty-directory information icon remains decorative, is hidden from assistive technology with `aria-hidden="true"`, and stays inside the existing `role="status"` container. No new emoji is selected solely for visual appearance.
+The empty-directory folder icon remains decorative and is hidden from assistive technology with `aria-hidden="true"`. The surrounding `.empty-dir` element carries no live-region role because its text is generated as part of the initial document rather than being inserted or updated as an advisory status after the interface is already present.
 
 ## Accessibility engineering basis
+
+WAI-ARIA 1.2 defines `status` as a live-region role for advisory information and gives it implicit `aria-live="polite"` and `aria-atomic="true"` semantics. WCAG 2.2 Success Criterion 4.1.3 requires actual status messages to be programmatically determinable so assistive technologies can present them without moving focus. That criterion does not require every static informational sentence in the initially generated document to be exposed as a live region. For html4tree's build-time empty-directory row, ordinary semantic document content is the narrower and more truthful contract; a future dynamically updated empty state would need a separate status-message analysis.
 
 WCAG 2.2 Success Criterion 1.4.3 requires at least 4.5:1 contrast for ordinary text. Success Criterion 2.4.13, which is Level AAA, describes a keyboard focus indicator area at least as large as a two-CSS-pixel perimeter and a focused-versus-unfocused contrast change of at least 3:1. The W3C Understanding documents explain these criteria but are informative rather than normative.
 
@@ -32,7 +35,7 @@ These deterministic source-level checks are regression evidence, not a declarati
 `GeneratedIndexReadabilityTest` exercises the real generated page and verifies:
 
 1. parent, first, middle, and last rows preserve the established output order;
-2. an empty directory emits exactly one semantic status row;
+2. an empty directory emits exactly one ordinary empty-state row and does not assign that row `role="status"`;
 3. adjacent-row separators do not rely on a trailing-border exception;
 4. empty-state text uses explicit light and dark colors and no opacity declaration;
 5. dark-mode declarations follow their base declarations;
@@ -40,11 +43,21 @@ These deterministic source-level checks are regression evidence, not a declarati
 7. reduced-motion styling remains present; and
 8. the authored text and focus colors meet the documented numeric thresholds.
 
+`MainTest` separately requires the generated empty-directory document to contain the buyer-visible empty-state copy while omitting `role="status"`. This locks the static-content decision at the complete generated-page boundary rather than relying on a source-string-only assertion.
+
 `CspHashTest` independently recomputes the digest from the exact emitted `<style>` bytes. Any CSS change must continue to preserve the single-source `CSS_CONTENT` and `STYLE_HASH` byte-identity contract rather than weakening CSP with `unsafe-inline`, a broader source expression, or a duplicated stylesheet fixture.
+
+## Claim boundary and rollback
+
+Removing `role="status"` does not claim that every screen reader would otherwise announce the initial content twice, nor does it claim whole-product accessibility conformance. Assistive-technology treatment of live regions can vary. The implemented claim is narrower: the generated empty-directory message is static document content, while `status` carries live-region semantics intended for status information and updates.
+
+If html4tree later introduces client-side directory refresh or another operation that changes the empty-state message after initial load, revisit the status-message contract against the then-current WAI-ARIA and WCAG requirements rather than restoring a live-region role by default.
 
 ## References
 
-World Wide Web Consortium. (2024, December 12). *Web Content Accessibility Guidelines (WCAG) 2.2* (W3C Recommendation). https://www.w3.org/TR/WCAG22/
+World Wide Web Consortium. (2023, June 6). *Accessible Rich Internet Applications (WAI-ARIA) 1.2* (W3C Recommendation). https://www.w3.org/TR/2023/REC-wai-aria-1.2-20230606/
+
+World Wide Web Consortium. (2024, December 12). *Web Content Accessibility Guidelines (WCAG) 2.2* (W3C Recommendation). https://www.w3.org/TR/2024/REC-WCAG22-20241212/
 
 World Wide Web Consortium. (2026, February 11). *Understanding WCAG 2.2*. Web Accessibility Initiative. https://www.w3.org/WAI/WCAG22/Understanding/
 
