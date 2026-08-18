@@ -75,6 +75,17 @@ li + li {
   color: #656d76;
   font-style: italic;
 }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #0d1117;
@@ -318,20 +329,19 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            }
        }
 
-       // Compare a normalized candidate, but always retain the exact observed filesystem entry
-       // in the exclusion set because downstream admission compares against File.name verbatim.
+       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
        val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach { observedName ->
-           val normalizedCandidate = observedName.trim()
+       list?.forEach {
+           val current = it.trim()
            val pathCurrent = try {
-               java.nio.file.Paths.get(normalizedCandidate)
+               java.nio.file.Paths.get(current)
            } catch (_: java.nio.file.InvalidPathException) {
-               files_to_exclude.add(observedName)
+               files_to_exclude.add(current)
                return@forEach
            }
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(observedName)
+                 files_to_exclude.add(current)
                  break
               }
            }
@@ -345,20 +355,19 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
-    // 보안 향상: match sensitive aliases after trimming/case normalization, but exclude the exact
-    // observed entry name so padded filesystem names cannot bypass downstream exact membership.
-    (dirFilesNames ?: curr_dir.list())?.forEach { observedName ->
-        val normalizedCandidate = observedName.trim()
-        val normalizedName = normalizedCandidate.toLowerCase(java.util.Locale.ROOT)
+    // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
+    (dirFilesNames ?: curr_dir.list())?.forEach {
+        val fileName = it.trim()
+        val normalizedName = fileName.toLowerCase(java.util.Locale.ROOT)
         if (
-            normalizedCandidate.isHiddenFile() ||
+            fileName.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
             Constants.defaultSensitiveExtensions.any { extension ->
                 normalizedName.endsWith(extension)
             }
         ) {
-            files_to_exclude.add(observedName)
+            files_to_exclude.add(fileName)
         }
     }
 
@@ -427,7 +436,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <h1 dir="auto">${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." aria-label="상위 디렉토리로 이동" title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span dir="auto">..</span></a></li>
+            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span dir="auto" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -456,8 +465,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
+                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" aria-label="${ariaLabel}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${fileName.escapeHtml()}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
