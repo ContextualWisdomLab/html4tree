@@ -236,15 +236,9 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        // ⚡ Bolt Performance Optimization: Replace conditional 'when' jump table with direct array lookup
+        // 핫 패스에서 문자 매핑 시 조건 평가 오버헤드를 줄이기 위해 크기가 128인 배열 기반 조회 테이블을 직접 인덱스로 접근하도록 변경했습니다.
+        val replacement = if (c.toInt() < 128) Constants.HTML_ESCAPE_TABLE[c.toInt()] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -526,4 +520,17 @@ private object Constants {
         ".swo",
         ".swpx"
     )
+
+    @JvmField
+    val HTML_ESCAPE_TABLE = Array<String?>(128) { index ->
+        when (index.toChar()) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
+    }
 }
