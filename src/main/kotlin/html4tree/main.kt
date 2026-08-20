@@ -483,6 +483,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 """
 
    try {
+       if (!Files.isDirectory(curr_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+           return
+       }
        write_index_file(curr_dir, index_top+index_middle()+index_bottom)
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
