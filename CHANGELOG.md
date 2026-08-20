@@ -19,6 +19,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- 시각적으로 숨겨진 접근성 텍스트 요소가 추가된 후 기존 `:last-child` CSS 선택자와 충돌하여 호버(hover) 시 텍스트 밑줄이 표시되지 않던 문제를 `:nth-child(2)` 선택자를 사용하여 수정했습니다.
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
