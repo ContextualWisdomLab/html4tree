@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-21 - [html4tree] CLI 입력값(topDir) 검증 및 길이 제한 추가
+**Vulnerability:** 누락된 입력값 길이 제한(DoS 위험) 및 Null Byte 인젝션 방어 부재
+**Learning:** 애플리케이션의 엔트리포인트에서 전달받는 최상위 입력값(`topDir`)에 대해 최소한의 방어(Null Byte 검증 및 비정상적인 길이 제한)가 누락되어 있었습니다. 최신 플랫폼은 일부 방어를 내장하지만, 애플리케이션 레벨에서 허용 범위를 명확히 제한하지 않으면 예기치 않은 동작이나 시스템 자원 고갈을 유발할 수 있습니다.
+**Prevention:** 모든 외부 입력에 대해 명시적으로 Null Byte 포함 여부를 검사하고, 시스템이 허용하는 합리적인 최대 길이(예: 4096자) 제한을 두어 Defense in Depth를 달성해야 합니다.

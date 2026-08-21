@@ -128,6 +128,20 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsNullByte() {
+        assertFailsWith<IllegalArgumentException> {
+            go("test\u0000dir", -1)
+        }
+    }
+
+    @Test
+    fun testGoRejectsOversizedPath() {
+        assertFailsWith<IllegalArgumentException> {
+            go("a".repeat(4097), -1)
+        }
+    }
+
+    @Test
     fun testGoIgnoresHiddenFilesAndDirectories() {
         val hiddenFile = File(tempDir, ".hidden_file.txt")
         hiddenFile.createNewFile()

@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- 보안 향상: `topDir` 입력값에 대한 Null Byte 검증 및 길이 제한(4096자) 추가.
 - Emit a `noindex, nofollow` robots meta preference on every generated
   directory page, with the explicit boundary that supporting crawlers must
   first fetch the page and that confidential data still requires server-side
