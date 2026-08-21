@@ -62,7 +62,7 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
-## 2024-10-24 - Avoid Redundant Directory Listing I/O
+## 2024-10-24 - 중복된 디렉토리 리스팅 I/O 방지
 
-**Learning:** The `File.list()` call is an expensive OS I/O operation. In `process_ignore_file`, if the directory listing is not provided via arguments, it was evaluated multiple times across different execution blocks, causing redundant overhead.
-**Action:** Hoist dynamically constructed directory listings (e.g., `curr_dir.list()`) to a top-level cached local variable above conditional blocks in the function to prevent multiple redundant I/O operations.
+**Learning:** `File.list()` 호출은 비용이 많이 드는 OS I/O 연산입니다. `process_ignore_file`에서 디렉토리 목록이 인자로 제공되지 않으면, 여러 실행 블록에서 여러 번 평가되어 중복된 오버헤드를 유발했습니다.
+**Action:** 중복된 I/O 연산을 방지하기 위해 동적으로 생성된 디렉토리 목록(예: `curr_dir.list()`)을 함수 내 조건 블록 위의 최상위 캐시된 지역 변수로 끌어올립니다.
