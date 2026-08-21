@@ -1,3 +1,6 @@
+### ⚡ 성능 개선
+- `process_ignore_file` 내에서 `curr_dir.list()` 호출을 캐싱하여 중복된 OS I/O 연산 제거
+
 # Changelog
 
 All notable changes to this project are documented in this file.
