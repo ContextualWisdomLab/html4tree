@@ -699,6 +699,8 @@ class MainTest {
             "editor.swp",
             "editor.SWO",
             "editor.swpx",
+            "infra.TFSTATE",
+            "infra.tfstate.BACKUP",
             "autosave~"
         )
         val safeNames = arrayOf("public.txt", "image.png", "catalog.html")

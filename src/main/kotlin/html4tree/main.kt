@@ -524,6 +524,8 @@ private object Constants {
         ".log",
         ".swp",
         ".swo",
-        ".swpx"
+        ".swpx",
+        ".tfstate",
+        ".tfstate.backup"
     )
 }
