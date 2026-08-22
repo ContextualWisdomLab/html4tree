@@ -943,7 +943,7 @@ class MainTest {
         assertTrue(indexHtml.exists())
         val content = indexHtml.readText()
         assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
-        assertTrue(content.contains("<h1 dir=\"auto\">Root</h1>"))
+        assertTrue(content.contains("<h1>Root</h1>"))
     }
 
 }
