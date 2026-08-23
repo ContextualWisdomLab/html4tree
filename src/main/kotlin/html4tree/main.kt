@@ -293,7 +293,13 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
-fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
+fun process_ignore_file(
+    curr_dir: File,
+    dirFilesNames: Array<String>? = null,
+    newInputStream: (java.nio.file.Path, Array<out java.nio.file.OpenOption>) -> java.io.InputStream = { path, options ->
+        java.nio.file.Files.newInputStream(path, *options)
+    }
+): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -310,7 +316,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        try {
-           java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { lines ->
+           newInputStream(ignore_file.toPath(), arrayOf(java.nio.file.LinkOption.NOFOLLOW_LINKS)).bufferedReader().useLines { lines ->
                for ((lineIndex, it) in lines.withIndex()) {
                    // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                    if (lineIndex >= 1000) break
