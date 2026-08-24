@@ -4,6 +4,7 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertTrue
 import java.io.IOException
+import java.io.UncheckedIOException
 
 class SentinelExceptionCoverageTest {
     @Test
@@ -14,7 +15,7 @@ class SentinelExceptionCoverageTest {
             }
         }
         val excluded = process_ignore_file(mockDir, arrayOf())
-        assertTrue(excluded != null)
+        assertTrue(excluded.contains("index.html"))
     }
 
     @Test
@@ -25,6 +26,17 @@ class SentinelExceptionCoverageTest {
             }
         }
         val excluded = process_ignore_file(mockDir, arrayOf())
-        assertTrue(excluded != null)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileWithUncheckedIOException() {
+        val mockDir = object : File("test") {
+            override fun getAbsolutePath(): String {
+                throw UncheckedIOException(IOException("mock"))
+            }
+        }
+        val excluded = process_ignore_file(mockDir, arrayOf())
+        assertTrue(excluded.contains("index.html"))
     }
 }
