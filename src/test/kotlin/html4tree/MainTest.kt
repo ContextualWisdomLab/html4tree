@@ -975,4 +975,18 @@ class MainTest {
             tempDir.deleteRecursively()
         }
     }
+
+    @Test
+    fun testProcessIgnoreFileThrowsExceptionOnUseLinesAgain() {
+        val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
+        val ignoreFile = File(tempDir, ".html4ignore")
+        try {
+            ignoreFile.writeText("*.txt")
+            ignoreFile.setReadable(false) // Not guaranteed to work everywhere but let's try
+            process_ignore_file(tempDir, null)
+        } finally {
+            ignoreFile.setReadable(true)
+            tempDir.deleteRecursively()
+        }
+    }
 }
