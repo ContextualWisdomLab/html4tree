@@ -1,6 +1,9 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+### 변경 내용
+- 스크린 리더용 `.visually-hidden` 요소가 추가된 후 깨진 호버(hover)/포커스(focus) 텍스트 밑줄 효과를 `span:nth-child(2)`를 사용하여 수정.
+
 
 ## [Unreleased]
 
