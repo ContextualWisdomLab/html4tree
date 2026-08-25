@@ -294,6 +294,9 @@ fun String.urlEncodePath(): String {
 }
 
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
+    // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐시하여 불필요한 OS I/O 호출을 방지합니다.
+    val list = dirFilesNames ?: curr_dir.list()
+
 
     val ignore_filename = ".html4ignore"
  
@@ -324,7 +327,6 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
        list?.forEach {
            val current = it
            val pathCurrent = try {
@@ -350,7 +352,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
-    (dirFilesNames ?: curr_dir.list())?.forEach {
+    list?.forEach {
         val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
             it.isHiddenFile() ||
@@ -483,13 +485,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 """
 
    try {
-       // ⚡ Bolt Performance Optimization: Single StringBuilder for index file generation
-       // Prevents unnecessary intermediate string allocations and reduces garbage collection overhead.
-       val finalContent = java.lang.StringBuilder(index_top.length + index_bottom.length + 4096)
-       finalContent.append(index_top)
-       finalContent.append(index_middle())
-       finalContent.append(index_bottom)
-       write_index_file(curr_dir, finalContent.toString())
+       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
