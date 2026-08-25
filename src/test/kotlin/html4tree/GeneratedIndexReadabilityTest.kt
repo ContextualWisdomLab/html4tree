@@ -57,6 +57,22 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
+    fun fileAndDirectoryRowsUseExplicitNameSpans() {
+        val linkedFile = File(temporaryDirectory, "alpha.txt").apply { writeText("alpha") }
+        val linkedDirectory = File(temporaryDirectory, "docs").apply { mkdir() }
+
+        process_dir(
+            temporaryDirectory,
+            setOf("index.html"),
+            arrayOf(linkedDirectory, linkedFile)
+        )
+
+        val generatedHtml = generatedHtml()
+        assertTrue(generatedHtml.contains("<span class=\"name\">alpha.txt</span>"))
+        assertTrue(generatedHtml.contains("<span class=\"name\">docs</span>"))
+    }
+
+    @Test
     fun emptyDirectoryRetainsOneSemanticStatusRow() {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
