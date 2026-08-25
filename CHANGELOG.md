@@ -16,9 +16,6 @@ All notable changes to this project are documented in this file.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
-- Bind hover/focus underlining to explicit `span.name` markup for parent, file,
-  and directory labels so later visually hidden siblings cannot redirect the
-  visible text decoration through `:last-child` coupling.
 
 ### Fixed
 
@@ -33,8 +30,6 @@ All notable changes to this project are documented in this file.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
   cascade ordering, reduced-motion retention, text-only decoration, and numeric
   text/focus contrast thresholds.
-- Verify complete `span.name` markup for generated file and directory labels,
-  not only the displayed text or parent-directory row.
 
 ### Documentation
 
@@ -44,5 +39,4 @@ All notable changes to this project are documented in this file.
 - Record the CSP byte-identity decision, threat boundary, verification contract,
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
-  contrast calculations, explicit name-selector boundary, current W3C Selectors
-  Level 4 reference, scope boundaries, and verification contract.
+  contrast calculations, scope boundaries, and verification contract.
