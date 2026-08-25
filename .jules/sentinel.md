@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-08-25 - [TOCTOU] File.useLines 심볼릭 링크 순회 방지
+**Vulnerability:** Kotlin의 `File.useLines` 내부에서 심볼릭 링크를 따라가는 동작으로 인한 Time-of-Check-Time-of-Use (TOCTOU) 및 파일 노출 취약점.
+**Learning:** 대상 파일이 심볼릭 링크가 아니라는 사전 검증 후에도 악의적인 사용자가 읽기 직전에 파일을 심볼릭 링크로 교체하여 임의의 파일(예: 민감한 시스템 파일) 내용을 읽을 수 있습니다.
+**Prevention:** 파일을 읽을 때 `Files.newInputStream(file.toPath(), LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { ... }` 방식을 사용하여 읽기 시점에도 심볼릭 링크를 따라가지 않도록 강제해야 합니다.
