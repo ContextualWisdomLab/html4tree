@@ -483,7 +483,13 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 """
 
    try {
-       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+       // ⚡ Bolt Performance Optimization: Single StringBuilder for index file generation
+       // Prevents unnecessary intermediate string allocations and reduces garbage collection overhead.
+       val finalContent = java.lang.StringBuilder(index_top.length + index_bottom.length + 4096)
+       finalContent.append(index_top)
+       finalContent.append(index_middle())
+       finalContent.append(index_bottom)
+       write_index_file(curr_dir, finalContent.toString())
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)

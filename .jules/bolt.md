@@ -62,3 +62,6 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+## 2025-03-03 - Avoid Intermediate String Allocations
+**Learning:** In Kotlin, concatenating large strings or function results (e.g., `string1 + func() + string2`) allocates intermediate strings, leading to high garbage collection overhead during repeated operations like directory traversal.
+**Action:** Instantiate a single `StringBuilder` and `.append()` all segments directly to eliminate redundant object allocations.
