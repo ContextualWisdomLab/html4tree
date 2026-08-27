@@ -44,6 +44,9 @@ a.dir-link {
   width: 1.25rem;
   text-align: center;
 }
+.entry-name {
+  unicode-bidi: isolate;
+}
 a {
   padding: 0.75rem 0.5rem;
   text-decoration: none;
@@ -56,7 +59,7 @@ a:hover, a:focus-visible {
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
-a:hover span:last-child, a:focus-visible span:last-child {
+.dir-link:hover .entry-name, .dir-link:focus-visible .entry-name {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -332,16 +335,17 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
        val list = dirFilesNames ?: curr_dir.list()
        list?.forEach {
-           val current = it.trim()
+           val originalName = it
+           val normalizedName = originalName.trim()
            val pathCurrent = try {
-               java.nio.file.Paths.get(current)
+               java.nio.file.Paths.get(normalizedName)
            } catch (_: java.nio.file.InvalidPathException) {
-               files_to_exclude.add(current)
+               files_to_exclude.add(originalName)
                return@forEach
            }
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
+                 files_to_exclude.add(originalName)
                  break
               }
            }
@@ -357,17 +361,18 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        val fileName = it.trim()
-        val normalizedName = fileName.toLowerCase(java.util.Locale.ROOT)
+        val originalName = it
+        val normalizedName = originalName.trim()
+        val normalizedLowercaseName = normalizedName.toLowerCase(java.util.Locale.ROOT)
         if (
-            fileName.isHiddenFile() ||
-            normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
-            normalizedName.endsWith("~") ||
+            normalizedName.isHiddenFile() ||
+            normalizedLowercaseName in Constants.defaultSensitiveFileNamesLowercase ||
+            normalizedLowercaseName.endsWith("~") ||
             Constants.defaultSensitiveExtensions.any { extension ->
-                normalizedName.endsWith(extension)
+                normalizedLowercaseName.endsWith(extension)
             }
         ) {
-            files_to_exclude.add(fileName)
+            files_to_exclude.add(originalName)
         }
     }
 
@@ -436,7 +441,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <h1 dir="auto">${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span dir="auto" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
+            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -464,10 +469,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
+                  val titleLabel = "\u2068${fileName}\u2069 ${typeLabel}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span class="entry-name" dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
