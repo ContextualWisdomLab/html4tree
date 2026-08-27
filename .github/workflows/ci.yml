@@ -53,3 +53,12 @@ jobs:
                       if counter is not None and counter.get('covered') == '0':
                           print(f"uncovered method: {cls.get('name')}.{m.get('name')}{m.get('desc')} (line {m.get('line')})")
           PY
+
+  strix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Strix security scan
+        uses: ContextualWisdomLab/strix-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
