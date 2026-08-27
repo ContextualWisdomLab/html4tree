@@ -44,7 +44,7 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span dir=\"auto\" aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
@@ -160,7 +160,7 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
-    fun hoverAndKeyboardFocusUnderlineOnlyLinkText() {
+    fun hoverAndKeyboardFocusUnderlineOnlyVisibleEntryText() {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
         val style = emittedStyle()
@@ -171,10 +171,11 @@ class GeneratedIndexReadabilityTest {
         assertNotNull(completeTargetRule)
         assertFalse(completeTargetRule.contains("text-decoration"))
         assertTrue(completeTargetRule.contains("outline: 2px solid #0969da;"))
+        assertFalse(style.contains("a:hover span:last-child, a:focus-visible span:last-child"))
         assertTrue(
             style.contains(
                 """
-                a:hover span:last-child, a:focus-visible span:last-child {
+                .dir-link:hover .entry-name, .dir-link:focus-visible .entry-name {
                   text-decoration: underline;
                 }
                 """.trimIndent()
