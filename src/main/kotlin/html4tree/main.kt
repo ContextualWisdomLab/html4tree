@@ -309,18 +309,34 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { lines ->
-           for ((lineIndex, it) in lines.withIndex()) {
-               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-               if (lineIndex >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: IllegalArgumentException) {
+       val inputStream = java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)
+       try {
+           val reader = java.io.InputStreamReader(inputStream, Charsets.UTF_8)
+           try {
+               val bufferedReader = java.io.BufferedReader(reader)
+               try {
+                   var lineIndex = 0
+                   while (true) {
+                       val it = bufferedReader.readLine() ?: break
+                       // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+                       if (lineIndex >= 1000) break
+                       val pattern = it.trim()
+                       if (pattern.isNotEmpty() && pattern.length <= 100) {
+                           try {
+                               ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                           } catch (_: IllegalArgumentException) {
+                           }
+                       }
+                       lineIndex++
                    }
+               } finally {
+                   bufferedReader.close()
                }
+           } finally {
+               reader.close()
            }
+       } finally {
+           inputStream.close()
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
