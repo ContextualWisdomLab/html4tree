@@ -309,18 +309,24 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
-           for ((lineIndex, it) in lines.withIndex()) {
-               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-               if (lineIndex >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: IllegalArgumentException) {
+       try {
+           ignore_file.useLines { lines ->
+               for ((lineIndex, it) in lines.withIndex()) {
+                   // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+                   if (lineIndex >= 1000) break
+                   val pattern = it.trim()
+                   if (pattern.isNotEmpty() && pattern.length <= 100) {
+                       try {
+                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                       } catch (_: IllegalArgumentException) {
+                       }
                    }
                }
            }
+       } catch (_: java.io.IOException) {
+           // 보안 향상: TOCTOU(Time-of-Check to Time-of-Use) 취약점으로 인해
+           // canRead() 확인 이후 파일이 삭제되거나 권한이 변경될 때 발생하는
+           // 애플리케이션 크래시(DoS) 방지
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
