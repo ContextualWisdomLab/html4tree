@@ -294,6 +294,9 @@ fun String.urlEncodePath(): String {
 }
 
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
+    // ⚡ Bolt Performance Optimization: 중복된 OS I/O 호출을 방지하기 위한 디렉토리 목록 캐싱
+    // dirFilesNames가 제공되지 않은 경우, curr_dir.list()를 여러 번 호출하면 불필요한 I/O 오버헤드가 발생합니다.
+    val cachedDirList = dirFilesNames ?: curr_dir.list()
 
     val ignore_filename = ".html4ignore"
  
@@ -324,7 +327,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
+       val list = cachedDirList
        list?.forEach {
            val current = it
            val pathCurrent = try {
@@ -350,7 +353,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
-    (dirFilesNames ?: curr_dir.list())?.forEach {
+    cachedDirList?.forEach {
         val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
             it.isHiddenFile() ||
