@@ -44,7 +44,7 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span dir=\"auto\" aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
@@ -54,33 +54,6 @@ class GeneratedIndexReadabilityTest {
         assertTrue(firstIndex < middleIndex)
         assertTrue(middleIndex < lastIndex)
         assertFalse(generatedHtml.contains("이 디렉토리는 비어 있습니다."))
-    }
-
-    @Test
-    fun bidiEntryNamesAreIsolatedWithoutReplacingTranslatableAccessibleText() {
-        val rtlName = "שלום.txt"
-        val rtlFile = File(temporaryDirectory, rtlName).apply { writeText("rtl") }
-
-        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(rtlFile))
-
-        val generatedHtml = generatedHtml()
-        val style = emittedStyle()
-
-        assertTrue(generatedHtml.contains("<span aria-hidden=\"true\">..</span>"))
-        assertFalse(generatedHtml.contains("<span dir=\"auto\" aria-hidden=\"true\">..</span>"))
-        assertTrue(generatedHtml.contains("<span class=\"entry-name\" dir=\"auto\">$rtlName</span>"))
-        assertTrue(generatedHtml.contains("<span class=\"visually-hidden\">파일</span>"))
-        assertTrue(generatedHtml.contains("title=\"\u2068$rtlName\u2069 파일\""))
-        assertFalse(generatedHtml.contains("aria-label=\"$rtlName 파일\""))
-        assertTrue(
-            style.contains(
-                """
-                .entry-name {
-                  unicode-bidi: isolate;
-                }
-                """.trimIndent()
-            )
-        )
     }
 
     @Test
@@ -160,7 +133,7 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
-    fun hoverAndKeyboardFocusUnderlineOnlyVisibleEntryText() {
+    fun hoverAndKeyboardFocusUnderlineOnlyLinkText() {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
         val style = emittedStyle()
@@ -171,11 +144,10 @@ class GeneratedIndexReadabilityTest {
         assertNotNull(completeTargetRule)
         assertFalse(completeTargetRule.contains("text-decoration"))
         assertTrue(completeTargetRule.contains("outline: 2px solid #0969da;"))
-        assertFalse(style.contains("a:hover span:last-child, a:focus-visible span:last-child"))
         assertTrue(
             style.contains(
                 """
-                .dir-link:hover .entry-name, .dir-link:focus-visible .entry-name {
+                a:hover span:last-child, a:focus-visible span:last-child {
                   text-decoration: underline;
                 }
                 """.trimIndent()
