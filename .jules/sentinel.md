@@ -99,7 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-## 2024-08-27 - [html4tree] .html4ignore 파일 TOCTOU 읽기 거부 서비스(DoS) 취약점 완화
-**Vulnerability:** `.html4ignore` 파일 파싱 중, 애플리케이션은 `canRead()` 및 `isFile`을 미리 확인하여 안전성을 확보하려 했으나, 확인 직후 권한이 변경되거나 파일이 삭제(Time-of-Check to Time-of-Use)될 경우 `useLines`에서 `IOException`이 발생하여 애플리케이션이 충돌하고 디렉토리 인덱싱이 완전히 중단되었습니다.
-**Learning:** 파일 상태를 미리 체크(Time-of-Check)하는 방어 로직만으로는 충분하지 않습니다. 파일 접근 및 읽기 시점(Time-of-Use)에 발생하는 I/O 예외를 잡아내지 않으면 언제든지 DoS로 이어질 수 있습니다.
-**Prevention:** 런타임에 동적으로 파일을 읽을 때는 항상 `try-catch` 블록(예: `catch (_: IOException)`)으로 I/O 작업을 감싸서(Fail Securely) 예상치 못한 상태 변경이나 권한 박탈로 인해 애플리케이션 전체가 충돌하는 것을 방지하십시오.
