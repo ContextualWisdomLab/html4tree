@@ -57,6 +57,33 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
+    fun bidiEntryNamesAreIsolatedWithoutReplacingTranslatableAccessibleText() {
+        val rtlName = "שלום.txt"
+        val rtlFile = File(temporaryDirectory, rtlName).apply { writeText("rtl") }
+
+        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(rtlFile))
+
+        val generatedHtml = generatedHtml()
+        val style = emittedStyle()
+
+        assertTrue(generatedHtml.contains("<span aria-hidden=\"true\">..</span>"))
+        assertFalse(generatedHtml.contains("<span dir=\"auto\" aria-hidden=\"true\">..</span>"))
+        assertTrue(generatedHtml.contains("<span class=\"entry-name\" dir=\"auto\">$rtlName</span>"))
+        assertTrue(generatedHtml.contains("<span class=\"visually-hidden\">파일</span>"))
+        assertTrue(generatedHtml.contains("title=\"\u2068$rtlName\u2069 파일\""))
+        assertFalse(generatedHtml.contains("aria-label=\"$rtlName 파일\""))
+        assertTrue(
+            style.contains(
+                """
+                .entry-name {
+                  unicode-bidi: isolate;
+                }
+                """.trimIndent()
+            )
+        )
+    }
+
+    @Test
     fun emptyDirectoryRetainsOneSemanticStatusRow() {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
