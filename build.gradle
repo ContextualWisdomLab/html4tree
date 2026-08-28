@@ -25,7 +25,7 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     testCompile 'junit:junit:4.13.2'
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
-    compile "com.github.ajalt:clikt:2.8.0"
+    compile "com.github.ajalt:clikt:2.7.1"
 }
 
 jar {
