@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-24 - File Handling TOCTOU DoS Vulnerability
+**Vulnerability:** A Time-Of-Check to Time-Of-Use (TOCTOU) condition existed where checking if `.html4ignore` can be read and then reading it can crash the process with an `IOException` or `UncheckedIOException` if the file state changes or I/O errors occur between the check and use, leading to a local Denial of Service (DoS) during directory crawling.
+**Learning:** Checking file attributes before using them is not sufficient to prevent I/O errors. Unhandled I/O exceptions in core crawling functions like `process_ignore_file` can cause the entire program to fail.
+**Prevention:** Always wrap filesystem I/O operations (like `File.useLines`) on user-provided or dynamic files in robust `try-catch` blocks that handle both checked `IOException` and runtime `UncheckedIOException` to fail securely and continue processing other files.

@@ -801,6 +801,17 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileThrowsIOException() {
+        val mockFile = object : File("mock") {
+            override fun getAbsolutePath(): String {
+                throw java.io.UncheckedIOException(java.io.IOException("mock IO error"))
+            }
+        }
+        val excluded = process_ignore_file(mockFile, null)
+        assertTrue(excluded.contains("index.html"))
+    }
+
+    @Test
     fun testProcessIgnoreFileMaxLines() {
         val ignoreFile = File(tempDir, ".html4ignore")
         val content = StringBuilder()
