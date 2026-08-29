@@ -342,8 +342,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            }
        }
     }
-    } catch (_: java.io.IOException) {
-    } catch (_: java.io.UncheckedIOException) {
+    } catch (ignored: java.io.IOException) {
+    } catch (ignored: java.io.UncheckedIOException) {
     }
 
     if ("index.html" !in files_to_exclude)
