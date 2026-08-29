@@ -207,7 +207,7 @@ internal fun crawl_directories(
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
                 // by checking cheap in-memory string exclusion rules first
                 if(!it.name.isHiddenFile() && it.name !in exclude) {
                     val childAttrs = readAttributes(it)
@@ -312,6 +312,24 @@ internal fun read_ignore_file_bytes(
     }
 }
 
+internal fun read_ignore_file_safely(
+    path: java.nio.file.Path,
+    openStream: (java.nio.file.Path) -> java.io.InputStream = {
+        java.nio.file.Files.newInputStream(it, java.nio.file.LinkOption.NOFOLLOW_LINKS)
+    }
+): ByteArray? {
+    return try {
+        val inputStream = openStream(path)
+        try {
+            read_ignore_file_bytes(inputStream)
+        } finally {
+            inputStream.close()
+        }
+    } catch (_: java.io.IOException) {
+        null
+    }
+}
+
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -328,16 +346,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead()){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       val ignoreBytes = try {
-           val inputStream = java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)
-           try {
-               read_ignore_file_bytes(inputStream)
-           } finally {
-               inputStream.close()
-           }
-       } catch (_: java.io.IOException) {
-           null
-       }
+       val ignoreBytes = read_ignore_file_safely(ignore_file.toPath())
 
        if (ignoreBytes != null) {
            val reader = java.io.InputStreamReader(java.io.ByteArrayInputStream(ignoreBytes), Charsets.UTF_8)
