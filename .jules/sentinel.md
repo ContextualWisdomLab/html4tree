@@ -103,9 +103,9 @@
 ## 2024-09-02 - [CRITICAL] File.useLines TOCTOU 심볼릭 링크 우회 취약점 수정
 **Vulnerability:** 파일 속성 검증(예: 일반 파일 여부, 심볼릭 링크 아님 등) 직후 `File.useLines`를 통해 내용을 읽는 사이, 해당 파일이 심볼릭 링크로 교체(Swap)되면 기존 검증이 무력화되어 임의의 시스템 파일 내용을 읽고 처리하게 되는 TOCTOU(Time-of-Check to Time-of-Use) 취약점.
 **Learning:** `File.useLines` 내부적으로 `FileInputStream`을 사용하며, 이는 심볼릭 링크를 기본적으로 따라갑니다(follow). 파일 시스템 상태는 검사 시점과 사용 시점 사이에 언제든 변경될 수 있으므로, 검증과 열기 작업은 원자적(atomic)이거나 동일한 보안 컨텍스트 내에서 수행되어야 합니다.
-**Prevention:** 검증 전 경로 속성만 신뢰하지 말고 `Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS)`로 한 번 연 스트림을 읽기 권한의 기준으로 삼으십시오. 그 동일 스트림에서 최대 1 MiB+1 바이트까지만 읽어 크기 상한을 다시 적용하고, 초과 입력은 파싱하지 마십시오. 열기·읽기·닫기 중 파일 교체나 접근 경쟁으로 발생하는 `IOException`은 해당 `.html4ignore`만 건너뛰어 전체 순회를 중단시키지 않아야 합니다.
+**Prevention:** 검증된 파일을 읽을 때 심볼릭 링크 공격을 방지하려면, `File.useLines` 대신 `java.nio.file.Files.newInputStream(path, java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines`를 사용하여 심볼릭 링크를 명시적으로 거부하도록 강제해야 합니다.
 
 ## 2024-09-02 - [CRITICAL] File.useLines TOCTOU 심볼릭 링크 우회 취약점 완벽한 커버리지 달성
 **Vulnerability:** `File.useLines`를 통해 심볼릭 링크 교체를 통한 TOCTOU 취약점을 수정한 후, `useLines`의 인라인 확장(inline expansion) 시 발생한 예외 처리(`catch`/`finally`) 블록이 Jacoco 코드 커버리지에서 미달성(Missed) 브랜치로 남는 문제가 있었습니다.
 **Learning:** Kotlin 컴파일러는 인라인 함수(`useLines`)를 전개할 때 내부적으로 숨겨진 `try-catch-finally` 구조를 생성합니다. 이때 발생하지 않는 안전한 조건(예: 파일의 크기나 속성 조건이 만족된 상태에서의 단순 읽기 루프) 내에서는 `catch` 브랜치에 진입할 수 없어 100% 분기 커버리지를 달성하는 데 큰 걸림돌이 됩니다.
-**Prevention:** 향후 비슷한 취약점을 수정하면서 100% 커버리지를 유지해야 할 경우, 인라인 `useLines`를 사용하지 마십시오. `NOFOLLOW_LINKS`로 연 동일 스트림의 바이트 상한을 먼저 확정한 뒤, 명시적 `BufferedReader`와 `try-finally`를 사용해 줄을 처리하십시오. 이 패턴을 유일한 권장 경로로 유지해 숨겨진 인라인 분기와 TOCTOU 크기 상한 우회를 동시에 피합니다.
+**Prevention:** 향후 비슷한 취약점을 수정하면서 100% 커버리지를 유지해야 할 경우, 인라인으로 전개되는 `useLines`에 의존하기보다는, 명시적으로 `BufferedReader`를 획득하고, `try-finally`로 감싼 뒤 `reader.lineSequence().iterator()`를 사용한 원시적인 루프 패턴을 사용하여 숨겨진 미도달 경로의 생성을 원천적으로 방지해야 합니다.

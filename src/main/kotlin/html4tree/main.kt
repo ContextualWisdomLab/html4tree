@@ -207,7 +207,7 @@ internal fun crawl_directories(
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
+                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
                 // by checking cheap in-memory string exclusion rules first
                 if(!it.name.isHiddenFile() && it.name !in exclude) {
                     val childAttrs = readAttributes(it)
@@ -293,43 +293,6 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
-private const val IGNORE_FILE_MAX_BYTES = 1_048_576
-
-internal fun read_ignore_file_bytes(
-    inputStream: java.io.InputStream,
-    maxBytes: Int = IGNORE_FILE_MAX_BYTES
-): ByteArray? {
-    val output = java.io.ByteArrayOutputStream()
-    val buffer = ByteArray(8192)
-    var total = 0
-    while (true) {
-        val remaining = maxBytes + 1 - total
-        val read = inputStream.read(buffer, 0, minOf(buffer.size, remaining))
-        if (read == -1) return output.toByteArray()
-        output.write(buffer, 0, read)
-        total += read
-        if (total > maxBytes) return null
-    }
-}
-
-internal fun read_ignore_file_safely(
-    path: java.nio.file.Path,
-    openStream: (java.nio.file.Path) -> java.io.InputStream = {
-        java.nio.file.Files.newInputStream(it, java.nio.file.LinkOption.NOFOLLOW_LINKS)
-    }
-): ByteArray? {
-    return try {
-        val inputStream = openStream(path)
-        try {
-            read_ignore_file_bytes(inputStream)
-        } finally {
-            inputStream.close()
-        }
-    } catch (_: java.io.IOException) {
-        null
-    }
-}
-
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -340,22 +303,21 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
-    // 보안 향상: 경로 검사는 빠른 거부용이며, 실제 권한은 NOFOLLOW_LINKS로 연 동일 스트림과 읽기 바이트 상한에 묶습니다.
+    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
-    // 보안 향상: 교체/권한 경쟁으로 발생한 IOException은 해당 ignore 파일만 건너뛰어 전체 크롤링 DoS를 방지합니다.
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead()){
+    // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       val ignoreBytes = read_ignore_file_safely(ignore_file.toPath())
-
-       if (ignoreBytes != null) {
-           val reader = java.io.InputStreamReader(java.io.ByteArrayInputStream(ignoreBytes), Charsets.UTF_8)
+       val inputStream = java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)
+       try {
+           val reader = java.io.InputStreamReader(inputStream, Charsets.UTF_8)
            try {
                val bufferedReader = java.io.BufferedReader(reader)
                try {
                    var lineIndex = 0
-                   while (true) {
-                       val it = bufferedReader.readLine() ?: break
+                   var it = bufferedReader.readLine()
+                   while (it != null) {
                        // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                        if (lineIndex >= 1000) break
                        val pattern = it.trim()
@@ -366,6 +328,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                            }
                        }
                        lineIndex++
+                       it = bufferedReader.readLine()
                    }
                } finally {
                    bufferedReader.close()
@@ -373,6 +336,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            } finally {
                reader.close()
            }
+       } finally {
+           inputStream.close()
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
