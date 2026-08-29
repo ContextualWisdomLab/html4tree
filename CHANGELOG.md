@@ -16,9 +16,6 @@ All notable changes to this project are documented in this file.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
-- Keep the generated empty-directory message as ordinary static list content
-  instead of assigning the WAI-ARIA `status` live-region role; the decorative
-  folder icon remains hidden from assistive technology.
 
 ### Fixed
 
@@ -33,8 +30,6 @@ All notable changes to this project are documented in this file.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
   cascade ordering, reduced-motion retention, text-only decoration, and numeric
   text/focus contrast thresholds.
-- Require generated empty-directory pages to retain exactly one empty-state row
-  without emitting `role="status"`.
 
 ### Documentation
 
@@ -45,6 +40,3 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
-- Align the generated-index accessibility record with WAI-ARIA 1.2 and WCAG 2.2
-  by documenting why the build-time empty-state message is not modeled as a
-  live `status` region.
