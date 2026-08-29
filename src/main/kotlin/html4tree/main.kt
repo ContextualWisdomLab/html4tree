@@ -315,10 +315,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            try {
                val bufferedReader = java.io.BufferedReader(reader)
                try {
-                   val iterator = bufferedReader.lineSequence().iterator()
                    var lineIndex = 0
-                   while (iterator.hasNext()) {
-                       val it = iterator.next()
+                   while (true) {
+                       val it = bufferedReader.readLine() ?: break
                        if (lineIndex >= 1000) break
                        val pattern = it.trim()
                        if (pattern.isNotEmpty() && pattern.length <= 100) {
