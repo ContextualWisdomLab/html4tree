@@ -315,8 +315,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            val bufferedReader = java.io.BufferedReader(reader)
            try {
                var lineIndex = 0
-               var it = bufferedReader.readLine()
-               while (it != null) {
+               while (true) {
+                   val it = bufferedReader.readLine() ?: break
                    // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                    if (lineIndex >= 1000) break
                    val pattern = it.trim()
@@ -327,7 +327,6 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                        }
                    }
                    lineIndex++
-                   it = bufferedReader.readLine()
                }
            } finally {
                bufferedReader.close()
