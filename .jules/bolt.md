@@ -62,3 +62,7 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+
+## 2024-08-30 - Prevent Redundant OS I/O Calls in Conditionals
+**Learning:** Multiple conditional blocks calling `curr_dir.list()` (or relying on un-cached optional parameters like `dirFilesNames ?: curr_dir.list()`) can multiply expensive OS filesystem calls per directory.
+**Action:** Cache the result of directory listing in a hoisted local variable before proceeding to iterate or perform multiple condition checks on the same directory content.
