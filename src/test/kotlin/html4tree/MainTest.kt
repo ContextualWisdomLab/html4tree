@@ -50,6 +50,28 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileThrowsIOException() {
+        val failingDir = object : File(tempDir, "test") {
+            override fun getAbsolutePath(): String {
+                throw java.io.IOException("Simulated access error")
+            }
+        }
+        val excluded = process_ignore_file(failingDir, null)
+        assertTrue(excluded.contains("index.html"), "Should handle IOException gracefully and return default excludes")
+    }
+
+    @Test
+    fun testProcessIgnoreFileThrowsUncheckedIOException() {
+        val failingDir = object : File(tempDir, "test") {
+            override fun getAbsolutePath(): String {
+                throw java.io.UncheckedIOException(java.io.IOException("Simulated unchecked access error"))
+            }
+        }
+        val excluded = process_ignore_file(failingDir, null)
+        assertTrue(excluded.contains("index.html"), "Should handle UncheckedIOException gracefully and return default excludes")
+    }
+
+    @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
