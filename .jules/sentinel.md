@@ -99,7 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-## 2024-03-24 - DoS through File.useLines and TOCTOU
-**Vulnerability:** `.html4ignore` 파일을 `File.useLines`를 통해 처리할 때, 파일 접근 실패(예: 권한 없음, 파일 I/O 오류, TOCTOU 발생 등)가 처리되지 않아 `IOException`이 발생하여 프로세스가 중단되는 DoS 취약점이 있었습니다.
-**Learning:** `isFile`, `isSymbolicLink`, `canRead()`로 사전에 확인하더라도 파일에 접근하는 시점에는 파일 상태가 변경될 수 있는 TOCTOU 조건이 있습니다.
-**Prevention:** 파일에 직접 접근하거나 파일을 읽는 모든 코드에 대해서는 `IOException` 및 `UncheckedIOException` 등의 예외를 방어적으로 `try-catch`로 묶어 Fail Securely 하도록 해야 합니다.
