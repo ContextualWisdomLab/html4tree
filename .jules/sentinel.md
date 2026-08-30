@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-30 - [HIGH] TOCTOU (Time-of-Check to Time-of-Use) 심볼릭 링크 스왑 취약점 수정 (파일 읽기)
+**Vulnerability:** 파일 유효성 검증(예: `isFile`, `!isSymbolicLink`) 직후 파일을 읽을 때(`File.useLines`), 그 사이에 원본 파일이 악의적인 심볼릭 링크로 교체될 경우(TOCTOU), 의도치 않은 임의의 파일을 읽어 들일 수 있습니다.
+**Learning:** 파일 객체에 대한 권한이나 심볼릭 링크 여부를 검증했더라도, Kotlin의 `File.useLines` 등 내부적으로 파일 경로를 다시 여는 유틸리티는 심볼릭 링크를 무조건 따라갑니다. (Implicit Trust)
+**Prevention:** 이러한 TOCTOU 취약점을 방지하기 위해서는 안전하게 파일을 열 때 `java.nio.file.Files.newInputStream`에 `LinkOption.NOFOLLOW_LINKS` 옵션을 명시하여 심볼릭 링크 해석을 차단해야 합니다.
