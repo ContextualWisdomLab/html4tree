@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-31 - [MEDIUM] TOCTOU (Time-of-Check to Time-of-Use) DoS in File.useLines
+**Vulnerability:** `canRead()`로 파일 읽기 권한을 확인한 직후라도, `useLines()`로 파일을 열 때 권한이 변경되거나 파일이 삭제되면 처리되지 않은 `IOException`이 발생하여 전체 크롤링 프로세스가 중단(DoS)될 수 있습니다.
+**Learning:** 파일 상태를 검증(`canRead()`)하는 시점과 실제로 I/O 작업을 수행(`useLines()`)하는 시점 사이에는 간격이 존재하므로, 검증에만 의존하면 TOCTOU 취약점에 노출됩니다.
+**Prevention:** 파일 I/O 작업 시 단일 시점의 상태 검증에만 의존하지 말고, 실제 I/O 호출부를 `try-catch (IOException)`으로 감싸서 예외 발생 시 애플리케이션 크래시 대신 우아하게 실패(Fail Securely)하도록 구현해야 합니다.
