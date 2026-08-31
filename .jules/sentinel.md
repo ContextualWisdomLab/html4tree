@@ -98,4 +98,7 @@
 **Vulnerability:** Exact string membership in the default sensitive-file set allowed mixed-case variants such as `ID_RSA`, `Secrets.YML`, and `CONFIG.JSON` to appear in generated indexes.
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
-**Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-08-31 - 파일 읽기 시 TOCTOU(Time-of-Check to Time-of-Use) 심볼릭 링크 취약점
+**Vulnerability:** 파일 속성 확인(`isFile` 및 `!isSymbolicLink`) 직후 `File.useLines`로 읽기 작업을 수행할 때, 이 짧은 시간차(Race Condition) 동안 대상 파일이 심볼릭 링크로 교체될 수 있습니다. `File.useLines`는 기본적으로 심볼릭 링크를 따라가기 때문에 의도치 않은 임의의 파일 경로로 접근할 수 있는 취약점이 존재했습니다.
+**Learning:** `isFile`, `!isSymbolicLink`를 확인한 뒤에 별도의 I/O 객체를 생성하는 것은 TOCTOU를 막지 못합니다. Kotlin의 내장 `File.useLines` 함수는 심볼릭 링크를 따라가는 것을 막을 수 있는(LinkOption) 파라미터가 없으므로 보안 검사를 통과한 후 심볼릭 링크로 스왑될 위험이 항상 존재합니다.
+**Prevention:** 파일을 읽을 때 심볼릭 링크를 따라가지 않게 하려면 `java.nio.file.Files.newInputStream`에 `StandardOpenOption.READ`와 `LinkOption.NOFOLLOW_LINKS` 옵션을 제공하여 원자적으로(atomically) 파일 디스크립터를 열고, 이후에 `bufferedReader().useLines { ... }`를 사용해야 합니다.
