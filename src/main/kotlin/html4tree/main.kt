@@ -136,6 +136,7 @@ internal fun read_file_identity(file: File): FileIdentity {
 
 fun go(topDir: String, maxLevel: Int)  {
     require(topDir.isNotBlank())
+    require(topDir.length <= 4096) { "Top directory path exceeds maximum length of 4096 characters to prevent DoS." }
     require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
     // 보안 수정: symlink 검사를 우회하는 canonicalFile 대신 absoluteFile을 사용
     // canonicalFile은 symlink를 대상 경로로 해석하여 이어지는 NOFOLLOW_LINKS 검사를 무력화합니다.
@@ -308,32 +309,24 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
-       val listed_file_names = dirFilesNames ?: curr_dir.list()
 
-       try {
-           ignore_file.useLines { lines ->
-               for ((lineIndex, it) in lines.withIndex()) {
-                   // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-                   if (lineIndex >= 1000) break
-                   val pattern = it.trim()
-                   if (pattern.isNotEmpty() && pattern.length <= 100) {
-                       try {
-                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                       } catch (_: IllegalArgumentException) {
-                       }
+       ignore_file.useLines { lines ->
+           for ((lineIndex, it) in lines.withIndex()) {
+               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+               if (lineIndex >= 1000) break
+               val pattern = it.trim()
+               if (pattern.isNotEmpty() && pattern.length <= 100) {
+                   try {
+                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                   } catch (_: IllegalArgumentException) {
                    }
                }
            }
-       } catch (_: java.io.IOException) {
-           ignored_matchers.clear()
-           listed_file_names?.forEach { files_to_exclude.add(it) }
-       } catch (_: java.io.UncheckedIOException) {
-           ignored_matchers.clear()
-           listed_file_names?.forEach { files_to_exclude.add(it) }
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       listed_file_names?.forEach {
+       val list = dirFilesNames ?: curr_dir.list()
+       list?.forEach {
            val current = it
            val pathCurrent = try {
                java.nio.file.Paths.get(current)
