@@ -41,6 +41,14 @@ class IgnoreFileRaceTest {
         }
     }
 
+    private fun assertFailedIgnoreReadFailsClosed(excluded: Set<String>) {
+        assertTrue("index.html" in excluded)
+        assertTrue(
+            "safe.txt" in excluded,
+            "when .html4ignore cannot be read completely, directory entries must be hidden rather than filtered by partial rules"
+        )
+    }
+
     @Test
     fun processIgnoreFileSwallowsIOExceptionWhenFileDisappearsBeforeOpen() {
         val ignoreFile = temporaryFolder.newFile(".html4ignore")
@@ -50,7 +58,7 @@ class IgnoreFileRaceTest {
             assertTrue(racedFile.delete(), "the test must remove the file between metadata checks and open")
         }) {
             val excluded = process_ignore_file(temporaryFolder.root, arrayOf("safe.txt"))
-            assertTrue("index.html" in excluded)
+            assertFailedIgnoreReadFailsClosed(excluded)
         }
     }
 
@@ -63,7 +71,7 @@ class IgnoreFileRaceTest {
             throw UncheckedIOException(IOException("simulated lazy read failure"))
         }) {
             val excluded = process_ignore_file(temporaryFolder.root, arrayOf("safe.txt"))
-            assertTrue("index.html" in excluded)
+            assertFailedIgnoreReadFailsClosed(excluded)
         }
     }
 }
