@@ -31,20 +31,29 @@ class BuildPolicyTest {
     fun jacocoCoverageGateRemainsComplete() {
         val buildFile = File("build.gradle")
         assertTrue(buildFile.isFile, "build.gradle must be available to the policy regression test")
+        val script = buildFile.readText()
 
         val coverageBlock = extractGradleBlock(
-            buildFile.readText(),
+            script,
             "jacocoTestCoverageVerification"
         )
         val activeThresholds = Regex("""(?m)^\s*minimum\s*=\s*([0-9]+(?:\.[0-9]+)?)\s*$""")
             .findAll(coverageBlock)
             .map { it.groupValues[1] }
             .toList()
+        val checkBindings = Regex(
+            """(?m)^\s*check\.dependsOn\s+jacocoTestCoverageVerification\s*$"""
+        ).findAll(script).count()
 
         assertEquals(
             listOf("1.00"),
             activeThresholds,
             "JaCoCo must have exactly one active 100% coverage threshold"
+        )
+        assertEquals(
+            1,
+            checkBindings,
+            "the normal Gradle check lifecycle must invoke jacocoTestCoverageVerification exactly once"
         )
     }
 }
