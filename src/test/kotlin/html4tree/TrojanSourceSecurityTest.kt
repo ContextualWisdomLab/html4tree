@@ -71,7 +71,7 @@ class TrojanSourceSecurityTest {
 
         assertTrue(generatedHtml.contains("<span dir=\"auto\">$displayName</span>"))
         assertTrue(generatedHtml.contains("title=\"${isolate_bidi_plain_text(displayName)} 파일\""))
-        assertTrue(generatedHtml.contains("이름에 방향 제어 문자가 있습니다"))
+        assertTrue(generatedHtml.contains("이름에 방향 제어 문자가 있습니다. 열기 전에 링크 대상 파일 이름을 확인하세요."))
         assertTrue(generatedHtml.contains("href=\"$encodedHref\""))
         assertFalse(generatedHtml.contains("$spoofedName</span>"))
         assertFalse(generatedHtml.contains("title=\"${isolate_bidi_plain_text(spoofedName)}"))
