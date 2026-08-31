@@ -207,7 +207,7 @@ internal fun crawl_directories(
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
                 // by checking cheap in-memory string exclusion rules first
                 if(!it.name.isHiddenFile() && it.name !in exclude) {
                     val childAttrs = readAttributes(it)
@@ -256,6 +256,47 @@ fun String.escapeHtml(): String {
         }
     }
     return sb?.toString() ?: this
+}
+
+/**
+ * Wrap plain-text filename content in Unicode First Strong Isolate / Pop
+ * Directional Isolate. HTML `dir="auto"` isolates element text, while title
+ * attributes need explicit isolation to keep adjacent UI copy in its own run.
+ */
+internal fun isolate_bidi_plain_text(value: String): String {
+    return "\u2068$value\u2069"
+}
+
+/** True for Unicode bidirectional format controls that can reorder glyphs. */
+internal fun is_bidi_control(character: Char): Boolean {
+    val code = character.toInt()
+    return code == 0x061C ||
+        code == 0x200E ||
+        code == 0x200F ||
+        code in 0x202A..0x202E ||
+        code in 0x2066..0x2069
+}
+
+/**
+ * Neutralize controls in display text only. The exact filesystem name remains
+ * untouched for href generation, so visible spoof prevention does not break
+ * navigation or mutate the underlying entry.
+ */
+internal fun neutralize_bidi_controls(value: String): String {
+    var builder: StringBuilder? = null
+    for (index in 0 until value.length) {
+        val character = value[index]
+        if (is_bidi_control(character)) {
+            if (builder == null) {
+                builder = StringBuilder(value.length)
+                builder.append(value as CharSequence, 0, index)
+            }
+            builder.append('\uFFFD')
+        } else {
+            builder?.append(character)
+        }
+    }
+    return builder?.toString() ?: value
 }
 
 fun String.urlEncodePath(): String {
@@ -407,6 +448,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
+    val displayDirectoryName = neutralize_bidi_controls(directoryName)
+    val directoryTitle = "${isolate_bidi_plain_text(displayDirectoryName)} - 디렉토리 목록".escapeHtml()
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -421,12 +464,12 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <meta name="robots" content="noindex, nofollow">
-        <title>${directoryName.escapeHtml()} - 디렉토리 목록</title>
+        <title>${directoryTitle}</title>
         <style>${CSS_CONTENT}</style>
      </head>
      <body>
        <main>
-         <h1>${directoryName.escapeHtml()}</h1>
+         <h1 dir="auto">${displayDirectoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
@@ -456,11 +499,17 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
+                  val displayName = neutralize_bidi_controls(fileName)
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
+                  val titleText = "${isolate_bidi_plain_text(displayName)} $typeLabel".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  val bidiWarning = if (displayName != fileName) {
+                      """ <span class="visually-hidden">이름에 방향 제어 문자가 있습니다</span>"""
+                  } else {
+                      ""
+                  }
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleText}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${displayName.escapeHtml()}</span>${bidiWarning} <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
