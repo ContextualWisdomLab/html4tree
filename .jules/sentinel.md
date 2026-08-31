@@ -100,6 +100,7 @@
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
 
+
 ## 2025-03-05 - Missing Path Length Limit Risk
 **Vulnerability:** The `topDir` argument lacked a length limit, allowing an attacker to pass an excessively long string, which could lead to memory exhaustion (OOM) or Denial of Service (DoS) during subsequent file system operations and path parsing.
 **Learning:** All user-provided inputs, especially file paths, must be explicitly validated against reasonable length bounds before being processed by expensive OS-level file system calls or regex matchers.
