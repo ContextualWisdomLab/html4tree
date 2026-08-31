@@ -308,7 +308,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
-       val listed_file_names = dirFilesNames ?: curr_dir.list() ?: emptyArray()
+       val listed_file_names = dirFilesNames ?: curr_dir.list()
 
        try {
            ignore_file.useLines { lines ->
@@ -326,14 +326,14 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            }
        } catch (_: java.io.IOException) {
            ignored_matchers.clear()
-           files_to_exclude.addAll(listed_file_names)
+           listed_file_names?.forEach { files_to_exclude.add(it) }
        } catch (_: java.io.UncheckedIOException) {
            ignored_matchers.clear()
-           files_to_exclude.addAll(listed_file_names)
+           listed_file_names?.forEach { files_to_exclude.add(it) }
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       listed_file_names.forEach {
+       listed_file_names?.forEach {
            val current = it
            val pathCurrent = try {
                java.nio.file.Paths.get(current)
