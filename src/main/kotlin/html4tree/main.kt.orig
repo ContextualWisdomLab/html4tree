@@ -232,27 +232,19 @@ fun String.isHiddenFile(): Boolean {
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
-private object HtmlEscapeHelper {
-    @JvmField
-    val HTML_ESCAPE_MAP = Array<String?>(128) { null }.apply {
-        this['&'.toInt()] = "&amp;"
-        this['<'.toInt()] = "&lt;"
-        this['>'.toInt()] = "&gt;"
-        this['"'.toInt()] = "&quot;"
-        this['\''.toInt()] = "&#x27;"
-        this['`'.toInt()] = "&#x60;"
-    }
-}
-
-// ⚡ Bolt Performance Optimization: Array-based lookup for HTML escaping
-// Replaces the `when` conditional jump table with a direct array lookup for characters < 128.
-// This significantly speeds up character mapping in the hot path.
 fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val cInt = c.toInt()
-        val replacement = if (cInt < 128) HtmlEscapeHelper.HTML_ESCAPE_MAP[cInt] else null
+        val replacement = when (c) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -304,7 +296,7 @@ fun String.urlEncodePath(): String {
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
- 
+
     val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
 
     val ignore_file = File(ignore_file_path)
@@ -410,9 +402,9 @@ fun write_index_file(
         Files.deleteIfExists(tempPath)
     }
 }
- 
+
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
+
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
 
@@ -438,9 +430,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
-""" 
+"""
 
-    val index_middle = fun():String{ 
+    val index_middle = fun():String{
         val l = StringBuilder()
 
         val filesList = dirFiles ?: curr_dir.listFiles()
@@ -480,7 +472,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         }
 
         return l.toString();
-     } 
+     }
 
    val index_bottom="""
          </ul>
