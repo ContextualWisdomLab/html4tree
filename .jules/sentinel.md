@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-08-31 - [MEDIUM] DoS and OOM via unbounded topDir path length
+**Vulnerability:** Unbounded user input (`topDir`) was directly converted to a `File` object and its absolute path was resolved, leading to potential DoS or Out-Of-Memory (OOM) vulnerabilities if extremely long strings are provided.
+**Learning:** Application inputs that are directly translated to file system paths must be explicitly bounded in length prior to any expensive path resolution or normalization operations.
+**Prevention:** Always enforce a reasonable maximum length (e.g., 4096 characters) on directory path inputs using `require(path.length <= 4096)` before processing.
