@@ -1,7 +1,6 @@
 package html4tree
 
 import java.io.File
-import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -23,12 +22,9 @@ internal fun read_ignore_file_lines_no_follow(ignoreFile: File): List<String>? {
             var reachedEnd = false
             while (buffer.hasRemaining()) {
                 val read = channel.read(buffer)
-                when {
-                    read < 0 -> {
-                        reachedEnd = true
-                        break
-                    }
-                    read == 0 -> return@use null
+                if (read < 0) {
+                    reachedEnd = true
+                    break
                 }
             }
             if (!reachedEnd) {
@@ -40,16 +36,12 @@ internal fun read_ignore_file_lines_no_follow(ignoreFile: File): List<String>? {
                     .toList()
             }
         }
-    } catch (_: IOException) {
-        null
-    } catch (_: SecurityException) {
-        null
-    } catch (_: UnsupportedOperationException) {
+    } catch (_: Exception) {
         null
     }
 }
 
-internal fun process_ignore_file_with_reader(
+internal fun collect_ignore_file_exclusions(
     currDir: File,
     dirFilesNames: Array<String>? = null,
     readIgnoreLines: (File) -> List<String>? = ::read_ignore_file_lines_no_follow
@@ -66,8 +58,8 @@ internal fun process_ignore_file_with_reader(
     ) {
         val lines = readIgnoreLines(ignoreFile)
         if (lines == null) {
-            // If the path changed or the bounded open failed after metadata checks,
-            // do not publish entries that the unavailable ignore policy might hide.
+            // A failed point-of-use read means the ignore policy is unknown.
+            // Withhold the captured listing rather than publishing around it.
             listedNames?.let(filesToExclude::addAll)
         } else {
             val ignoredMatchers = mutableListOf<java.nio.file.PathMatcher>()
