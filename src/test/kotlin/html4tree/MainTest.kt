@@ -4,6 +4,7 @@ import org.junit.After
 import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
+import java.util.ArrayDeque
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
@@ -167,8 +168,8 @@ class MainTest {
         val candidate = File(tempDir, "candidate")
         candidate.mkdir()
         val processed = mutableListOf<File>()
-        val queue = LinkedList()
-        queue.push(LinkedListEntry(candidate, 0, "before-swap"))
+        val queue = ArrayDeque<LinkedListEntry>()
+        queue.addLast(LinkedListEntry(candidate, 0, "before-swap"))
 
         crawl_directories(
             queue,
@@ -188,8 +189,8 @@ class MainTest {
         val candidate = File(tempDir, "candidate")
         candidate.mkdir()
         val processed = mutableListOf<File>()
-        val queue = LinkedList()
-        queue.push(LinkedListEntry(candidate, 0, null))
+        val queue = ArrayDeque<LinkedListEntry>()
+        queue.addLast(LinkedListEntry(candidate, 0, null))
 
         crawl_directories(
             queue,
@@ -211,8 +212,8 @@ class MainTest {
         child.mkdirs()
         val processed = mutableListOf<File>()
         val callsByPath = mutableMapOf<String, Int>()
-        val queue = LinkedList()
-        queue.push(LinkedListEntry(root, 0, "root-key"))
+        val queue = ArrayDeque<LinkedListEntry>()
+        queue.addLast(LinkedListEntry(root, 0, "root-key"))
 
         crawl_directories(
             queue,
@@ -248,9 +249,9 @@ class MainTest {
         directoryEntry.mkdir()
 
         val processed = mutableListOf<File>()
-        val queue = LinkedList()
-        queue.push(LinkedListEntry(fileEntry, 0, "file-key"))
-        queue.push(LinkedListEntry(directoryEntry, 0, "directory-key"))
+        val queue = ArrayDeque<LinkedListEntry>()
+        queue.addLast(LinkedListEntry(fileEntry, 0, "file-key"))
+        queue.addLast(LinkedListEntry(directoryEntry, 0, "directory-key"))
 
         crawl_directories(
             queue,
@@ -823,10 +824,10 @@ class MainTest {
     fun testToctouSymlinkSwapRejection() {
         val subdir = File(tempDir, "toctou_test_dir")
         subdir.mkdir()
-        val ll = LinkedList()
+        val ll = ArrayDeque<LinkedListEntry>()
         val entry = LinkedListEntry(subdir, 0)
         entry.fileKey = "queued-key"
-        ll.push(entry)
+        ll.addLast(entry)
 
         var processed = false
         var listed = false
@@ -852,10 +853,10 @@ class MainTest {
     fun testDirectoryReplacementAfterListingIsRejected() {
         val subdir = File(tempDir, "post_listing_swap")
         subdir.mkdir()
-        val ll = LinkedList()
+        val ll = ArrayDeque<LinkedListEntry>()
         val entry = LinkedListEntry(subdir, 0)
         entry.fileKey = "stable-key"
-        ll.push(entry)
+        ll.addLast(entry)
 
         var processed = false
         var listed = false
@@ -890,10 +891,10 @@ class MainTest {
     fun testDirectoryBecomingUnreadableAfterListingIsRejected() {
         val subdir = File(tempDir, "post_listing_unreadable")
         subdir.mkdir()
-        val ll = LinkedList()
+        val ll = ArrayDeque<LinkedListEntry>()
         val entry = LinkedListEntry(subdir, 0)
         entry.fileKey = "stable-key"
-        ll.push(entry)
+        ll.addLast(entry)
 
         var processed = false
         var identityCalls = 0

@@ -2,6 +2,7 @@ package html4tree
 
 import org.junit.Test
 import java.io.File
+import java.util.ArrayDeque
 import kotlin.test.assertTrue
 
 class CoverageTest {
@@ -25,8 +26,8 @@ class CoverageTest {
         val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
         val readOnlyDir = File(tempDir, "readonly")
         readOnlyDir.mkdir()
-        val ll = LinkedList()
-        ll.push(LinkedListEntry(readOnlyDir, 0, null))
+        val ll = ArrayDeque<LinkedListEntry>()
+        ll.addLast(LinkedListEntry(readOnlyDir, 0, null))
         crawl_directories(ll, -1, readAttributes = { null })
         assertTrue(true)
     }
@@ -41,8 +42,8 @@ class CoverageTest {
         // If we omit readAttributes, it will use `Files.readAttributes`. To make it throw an exception, we can pass a file that has been deleted right before, or just a file that doesn't exist!
         val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
         val missingDir = File(tempDir, "missing")
-        val ll = LinkedList()
-        ll.push(LinkedListEntry(missingDir, 0, null)) // missingDir doesn't exist, readAttributes throws NoSuchFileException
+        val ll = ArrayDeque<LinkedListEntry>()
+        ll.addLast(LinkedListEntry(missingDir, 0, null)) // missingDir doesn't exist, readAttributes throws NoSuchFileException
         crawl_directories(ll, -1)
         assertTrue(true)
     }
