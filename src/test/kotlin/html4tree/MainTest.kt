@@ -331,7 +331,7 @@ class MainTest {
         assertTrue(htmlContent.contains("<meta name=\"theme-color\" content=\"#ffffff\" media=\"(prefers-color-scheme: light)\">"))
         assertTrue(htmlContent.contains("<meta name=\"theme-color\" content=\"#0d1117\" media=\"(prefers-color-scheme: dark)\">"))
         assertRobotsDirective(htmlContent)
-        assertTrue(htmlContent.contains("<nav aria-label=\"디렉토리 목록\">"))
+        assertTrue(htmlContent.contains("<nav aria-labelledby=\"nav-heading\">"))
         assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("<main>"))
         assertTrue(htmlContent.contains("</main>"))
