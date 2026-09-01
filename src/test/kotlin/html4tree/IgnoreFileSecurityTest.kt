@@ -4,6 +4,7 @@ import org.junit.Assume
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
+import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -15,10 +16,42 @@ class IgnoreFileSecurityTest {
             File(tempDir, ".html4ignore").writeText("*.txt")
             val listedNames = arrayOf("public.md", "secret.txt")
 
-            val excluded = process_ignore_file_with_reader(tempDir, listedNames) { null }
+            val excluded = collect_ignore_file_exclusions(tempDir, listedNames) { null }
 
             assertTrue(listedNames.all { it in excluded })
             assertTrue("index.html" in excluded)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun invalidListedPathIsExcludedInsteadOfAbortingMatching() {
+        val tempDir = Files.createTempDirectory("html4tree-ignore-invalid-path-").toFile()
+        try {
+            File(tempDir, ".html4ignore").writeText("*")
+            val invalidName = "bad\u0000name"
+
+            val excluded = collect_ignore_file_exclusions(
+                tempDir,
+                arrayOf(invalidName),
+                readIgnoreLines = { listOf("*") }
+            )
+
+            assertTrue(invalidName in excluded)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun noFollowReaderReturnsLinesForSmallRegularFile() {
+        val tempDir = Files.createTempDirectory("html4tree-ignore-regular-").toFile()
+        try {
+            val ignoreFile = File(tempDir, ".html4ignore")
+            ignoreFile.writeText("*.txt\n*.log")
+
+            assertEquals(listOf("*.txt", "*.log"), read_ignore_file_lines_no_follow(ignoreFile))
         } finally {
             tempDir.deleteRecursively()
         }
