@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-09-01 - [html4tree] .html4ignore 처리 중 TOCTOU IOException 예외 처리
+**Vulnerability:** `.canRead()`를 통해 사전 검증을 수행하더라도, 이후 `.useLines()`로 파일을 읽는 시점에 권한이 변경되거나 파일이 삭제되면(Time-of-Check to Time-of-Use) `java.io.IOException`이 발생하여 애플리케이션 전체가 충돌하는 DoS(서비스 거부) 위험이 존재했습니다.
+**Learning:** 파일 기반 작업에서는 접근 권한이나 상태를 미리 확인(`Time-of-Check`)했더라도, 실제 읽기/쓰기 작업(`Time-of-Use`) 시점에 파일 시스템 상태가 변경될 수 있음을 항상 고려해야 합니다(Implicit Trust).
+**Prevention:** 파일 I/O 작업(예: `.useLines()`)을 수행할 때는 반드시 `try-catch`로 `IOException`을 명시적으로 감싸서 우아하게 실패(Fail Securely)하도록 처리하고 크롤링 프로세스가 중단되지 않게 해야 합니다.
