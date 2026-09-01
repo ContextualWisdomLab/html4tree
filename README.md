@@ -1,6 +1,8 @@
 html4tree
 =========
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ContextualWisdomLab/html4tree)
+
 ## Description
 
 This program generates index.html files based on a file directory tree.
