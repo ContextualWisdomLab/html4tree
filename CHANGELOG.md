@@ -19,12 +19,19 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- Read `.html4ignore` through a bounded no-follow channel at the point of use.
+  If the path becomes a symbolic link, the provider cannot honor no-follow, or
+  the file grows beyond 1 MiB after metadata validation, the directory fails
+  closed by withholding every already-listed entry instead of aborting the
+  crawl or applying an unavailable ignore policy.
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
 
 ### Tests
 
+- Add deterministic regressions for an ignore-file open race, an open-time
+  symbolic link, and a post-validation ignore file larger than 1 MiB.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
@@ -33,6 +40,9 @@ All notable changes to this project are documented in this file.
 
 ### Documentation
 
+- Record the `.html4ignore` open-time race boundary and fail-closed behavior in
+  the security change history; exact-head CI and security workflows remain the
+  landing authority.
 - Record the generated-page robots indexing preference, crawler-access
   prerequisite, non-security boundary, rollback contract, and current Google
   Search Central reference in `docs/doctoring/robots-indexing-preference.md`.
