@@ -13,7 +13,7 @@ class ToctouTest {
         val ignoreFile = File(tempDir, ".html4ignore")
 
         var excluded: Set<String>? = null
-        for (i in 0..500) {
+        for (i in 0..2000) {
             ignoreFile.writeText("test.txt")
             val t = thread { ignoreFile.delete() }
             excluded = process_ignore_file(tempDir, null)
