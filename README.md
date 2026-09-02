@@ -1,5 +1,7 @@
 # html4tree
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ContextualWisdomLab/html4tree)
+
 **Generate browsable static `index.html` pages from a directory tree.**
 
 `html4tree` is a small Kotlin command-line tool for turning a filesystem tree into self-contained directory indexes, similar in purpose to Apache `mod_autoindex` but generated ahead of time. Point it at a directory, choose how deep it may recurse, and it writes navigation pages that can be served by an ordinary static file host.
