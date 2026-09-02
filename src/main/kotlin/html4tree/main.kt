@@ -294,7 +294,7 @@ fun String.urlEncodePath(): String {
 }
 
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
-    val files_to_exclude = process_ignore_file_with_reader(
+    val files_to_exclude = collect_ignore_file_exclusions(
         curr_dir,
         dirFilesNames,
         ::read_ignore_file_lines_no_follow

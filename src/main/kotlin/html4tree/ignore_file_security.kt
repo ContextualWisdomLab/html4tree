@@ -25,6 +25,8 @@ internal fun read_ignore_file_lines_no_follow(ignoreFile: File): List<String>? {
                 if (read < 0) {
                     reachedEnd = true
                     break
+                } else if (read == 0) {
+                    return@use null
                 }
             }
             if (!reachedEnd) {
@@ -60,7 +62,7 @@ internal fun collect_ignore_file_exclusions(
         if (lines == null) {
             // A failed point-of-use read means the ignore policy is unknown.
             // Withhold the captured listing rather than publishing around it.
-            listedNames?.let(filesToExclude::addAll)
+            listedNames?.let { filesToExclude.addAll(it) }
         } else {
             val ignoredMatchers = mutableListOf<java.nio.file.PathMatcher>()
             for (line in lines) {
