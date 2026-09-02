@@ -42,13 +42,15 @@ java -jar ./build/libs/html4tree.jar /path/to/static-tree --max-level 0
 
 Place a `.html4ignore` file in a directory to exclude matching entries from that directory's generated index. Each non-empty line is interpreted as a Java filesystem glob matched against the entry name.
 
-For example, to hide text files from the generated listing:
+For example, to exclude text files from the generated listing:
 
 ```text
 *.txt
 ```
 
-The parser deliberately bounds ignore input: patterns longer than 100 characters and lines after the first 1,000 are ignored. Treat `.html4ignore` as presentation filtering, not as an authorization boundary—do not place sensitive material under a published static root merely because it is excluded from a listing.
+When a matching entry is a directory, the current crawler also does not enqueue that directory for recursion, so `html4tree` does not generate indexes beneath it during that crawl. The directory and its files remain on disk, and a static server may still serve them when addressed directly.
+
+The parser deliberately bounds ignore input: patterns longer than 100 characters and lines after the first 1,000 are ignored. `.html4ignore` therefore affects generated navigation and crawler traversal; it is **not** an authorization boundary. Do not place sensitive material under a published static root merely because it is excluded from a listing or recursive generation.
 
 ## Operating model
 

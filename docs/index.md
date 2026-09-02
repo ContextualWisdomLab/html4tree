@@ -9,11 +9,10 @@
 Build and verify the project with the repository's Gradle wrapper:
 
 ```bash
-./gradlew check
-./gradlew shadowJar
+./gradlew build
 ```
 
-For the full CLI examples, recursive-generation options, depth controls, `.html4ignore` behavior, and operator safety notes, see the [repository README](../README.md).
+For the full CLI examples, recursive-generation options, depth controls, `.html4ignore` behavior, and operator safety notes, see the [repository README](https://github.com/ContextualWisdomLab/html4tree#readme).
 
 ## Product boundary
 
@@ -25,14 +24,15 @@ The project is intentionally small: Kotlin implements the CLI and tree-to-HTML g
 
 ## Verification and maintenance
 
-Use `./gradlew check` as the repository-level verification entry point. Security reporting follows [`SECURITY.md`](../SECURITY.md). Repository changes should preserve the existing MIT license and upstream attribution in [`LICENSE`](../LICENSE).
+Use `./gradlew check` as the repository-level verification entry point. Security reporting follows the [repository security policy](https://github.com/ContextualWisdomLab/html4tree/security/policy). Repository changes should preserve the existing MIT license and upstream attribution in the [repository license](https://github.com/ContextualWisdomLab/html4tree/blob/master/LICENSE).
 
 ## Releases and source truth
 
-Treat the protected default branch and GitHub release/tag history as the source of truth for the version you deploy. Documentation on this site describes repository capabilities; it does not itself constitute a release, hosted-service SLA, or security certification.
+Treat the protected default branch and GitHub release/tag history as evidence for the version you deploy, and verify the exact revision and artifacts against repository policy. Documentation on this site describes repository capabilities; it does not itself constitute a release, hosted-service SLA, or security certification.
 
 ## Learn more
 
-- [README](../README.md) — task-first usage and operating model
-- [Security policy](../SECURITY.md) — vulnerability reporting and security boundary
+- [README](https://github.com/ContextualWisdomLab/html4tree#readme) — task-first usage and operating model
+- [Security policy](https://github.com/ContextualWisdomLab/html4tree/security/policy) — vulnerability reporting and security boundary
+- [License](https://github.com/ContextualWisdomLab/html4tree/blob/master/LICENSE) — project grant and attribution
 - [Ask DeepWiki](https://deepwiki.com/ContextualWisdomLab/html4tree) — repository-aware navigation and questions
