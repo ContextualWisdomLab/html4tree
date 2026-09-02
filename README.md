@@ -78,7 +78,8 @@ For vulnerability reporting, follow [`SECURITY.md`](SECURITY.md). Do not disclos
 
 ## Project documentation
 
-- [`docs/product-technical-gap-baseline.md`](docs/product-technical-gap-baseline.md) — current product boundary, architecture, release, security, and maintenance gaps.
+- [`docs/product-technical-gap-baseline.md`](docs/product-technical-gap-baseline.md) — current product boundary, architecture, release, security, licensing, and maintenance gaps.
+- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) — direct runtime/test dependency license boundary and fat-JAR redistribution note.
 - [`CHANGELOG.md`](CHANGELOG.md) — integrated change history.
 - [`SECURITY.md`](SECURITY.md) — coordinated vulnerability-reporting boundary.
 - [`AGENTS.md`](AGENTS.md) and [`CLAUDE.md`](CLAUDE.md) — maintainer/automation guidance, not end-user product behavior.
@@ -92,4 +93,4 @@ Keep changes small and deterministic. User-visible behavior changes should inclu
 
 `html4tree` is distributed under the **MIT License**. See [`LICENSE`](LICENSE).
 
-The existing license retains the original copyright notice for Yamir Encarnacion. ContextualWisdomLab maintenance does not replace that attribution or relicense independently licensed dependencies; third-party Kotlin/Gradle/test libraries remain under their own terms.
+The existing license retains the original copyright notice for Yamir Encarnacion. ContextualWisdomLab maintenance does not replace that attribution or relicense independently licensed dependencies. The current runtime/fat-JAR graph includes Apache-2.0 Kotlin and Clikt components, while JUnit is test-only under EPL-1.0; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). A source notice is not by itself proof that a built fat JAR preserves every required third-party license/NOTICE payload, so distributable-package acceptance remains an explicit gap rather than an implied license-clean claim.
