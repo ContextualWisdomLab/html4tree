@@ -1,59 +1,88 @@
-html4tree
-=========
+# html4tree
 
-## Description
+**Generate browsable static `index.html` pages from a directory tree.**
 
-This program generates index.html files based on a file directory tree.
-Think Apache mod_autoindex.
-See [https://httpd.apache.org/docs/2.4/mod/mod_autoindex.html](https://httpd.apache.org/docs/2.4/mod/mod_autoindex.html).
-It is written in Kotlin.
+`html4tree` is a small Kotlin command-line tool for turning a filesystem tree into self-contained directory indexes, similar in purpose to Apache `mod_autoindex` but generated ahead of time. Point it at a directory, choose how deep it may recurse, and it writes navigation pages that can be served by an ordinary static file host.
 
-## License 
+It is useful when you want lightweight directory browsing without running a dynamic directory-listing service. It does **not** start a web server, manage authentication, or decide which files are safe to publish; the operator remains responsible for the content under the selected root.
 
-html4tree is copyrighted free software by Yamir Encarnación &lt;yencarnacion@webninjapr.com&gt;. You can redistribute it and/or modify it under the terms of the MIT license(see the file LICENSE).
+## Quick start
 
-## How to compile
+Build the executable JAR with the checked-in Gradle wrapper:
 
-To compile:
-
-`$ ./gradlew`
-
-## How to run
-
-To obtain help:
-
+```bash
+./gradlew build
 ```
+
+Then inspect the CLI contract:
+
+```bash
 java -jar ./build/libs/html4tree.jar -h
-Usage: html4tree [OPTIONS] TOPDIR
+```
 
-Options:
-  --max-level INT  Number of levels deep for which to generate an index.html
-                   file
-  -h, --help       Show this message and exit
+Generate indexes recursively beneath a directory:
 
-Arguments:
-  TOPDIR  Top directory to crawl
-```  
+```bash
+java -jar ./build/libs/html4tree.jar /path/to/static-tree
+```
 
-To run:
+Limit generation to the selected top directory only:
 
-`$ java -jar ./build/libs/html4tree.jar <top directory to index>`
+```bash
+java -jar ./build/libs/html4tree.jar /path/to/static-tree --max-level 0
+```
 
-To only generate the index.html file for the top directory:
+`TOPDIR` is the directory to crawl. `--max-level` bounds how many directory levels receive generated `index.html` files.
 
-`$ java -jar ./build/libs/html4tree.jar <top directory to index> --max-level 0`
+## Exclude content from an index
 
-## To exclude files from the generated index.html file
+Place a `.html4ignore` file in a directory to exclude matching entries from that directory's generated index. Each non-empty line is interpreted as a Java filesystem glob matched against the entry name.
 
-To exclude files, place a `.html4ignore` file in the directory. Each non-empty line is a Java file-system glob pattern matched against an entry name. Patterns longer than 100 characters and lines after the first 1,000 are ignored.
+For example, to hide text files from the generated listing:
 
-For example, to exclude files ending in `.txt`:
+```text
+*.txt
+```
 
-`*.txt`
+The parser deliberately bounds ignore input: patterns longer than 100 characters and lines after the first 1,000 are ignored. Treat `.html4ignore` as presentation filtering, not as an authorization boundary—do not place sensitive material under a published static root merely because it is excluded from a listing.
 
-## Other
+## Operating model
 
-To delete all the index.html files generated with one command, do:
+`html4tree` reads the selected directory tree and writes generated `index.html` files into that tree. The resulting pages are static output and can be served by any suitable static host. The tool does not own HTTP serving, access control, TLS, deployment, or content-retention policy.
 
-`$ find <top directory to crawl> -name index.html -delete`
+If you need to remove generated indexes from a tree, review the target carefully before using a filesystem command such as:
 
+```bash
+find /path/to/static-tree -name index.html -delete
+```
+
+That command is an operator action outside `html4tree`; make sure pre-existing `index.html` files are not being mistaken for generated output.
+
+## Development and verification
+
+The current Gradle build uses Kotlin and Clikt for the CLI and JUnit/Kotlin test tooling. Run the repository verification path with:
+
+```bash
+./gradlew check
+```
+
+The build config wires JaCoCo coverage verification into `check` with a 100% minimum coverage threshold for the measured code. Passing source on one machine is not a substitute for checking the exact revision and workflow evidence you intend to ship.
+
+For vulnerability reporting, follow [`SECURITY.md`](SECURITY.md). Do not disclose suspected vulnerabilities in a public issue.
+
+## Project documentation
+
+- [`CHANGELOG.md`](CHANGELOG.md) — integrated change history.
+- [`SECURITY.md`](SECURITY.md) — coordinated vulnerability-reporting boundary.
+- [`AGENTS.md`](AGENTS.md) and [`CLAUDE.md`](CLAUDE.md) — maintainer/automation guidance, not end-user product behavior.
+- [`docs/doctoring/`](docs/doctoring/) — deeper maintenance evidence where applicable.
+
+## Contributing
+
+Keep changes small and deterministic. User-visible behavior changes should include tests for generated navigation and exclusion semantics, and the full `./gradlew check` contract should remain green. Avoid moving maintainer automation procedure into the customer-facing README.
+
+## License
+
+`html4tree` is distributed under the **MIT License**. See [`LICENSE`](LICENSE).
+
+The existing license retains the original copyright notice for Yamir Encarnacion. ContextualWisdomLab maintenance does not replace that attribution or relicense independently licensed dependencies; third-party Kotlin/Gradle/test libraries remain under their own terms.
