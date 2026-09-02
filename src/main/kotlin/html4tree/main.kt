@@ -147,6 +147,8 @@ fun go(topDir: String, maxLevel: Int)  {
 
     require(Files.isDirectory(top_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) { "Top directory must be an existing non-symlink directory" }
 
+    // ⚡ Bolt Performance Optimization: Use ArrayDeque instead of a custom linked list
+    // to prevent excessive node object allocations during BFS traversal.
     val ll = ArrayDeque<LinkedListEntry>()
 
     val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
