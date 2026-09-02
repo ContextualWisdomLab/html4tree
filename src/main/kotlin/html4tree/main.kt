@@ -229,6 +229,21 @@ fun String.isHiddenFile(): Boolean {
     }
 }
 
+// ⚡ Bolt Performance Optimization: character mapping via direct array-based lookups
+// Replacing `when` conditional jump tables with an array lookup significantly speeds up hot paths like HTML escaping.
+private object HtmlEscaper {
+    @JvmField
+    val REPLACEMENTS = Array<String?>(128) { null }
+    init {
+        REPLACEMENTS['&'.toInt()] = "&amp;"
+        REPLACEMENTS['<'.toInt()] = "&lt;"
+        REPLACEMENTS['>'.toInt()] = "&gt;"
+        REPLACEMENTS['"'.toInt()] = "&quot;"
+        REPLACEMENTS['\''.toInt()] = "&#x27;"
+        REPLACEMENTS['`'.toInt()] = "&#x60;"
+    }
+}
+
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
@@ -236,15 +251,8 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        val cInt = c.toInt()
+        val replacement = if (cInt < 128) HtmlEscaper.REPLACEMENTS[cInt] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
