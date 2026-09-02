@@ -71,7 +71,7 @@ sequenceDiagram
 
 The current repository uses Kotlin and Clikt with a checked-in Gradle 5.1.1 wrapper. The documented source path requires JDK 8–11 with this toolchain. `./gradlew check` is the repository verification entry point; the build configuration includes JaCoCo coverage verification with a 100% minimum threshold for measured code.
 
-The README lane preserves the existing MIT license and its original `Copyright (c) 2019 Yamir Encarnacion` attribution. GitHub metadata identifies `ContextualWisdomLab/html4tree` as a fork of `yencarnacion/html4tree`, whose repository is also MIT-licensed. ContextualWisdomLab maintenance does not replace that inherited attribution or relicense third-party build/runtime dependencies.
+The documentation preserves the existing MIT license and its original `Copyright (c) 2019 Yamir Encarnacion` attribution. GitHub metadata identifies `ContextualWisdomLab/html4tree` as a fork of `yencarnacion/html4tree`, whose repository is also MIT-licensed. ContextualWisdomLab maintenance does not replace that inherited attribution or relicense third-party build/runtime dependencies.
 
 The ContextualWisdomLab fork currently has no GitHub Release. Source state and passing checks must not be presented as an immutable release artifact.
 
@@ -79,18 +79,12 @@ The ContextualWisdomLab fork currently has no GitHub Release. Source state and p
 
 | Priority | Gap | Evidence / risk | Required action | Status |
 | --- | --- | --- | --- | --- |
-| P0 | Active security PR queue is fragmented across overlapping fixes | Multiple current PRs address `.html4ignore` TOCTOU/read failures and path-input hardening on separate branches | Reconcile by root cause and verified delta carryover into canonical security writers; preserve tests and retire only proven-complete duplicates | **Open** |
+| P0 | Filesystem read/path hardening lacks one durable release-level acceptance story | Ignore-file reads, path selection, and filesystem mutation can cross trust and race boundaries; isolated fixes are insufficient evidence of a shipped security posture | Consolidate the required path/read invariants into canonical tests and security acceptance, then carry them through one immutable release before claiming the boundary closed | **Open** |
 | P1 | Current Gradle/JDK toolchain is legacy | Gradle 5.1.1 requires JDK 8–11 for the documented path, limiting supported developer/runtime environments | Upgrade Gradle/Kotlin/dependency toolchain through an explicit compatibility/security test lane; verify generated HTML/CLI behavior and coverage before changing README support claims | **Open** |
 | P1 | Generated files lack explicit provenance for safe cleanup | Operator cleanup can remove pre-existing `index.html` files because generated output is not distinguishable by durable provenance | Design a backwards-compatible provenance/manifest or safe cleanup command before advertising automated cleanup | **Open** |
 | P1 | Publication/access control is intentionally external but easy to misunderstand | `.html4ignore` can hide navigation while direct static-host access remains possible | Keep fail-closed README/security language and add integration tests/examples for representative static-host deployment boundaries if a supported deployment profile is introduced | **Documented boundary** |
 | P1 | No immutable ContextualWisdomLab release | GitHub release inventory is empty | Establish reproducible release/package checks, checksum/SBOM/provenance as appropriate, then publish only from one protected exact source revision | **Not release-ready** |
-| P2 | Canonical product documentation was previously sparse | README PR #600 now owns task-first README and Pages-ready landing | Keep README, this ledger, and actual CLI/build semantics synchronized; avoid branch/run details in customer-facing copy | **In progress on #600** |
-
-## Current documentation integration lane
-
-PR #600 is the canonical README/public-documentation writer. It owns `README.md`, `docs/index.md`, and this gap baseline. Review repairs already align `.html4ignore` recursion semantics, the real Gradle `build` task, JDK 8–11 constraints, and Pages-safe repository navigation.
-
-Every mutation of the writer branch invalidates prior exact-head check evidence. Before ordinary integration, re-read the unchanged final head, live `master`, reviews/threads, repository CI, SAST/Security, mergeability, and then-live governance.
+| P2 | Product documentation requires durable synchronization with CLI semantics | Build commands, ignore semantics, supported JDK range, inherited-license provenance, and publication boundaries can drift independently from code | Keep README, Pages source, this ledger, tests, and actual CLI/build behavior synchronized through ordinary protected review | **Open maintenance duty** |
 
 ## Documentation / architecture gaps
 
