@@ -6,12 +6,13 @@
 
 ## Start here
 
-The checked-in Gradle 5.1.1 wrapper should currently be used with JDK 8–11. Build and verify the project with:
+The checked-in Gradle 5.1.1 wrapper should currently be used with JDK 8–11. Build the project with:
 
 ```bash
 ./gradlew build
-./gradlew check
 ```
+
+`build` already includes the repository verification lifecycle. When you only need verification without the rest of the build lifecycle, run `./gradlew check` instead.
 
 For the full CLI examples, recursive-generation options, depth controls, `.html4ignore` behavior, and operator safety notes, see the [repository README](https://github.com/ContextualWisdomLab/html4tree#readme).
 
@@ -29,7 +30,7 @@ The dated [product and technical gap baseline](product-technical-gap-baseline.md
 
 ## Verification and maintenance
 
-Use `./gradlew check` as the repository-level verification entry point. Security reporting follows the [repository security policy](https://github.com/ContextualWisdomLab/html4tree/security/policy). Repository changes should preserve the existing MIT license and upstream attribution in the [repository license](https://github.com/ContextualWisdomLab/html4tree/blob/master/LICENSE).
+Use `./gradlew check` as the repository-level verification entry point when you do not need the complete build lifecycle. Security reporting follows the [repository security policy](https://github.com/ContextualWisdomLab/html4tree/security/policy). Repository changes should preserve the existing MIT license and upstream attribution in the [repository license](https://github.com/ContextualWisdomLab/html4tree/blob/master/LICENSE).
 
 ## Releases and source truth
 
