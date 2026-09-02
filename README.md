@@ -10,6 +10,8 @@ It is useful when you want lightweight directory browsing without running a dyna
 
 ## Quick start
 
+The checked-in wrapper uses Gradle 5.1.1. Use a JDK 8–11 runtime with this repository's current build toolchain; newer JDKs require a separate, reviewed Gradle/Kotlin toolchain upgrade rather than an undocumented local workaround.
+
 Build the executable JAR with the checked-in Gradle wrapper:
 
 ```bash
