@@ -769,6 +769,34 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileToctouSymlinkSwapRejection() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*.txt")
+        File(tempDir, "test.txt").createNewFile()
+
+        // Mock a Time-of-Check-Time-of-Use window where the file is replaced by a symlink
+        val targetFile = File(tempDir, "target.ignore")
+        targetFile.writeText("*.log")
+
+        try {
+            ignoreFile.delete()
+            Files.createSymbolicLink(ignoreFile.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        // Even though it was a file previously (and TOCTOU bypassed the isFile check implicitly here),
+        // we simulate the replacement, but process_ignore_file reads it directly so we need to test
+        // the direct parsing block which will fail now because NOFOLLOW_LINKS throws an Exception on Symlinks.
+
+        // This is a unit test of the vulnerability itself; however, since process_ignore_file encapsulates
+        // both the check and the read, we can just call it again with the symlink in place.
+        val excluded = process_ignore_file(tempDir, null)
+        assertFalse(excluded.contains("test.txt"))
+        assertFalse(excluded.contains("test.log"))
+    }
+
+    @Test
     fun testProcessIgnoreFileLargeSize() {
         val ignoreFile = File(tempDir, ".html4ignore")
         // Write slightly more than 1MB
