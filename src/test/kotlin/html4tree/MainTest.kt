@@ -643,7 +643,21 @@ class MainTest {
 
     @Test
     fun testProcessIgnoreFileToctouIoException() {
-        val testDir = java.nio.file.Files.createTempDirectory("toctou_test").toFile()
+        val testDir = tempDir
+        val seamDir = java.io.File(testDir, "seam_test")
+        seamDir.mkdir()
+        java.io.File(seamDir, "should_be_ignored.txt").createNewFile()
+        java.io.File(seamDir, "should_not_be_ignored.txt").createNewFile()
+
+        val excluded = process_ignore_file(seamDir, null) {
+            sequence {
+                yield("should_not_be_ignored.txt")
+                throw java.io.IOException("Simulated TOCTOU IOException during read")
+            }
+        }
+
+        assertFalse(excluded.contains("should_not_be_ignored.txt"))
+
         val ignoreFile = java.io.File(testDir, ".html4ignore")
         var covered = false
         val start = System.currentTimeMillis()

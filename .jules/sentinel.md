@@ -104,3 +104,8 @@
 **Vulnerability:** `.canRead()`를 통해 사전 검증을 수행하더라도, 이후 `.useLines()`로 파일을 읽는 시점에 권한이 변경되거나 파일이 삭제되면(Time-of-Check to Time-of-Use) `java.io.IOException`이 발생하여 애플리케이션 전체가 충돌하는 DoS(서비스 거부) 위험이 존재했습니다.
 **Learning:** 파일 기반 작업에서는 접근 권한이나 상태를 미리 확인(`Time-of-Check`)했더라도, 실제 읽기/쓰기 작업(`Time-of-Use`) 시점에 파일 시스템 상태가 변경될 수 있음을 항상 고려해야 합니다(Implicit Trust).
 **Prevention:** 파일 I/O 작업(예: `.useLines()`)을 수행할 때는 반드시 `try-catch`로 `IOException`을 명시적으로 감싸서 우아하게 실패(Fail Securely)하도록 처리하고 크롤링 프로세스가 중단되지 않게 해야 합니다.
+
+## $(date +%Y-%m-%d) - [html4tree] .html4ignore 처리 중 TOCTOU IOException 예외 및 부분 정책 방지
+**Vulnerability:** \`.canRead()\` 검증 후 \`.useLines()\`로 읽는 사이에 파일이 삭제/권한 변경될 수 있는 TOCTOU 취약점으로 인해 \`IOException\`이 발생하여 프로세스가 충돌(DoS)할 수 있었으며, 더 심각한 것은 읽기 도중 실패 시 이전에 파싱된 일부 무시 규칙(partial policy)만 적용되어 안전하지 않은 디렉토리/파일이 노출될 수 있었습니다.
+**Learning:** 파일 읽기 도중 실패 시, 이전에 부분적으로 파싱된 상태가 남아서 보안 검증을 우회하거나 예기치 않은 상태(partial state)가 적용될 수 있습니다.
+**Prevention:** 런타임에 보안/필터 규칙을 로드할 때는 전체 스냅샷이 성공적으로 읽혀졌을 때만 적용되도록 해야 하며, 실패 시엔 부분 상태를 롤백(fails closed)하고 \`IOException\`을 우아하게 처리해야 합니다.
