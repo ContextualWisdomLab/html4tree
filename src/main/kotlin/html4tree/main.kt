@@ -323,7 +323,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                    }
                }
            }
-       } catch (_: java.io.IOException) {
+       } catch (_: Exception) {
            // 보안: TOCTOU 파일 접근 거부/삭제 예외 시 크래시(DoS) 방지 및 안전하게 무시 (Fail Securely)
        }
 
