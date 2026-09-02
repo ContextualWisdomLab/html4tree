@@ -78,6 +78,7 @@ For vulnerability reporting, follow [`SECURITY.md`](SECURITY.md). Do not disclos
 
 ## Project documentation
 
+- [`docs/product-technical-gap-baseline.md`](docs/product-technical-gap-baseline.md) — current product boundary, architecture, release, security, and maintenance gaps.
 - [`CHANGELOG.md`](CHANGELOG.md) — integrated change history.
 - [`SECURITY.md`](SECURITY.md) — coordinated vulnerability-reporting boundary.
 - [`AGENTS.md`](AGENTS.md) and [`CLAUDE.md`](CLAUDE.md) — maintainer/automation guidance, not end-user product behavior.
