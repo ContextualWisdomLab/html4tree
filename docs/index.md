@@ -6,10 +6,11 @@
 
 ## Start here
 
-Build and verify the project with the repository's Gradle wrapper:
+The checked-in Gradle 5.1.1 wrapper should currently be used with JDK 8–11. Build and verify the project with:
 
 ```bash
 ./gradlew build
+./gradlew check
 ```
 
 For the full CLI examples, recursive-generation options, depth controls, `.html4ignore` behavior, and operator safety notes, see the [repository README](https://github.com/ContextualWisdomLab/html4tree#readme).
@@ -18,9 +19,13 @@ For the full CLI examples, recursive-generation options, depth controls, `.html4
 
 `html4tree` reads a directory tree and writes static navigation pages. It does not run a web server, authenticate users, authorize publication, or decide whether files beneath a selected root are safe to expose. Static hosting, access control, retention, and cleanup remain operator responsibilities.
 
+An ignored directory is omitted from generated navigation and from recursive index generation for that crawl, but remains on disk and may still be served directly. `.html4ignore` is therefore not an authorization mechanism.
+
 ## Architecture
 
 The project is intentionally small: Kotlin implements the CLI and tree-to-HTML generation path, Clikt provides command-line parsing, and Gradle owns build/test packaging. Generated HTML is the product artifact; no long-running service or database is required.
+
+The dated [product and technical gap baseline](product-technical-gap-baseline.md) records the current Context Map, generation flow, inherited-license boundary, release status, and active security/toolchain/product gaps without treating open branches as shipped behavior.
 
 ## Verification and maintenance
 
@@ -28,11 +33,12 @@ Use `./gradlew check` as the repository-level verification entry point. Security
 
 ## Releases and source truth
 
-Treat the protected default branch and GitHub release/tag history as evidence for the version you deploy, and verify the exact revision and artifacts against repository policy. Documentation on this site describes repository capabilities; it does not itself constitute a release, hosted-service SLA, or security certification.
+The ContextualWisdomLab fork currently has no GitHub Release. Treat source state and current CI as revision evidence rather than as an immutable release artifact. Documentation on this site does not itself constitute a release, hosted-service SLA, Pages publication, or security certification.
 
 ## Learn more
 
 - [README](https://github.com/ContextualWisdomLab/html4tree#readme) — task-first usage and operating model
+- [Product and technical gap baseline](product-technical-gap-baseline.md) — current architecture, release, security, and maintenance gaps
 - [Security policy](https://github.com/ContextualWisdomLab/html4tree/security/policy) — vulnerability reporting and security boundary
-- [License](https://github.com/ContextualWisdomLab/html4tree/blob/master/LICENSE) — project grant and attribution
+- [License](https://github.com/ContextualWisdomLab/html4tree/blob/master/LICENSE) — inherited MIT grant and attribution
 - [Ask DeepWiki](https://deepwiki.com/ContextualWisdomLab/html4tree) — repository-aware navigation and questions
