@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-20 - [보안 개선: 민감한 설정 및 빌드 파일 제외 목록 확장]
+**Vulnerability:** 민감한 환경 변수, 패키지 잠금 파일, Docker 설정 파일 등이 디렉토리 목록을 통해 노출될 수 있는 정보 노출 (Information Exposure) 위험이 있었습니다.
+**Learning:** 공격자는 `package-lock.json`이나 `docker-compose.yml`과 같은 파일을 통해 애플리케이션의 내부 구조, 사용 중인 패키지의 버전(알려진 취약점 파악), 환경 설정 등을 유추할 수 있습니다. `.env.local`과 같은 추가적인 환경 변수 파일도 주요 타겟이 됩니다.
+**Prevention:** 디렉토리 목록을 생성할 때 기본적으로 제외되는 민감한 파일 목록(`Constants.defaultSensitiveFiles`)에 `.env.local`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `docker-compose.yml`, `Dockerfile` 등을 추가하여 우발적인 정보 유출을 방지하십시오.
