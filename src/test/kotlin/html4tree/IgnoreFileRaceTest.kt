@@ -23,10 +23,11 @@ class IgnoreFileRaceTest {
             val excluded = process_ignore_file(tempDir, names) { path ->
                 openerCalled = true
                 assertEquals(ignoreFile.toPath(), path)
-                // This seam runs only after the production regular-file/readability/size
-                // checks. Replace the entry at that point, then model the NOFOLLOW open
-                // failing because the checked entry is no longer safely readable.
-                ignoreFile.writeText("*.victim\n")
+                // The seam is reached only after the regular-file/readability/size
+                // checks. Replace that checked directory entry before the open and
+                // model the NOFOLLOW open rejecting the raced replacement.
+                Files.delete(path)
+                Files.writeString(path, "*.victim\n")
                 throw FileSystemException(path.toString(), null, "simulated raced replacement")
             }
 
