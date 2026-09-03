@@ -62,3 +62,6 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+## 2026-08-19 - String Interpolation Overhead in Hot Loops
+**Learning:** In Kotlin, using string interpolation (e.g., `"""...${...}..."""`) inside hot loops (like processing large directories) creates unnecessary intermediate string allocations, increasing Garbage Collection (GC) pressure and reducing performance.
+**Action:** Use direct `StringBuilder.append()` chaining instead of string interpolation for constructing strings in frequently executed code paths to minimize allocations and improve execution time.
