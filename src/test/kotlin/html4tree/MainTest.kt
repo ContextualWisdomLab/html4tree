@@ -167,7 +167,7 @@ class MainTest {
         val candidate = File(tempDir, "candidate")
         candidate.mkdir()
         val processed = mutableListOf<File>()
-        val queue = LinkedList()
+        val queue = java.util.ArrayDeque<LinkedListEntry>()
         queue.push(LinkedListEntry(candidate, 0, "before-swap"))
 
         crawl_directories(
@@ -188,7 +188,7 @@ class MainTest {
         val candidate = File(tempDir, "candidate")
         candidate.mkdir()
         val processed = mutableListOf<File>()
-        val queue = LinkedList()
+        val queue = java.util.ArrayDeque<LinkedListEntry>()
         queue.push(LinkedListEntry(candidate, 0, null))
 
         crawl_directories(
@@ -211,7 +211,7 @@ class MainTest {
         child.mkdirs()
         val processed = mutableListOf<File>()
         val callsByPath = mutableMapOf<String, Int>()
-        val queue = LinkedList()
+        val queue = java.util.ArrayDeque<LinkedListEntry>()
         queue.push(LinkedListEntry(root, 0, "root-key"))
 
         crawl_directories(
@@ -248,7 +248,7 @@ class MainTest {
         directoryEntry.mkdir()
 
         val processed = mutableListOf<File>()
-        val queue = LinkedList()
+        val queue = java.util.ArrayDeque<LinkedListEntry>()
         queue.push(LinkedListEntry(fileEntry, 0, "file-key"))
         queue.push(LinkedListEntry(directoryEntry, 0, "directory-key"))
 
@@ -823,7 +823,7 @@ class MainTest {
     fun testToctouSymlinkSwapRejection() {
         val subdir = File(tempDir, "toctou_test_dir")
         subdir.mkdir()
-        val ll = LinkedList()
+        val ll = java.util.ArrayDeque<LinkedListEntry>()
         val entry = LinkedListEntry(subdir, 0)
         entry.fileKey = "queued-key"
         ll.push(entry)
@@ -852,7 +852,7 @@ class MainTest {
     fun testDirectoryReplacementAfterListingIsRejected() {
         val subdir = File(tempDir, "post_listing_swap")
         subdir.mkdir()
-        val ll = LinkedList()
+        val ll = java.util.ArrayDeque<LinkedListEntry>()
         val entry = LinkedListEntry(subdir, 0)
         entry.fileKey = "stable-key"
         ll.push(entry)
@@ -890,7 +890,7 @@ class MainTest {
     fun testDirectoryBecomingUnreadableAfterListingIsRejected() {
         val subdir = File(tempDir, "post_listing_unreadable")
         subdir.mkdir()
-        val ll = LinkedList()
+        val ll = java.util.ArrayDeque<LinkedListEntry>()
         val entry = LinkedListEntry(subdir, 0)
         entry.fileKey = "stable-key"
         ll.push(entry)
