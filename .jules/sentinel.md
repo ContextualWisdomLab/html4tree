@@ -104,3 +104,8 @@
 **Vulnerability:** `.html4ignore` 파일의 크기와 권한을 확인한 후 `useLines`로 읽기 전에 공격자가 파일을 심볼릭 링크로 교체할 수 있는 TOCTOU 취약점. Kotlin의 `File.useLines`는 내부적으로 심볼릭 링크를 따라가므로 임의 파일 읽기/경로 탐색이 발생할 수 있습니다.
 **Learning:** 파일 유효성을 검증(Time-of-Check)한 후 파일 내용 읽기(Time-of-Use)를 진행할 때, 기본 읽기 함수(예: `useLines`)가 심볼릭 링크를 따라가면 검증을 우회할 수 있습니다.
 **Prevention:** 파일을 읽을 때 항상 `java.nio.file.Files.newInputStream`에 `java.nio.file.LinkOption.NOFOLLOW_LINKS` 옵션을 사용하여 심볼릭 링크 우회를 방지해야 합니다.
+
+## 2024-09-03 - [INFO] TOCTOU 방지 코드의 테스트 커버리지 최적화
+**Vulnerability:** 이전 커밋에서 `File.useLines`를 `Files.newInputStream(..., NOFOLLOW_LINKS)`로 대체하여 심볼릭 링크를 통한 TOCTOU 취약점을 해결했습니다. 하지만 기존에 존재하던 `!Files.isSymbolicLink()` 검사 때문에, 단위 테스트에서 심볼릭 링크 파일은 `if` 문을 통과하지 못해 새로 추가된 `newInputStream` 코드가 실행되지 않고 브랜치 커버리지가 100% 미만이 되는 문제가 발생했습니다.
+**Learning:** `newInputStream`과 `NOFOLLOW_LINKS` 옵션은 심볼릭 링크 접근 시 예외를 발생시키므로, 기존의 `!Files.isSymbolicLink()` 중복 검사는 도달할 수 없는 코드 분기를 만들어 테스트 커버리지를 떨어뜨립니다. (메모리 가이드라인: 중복 검사 제거 원칙)
+**Prevention:** 파일 읽기 시점에 원자적으로 접근 제한을 적용했다면(예: `NOFOLLOW_LINKS`), 불필요한 이전 상태 검사(`!Files.isSymbolicLink()`)를 제거하여 조건문의 복잡성을 줄이고 예외 처리(`try-catch`) 블록에 의존하는 편이 테스트 가능성과 보안 측면에서 모두 유리합니다.
