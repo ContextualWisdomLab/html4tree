@@ -128,6 +128,26 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileExcludesSensitiveNamesWithWhitespace() {
+        val sensitiveNamesWithWhitespace = arrayOf(
+            " .git",
+            "config.json ",
+            "\tsecrets.yml",
+            ".npmrc\r"
+        )
+        val safeNames = arrayOf(" public.txt ", "image.png")
+
+        val excluded = process_ignore_file(tempDir, sensitiveNamesWithWhitespace + safeNames)
+
+        sensitiveNamesWithWhitespace.forEach { name ->
+            assertTrue(excluded.contains(name), "exact observed name must stay in the exclusion set: '$name'")
+        }
+        safeNames.forEach { name ->
+            assertFalse(excluded.contains(name), "ordinary padded names must remain visible: '$name'")
+        }
+    }
+
+    @Test
     fun testGoIgnoresHiddenFilesAndDirectories() {
         val hiddenFile = File(tempDir, ".hidden_file.txt")
         hiddenFile.createNewFile()
@@ -339,9 +359,11 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"상위 디렉토리로 이동\""))
         assertTrue(htmlContent.contains("aria-hidden=\"true\""))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">파일</span>"))
-        assertTrue(htmlContent.contains("title=\"file1.txt 파일\""))
+        assertTrue(htmlContent.contains("title=\"${isolate_bidi_plain_text("file1.txt")} 파일\""))
+        assertTrue(htmlContent.contains("<span class=\"entry-name\" dir=\"auto\">file1.txt</span>"))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">디렉토리</span>"))
-        assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
+        assertTrue(htmlContent.contains("title=\"${isolate_bidi_plain_text("subdir")} 디렉토리\""))
+        assertTrue(htmlContent.contains("<span class=\"entry-name\" dir=\"auto\">subdir</span>"))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
@@ -366,7 +388,7 @@ class MainTest {
         assertTrue(htmlContent.contains("max-width: 800px;"))
         assertTrue(htmlContent.contains("margin: 0 auto;"))
         assertTrue(
-            Regex("""h1\s*\{[^}]*overflow-wrap:\s*anywhere;""").containsMatchIn(htmlContent),
+            Regex("""h1,\s*\.entry-name\s*\{[^}]*overflow-wrap:\s*anywhere;""").containsMatchIn(htmlContent),
             "long directory headings must wrap within narrow viewports"
         )
     }
@@ -942,8 +964,24 @@ class MainTest {
         val indexHtml = File(fakeRoot, "index.html")
         assertTrue(indexHtml.exists())
         val content = indexHtml.readText()
-        assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
-        assertTrue(content.contains("<h1>Root</h1>"))
+        assertTrue(content.contains("<title>${isolate_bidi_plain_text("Root")} - 디렉토리 목록</title>"))
+        assertTrue(content.contains("<h1 dir=\"auto\">Root</h1>"))
     }
 
+    @Test
+    fun testCrawlDirectoriesRespectsMaxSafeDepth() {
+        val maxSafeDepth = Class.forName("html4tree.MainKt").getDeclaredField("MAX_SAFE_DEPTH").apply { isAccessible = true }.get(null) as Int
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(tempDir, maxSafeDepth))
+
+        var processDirectoryCalled = false
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { _, _, _ -> processDirectoryCalled = true },
+            processIgnoreFile = { _, _ -> emptySet() },
+            listFiles = { emptyArray() }
+        )
+        assertFalse(processDirectoryCalled, "processDirectory should not be called when currentLevel >= MAX_SAFE_DEPTH")
+    }
 }
