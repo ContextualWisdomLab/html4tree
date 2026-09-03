@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-13 - [MEDIUM] File.useLines TOCTOU (Time-of-Check-Time-of-Use) 취약점 수정
+**Vulnerability:** `.html4ignore` 파일 파싱 중, 일반 파일인지 및 심볼릭 링크가 아닌지 확인하는 검사(`!Files.isSymbolicLink()`)와 실제로 파일을 읽는 작업(`File.useLines()`) 사이에 간격이 존재하여, 이 틈에 파일이 심볼릭 링크로 교체되면 의도치 않은 임의의 파일 시스템 경로를 읽어 서비스 거부(DoS)나 경로 탐색을 유발할 수 있는 TOCTOU 취약점.
+**Learning:** Kotlin의 `File.useLines()`는 내부적으로 심볼릭 링크를 따라가므로, 파일을 열 때 이전에 수행한 `isSymbolicLink()` 검사가 우회될 위험이 있습니다.
+**Prevention:** TOCTOU 취약점을 방지하고 심볼릭 링크를 안전하게 거부하며 파일을 읽기 위해서는, `java.nio.file.Files.newInputStream(path, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { ... }`를 사용하여 스트림을 여는 시점에 명시적으로 심볼릭 링크 추적을 비활성화해야 합니다.
