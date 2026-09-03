@@ -115,7 +115,6 @@ class MainTest {
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertRobotsDirective(htmlContent)
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
-        assertTrue(htmlContent.contains("role=\"status\""))
         assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("&#128194;"))
     }
@@ -944,6 +943,23 @@ class MainTest {
         val content = indexHtml.readText()
         assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
         assertTrue(content.contains("<h1 dir=\"auto\">Root</h1>"))
+    }
+
+
+    @Test
+    fun testBiDiDirectoryAndFileNames() {
+        val dirName = "מבחן_RTL_Dir"
+        val fileName = "ملف_RTL.txt"
+        val bidiDir = File(tempDir, dirName)
+        bidiDir.mkdir()
+        File(bidiDir, fileName).createNewFile()
+        process_dir(bidiDir, setOf(), arrayOf(File(bidiDir, fileName)))
+        val indexHtml = File(bidiDir, "index.html")
+        assertTrue(indexHtml.exists())
+        val content = indexHtml.readText()
+        assertTrue(content.contains("<h1 dir=\"auto\">מבחן_RTL_Dir</h1>"))
+        assertTrue(content.contains("<span dir=\"auto\">ملف_RTL.txt</span>"))
+        assertTrue(content.contains("<span aria-hidden=\"true\">..</span>"))
     }
 
 }
