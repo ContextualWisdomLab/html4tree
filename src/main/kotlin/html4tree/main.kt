@@ -456,12 +456,27 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
-                  val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
-                  l.append('\n')
+                  // ⚡ Bolt Performance Optimization: Replace string interpolation with direct StringBuilder chaining
+                  // to eliminate intermediate String allocations and reduce Garbage Collection pressure.
+                  val trailingSlash = if (isLinkedDirectory) "/" else ""
+                  val typeLabel = if (isLinkedDirectory) "디렉토리" else "파일"
+                  val icon = if (isLinkedDirectory) "&#128193;" else "&#128196;"
+                  val escapedFileName = fileName.escapeHtml()
+
+                  l.append("          <li><a class=\"dir-link\" href=\"./")
+                   .append(fileName.urlEncodePath())
+                   .append(trailingSlash)
+                   .append("\" title=\"")
+                   .append(escapedFileName)
+                   .append(" ")
+                   .append(typeLabel)
+                   .append("\"><span class=\"icon\" aria-hidden=\"true\">")
+                   .append(icon)
+                   .append("</span> <span>")
+                   .append(escapedFileName)
+                   .append("</span> <span class=\"visually-hidden\">")
+                   .append(typeLabel)
+                   .append("</span></a></li>\n")
                }
            }
         }
