@@ -209,7 +209,7 @@ internal fun crawl_directories(
             dirFiles?.forEach {
                 // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
                 // by checking cheap in-memory string exclusion rules first
-                if(!it.name.isHiddenFile() && it.name !in exclude) {
+                if(!it.isHidden() && it.name !in exclude) {
                     val childAttrs = readAttributes(it)
                     if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
                         val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
@@ -222,11 +222,8 @@ internal fun crawl_directories(
     }
 }
 
-fun String.isHiddenFile(): Boolean {
-    return when (firstOrNull()) {
-        '.', '\u3002', '\uFF0E', '\uFF61' -> true
-        else -> false
-    }
+fun isBackupFile(name: String): Boolean {
+    return name.endsWith("~") || name.endsWith("\u02DC") || name.endsWith("\u223C") || name.endsWith("\uFF5E")
 }
 
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
@@ -309,7 +306,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
+       Files.newInputStream(ignore_file.toPath(), LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { lines ->
            for ((lineIndex, it) in lines.withIndex()) {
                // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                if (lineIndex >= 1000) break
@@ -353,9 +350,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     (dirFilesNames ?: curr_dir.list())?.forEach {
         val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
-            it.isHiddenFile() ||
+            File(curr_dir, it).isHidden() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
-            normalizedName.endsWith("~") ||
+            isBackupFile(normalizedName) ||
             Constants.defaultSensitiveExtensions.any { extension ->
                 normalizedName.endsWith(extension)
             }
@@ -444,7 +441,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
            // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
-           if (!fileName.isHiddenFile() && fileName !in exclude) {
+           if (!it.isHidden() && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
                try {
