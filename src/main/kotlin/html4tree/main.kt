@@ -79,8 +79,8 @@ li + li {
   position: absolute;
   width: 1px;
   height: 1px;
-  margin: -1px;
   padding: 0;
+  margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
@@ -109,6 +109,7 @@ li + li {
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
+private const val MAX_SAFE_DEPTH: Int = 100 // Defense-in-depth: hard limit on directory traversal to prevent resource exhaustion
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -184,6 +185,11 @@ internal fun crawl_directories(
         }
 
         val currentLevel: Int = lle.level
+        // Defense-in-depth: prevent excessive resource consumption by limiting directory traversal depth
+        if (currentLevel >= MAX_SAFE_DEPTH) {
+            lle = ll.pull()
+            continue
+        }
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)
@@ -326,7 +332,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
        val list = dirFilesNames ?: curr_dir.list()
        list?.forEach {
-           val current = it
+           val current = it.trim()
            val pathCurrent = try {
                java.nio.file.Paths.get(current)
            } catch (_: java.nio.file.InvalidPathException) {
@@ -351,16 +357,17 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
+        val fileName = it.trim()
+        val normalizedName = fileName.toLowerCase(java.util.Locale.ROOT)
         if (
-            it.isHiddenFile() ||
+            fileName.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
             Constants.defaultSensitiveExtensions.any { extension ->
                 normalizedName.endsWith(extension)
             }
         ) {
-            files_to_exclude.add(it)
+            files_to_exclude.add(fileName)
         }
     }
 
@@ -426,10 +433,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
      </head>
      <body>
        <main>
-         <h1>${directoryName.escapeHtml()}</h1>
+         <h1 dir="auto">${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
+            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span dir="auto" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -460,14 +467,14 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
+            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span dir="auto">이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
 
