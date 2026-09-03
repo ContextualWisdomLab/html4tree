@@ -99,3 +99,13 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-08-23 - [html4tree] TOCTOU (Time-of-Check to Time-of-Use) 취약점 수정 (파일 읽기)
+**Vulnerability:** 파일 속성 검사(일반 파일 여부, 심볼릭 링크 아님 등)와 실제로 파일을 읽어오는 시점 사이에, 파일이 심볼릭 링크로 대체될 수 있는 TOCTOU 취약점이 존재했습니다. 이로 인해 임의의 파일을 읽어오는 경로 조작이 발생할 수 있었습니다.
+**Learning:** `File.useLines`와 같은 편리한 메서드는 내부적으로 심볼릭 링크를 따라가기 때문에, 보안 검사 이후에 심볼릭 링크 스왑 공격이 발생하면 우회될 수 있습니다.
+**Prevention:** 파일을 읽을 때 심볼릭 링크를 안전하게 무시하려면 `java.nio.file.Files.newInputStream(file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)`를 사용하여 스트림을 명시적으로 열고 읽어야 합니다.
+
+## 2024-08-23 - [html4tree] 심볼릭 링크 읽기 예외 처리 (Fail Securely)
+**Vulnerability:** 파일 스트림을 열 때 대상 파일이 심볼릭 링크인 경우 `NOFOLLOW_LINKS` 옵션으로 인해 `java.io.IOException`이 발생하여 애플리케이션 충돌(DoS)을 유발할 수 있습니다.
+**Learning:** 보안을 위해 `NOFOLLOW_LINKS`를 적용하는 경우, 파일 시스템 레벨에서 심볼릭 링크를 발견하면 예외가 발생하므로 이를 `try-catch` 블록으로 반드시 처리해야 합니다.
+**Prevention:** `Files.newInputStream` 사용 시 발생하는 IO 예외를 캐치하여 프로그램이 중단되지 않고 안전하게 우회하거나 기본값을 사용(Fail Securely)하도록 구현해야 합니다.
