@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-25 - [html4tree] TOCTOU (Time-of-Check to Time-of-Use) 방어로 인해 발생한 IOException 방지
+**Vulnerability:** 구성 파일(`.html4ignore`) 처리 중 canRead() 검사와 useLines() 호출 사이에 파일이 변경되거나 삭제될 경우 `java.io.FileNotFoundException` 등 `IOException`이 발생하여 애플리케이션 충돌(DoS)이 발생할 수 있는 TOCTOU 취약점이 발견되었습니다.
+**Learning:** `isFile`, `isSymbolicLink`, `canRead` 등을 사용하여 파일 상태를 확인한 후(Time-of-Check), 실제로 파일을 읽거나 사용할 때(Time-of-Use)에는 해당 시점에 파일 시스템 상태가 변경될 수 있다는 점을 항상 고려해야 합니다. 특히 멀티 스레드나 병렬 처리 환경, 외부 사용자(또는 프로세스)가 개입할 수 있는 환경에서는 `try-catch`로 예외를 감싸야 합니다.
+**Prevention:** `useLines` 또는 파일 I/O 작업을 수행할 때 `try-catch` 블록으로 `IOException`을 포착(catch)하여 우아하게 실패(Fail Securely)하도록 처리하고, 전체 애플리케이션 프로세스가 중단되지 않게 방어해야 합니다.
