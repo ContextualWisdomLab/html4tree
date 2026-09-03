@@ -135,6 +135,7 @@ internal fun read_file_identity(file: File): FileIdentity {
 }
 
 fun go(topDir: String, maxLevel: Int)  {
+    require(topDir.length <= 4096) { "Path length exceeds maximum allowed limit to prevent DoS/OOM vulnerabilities." }
     require(topDir.isNotBlank())
     require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
     // 보안 수정: symlink 검사를 우회하는 canonicalFile 대신 absoluteFile을 사용
