@@ -4,12 +4,15 @@ import java.io.File
 import java.security.MessageDigest
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
@@ -112,10 +115,25 @@ private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
+    val forceOverwrite: Boolean by option(
+        "--force-overwrite",
+        help="Destructively replace an unmarked existing index.html. Symlinks and directories are still refused."
+    ).flag()
+    val cleanup: Boolean by option(
+        "--cleanup",
+        help="Delete only html4tree-owned index.html files under TOPDIR. Unowned files are preserved."
+    ).flag()
+    val dryRun: Boolean by option(
+        "--dry-run",
+        help="With --cleanup, report owned artifacts that would be deleted without deleting them."
+    ).flag()
     val topDir: String by argument(help="Top directory to crawl")
 
     override fun run() {
-        go(topDir, maxLevel)
+        if (dryRun && !cleanup) {
+            throw UsageError("--dry-run requires --cleanup")
+        }
+        go(topDir, maxLevel, forceOverwrite, cleanup, dryRun)
     }
 }
 
@@ -134,7 +152,202 @@ internal fun read_file_identity(file: File): FileIdentity {
     }
 }
 
-fun go(topDir: String, maxLevel: Int)  {
+internal const val GENERATED_INDEX_NAME = "index.html"
+internal const val GENERATED_OWNERSHIP_VERSION = 1
+internal const val GENERATED_OWNERSHIP_MARKER =
+    """<meta name="generator" content="html4tree/$GENERATED_OWNERSHIP_VERSION">"""
+internal const val OWNERSHIP_PREFIX_LIMIT = 4096
+internal const val OWNERSHIP_NEAR_START_LIMIT = 1024
+private val OWNERSHIP_MARKER_REGEX = Regex("""<meta\s+name="generator"\s+content="html4tree/(\d+)">""")
+
+enum class IndexTargetKind {
+    ABSENT,
+    OWNED,
+    UNOWNED,
+    UNSAFE
+}
+
+data class IndexTargetClassification(
+    val kind: IndexTargetKind,
+    val reason: String
+)
+
+enum class IndexWriteResult {
+    CREATED,
+    REPLACED,
+    PRESERVED
+}
+
+internal fun generated_index_file(curr_dir: File): File {
+    return File(curr_dir, GENERATED_INDEX_NAME)
+}
+
+internal fun read_index_prefix(
+    path: Path,
+    limit: Int = OWNERSHIP_PREFIX_LIMIT,
+    openStream: (Path) -> java.io.InputStream = { Files.newInputStream(it, LinkOption.NOFOLLOW_LINKS) }
+): ByteArray? {
+    return try {
+        if (Files.isSymbolicLink(path)) {
+            null
+        } else if (limit <= 0) {
+            ByteArray(0)
+        } else {
+            openStream(path).use { input ->
+                val buffer = ByteArray(limit)
+                var offset = 0
+                while (offset < limit) {
+                    val n = input.read(buffer, offset, limit - offset)
+                    if (n <= 0) {
+                        break
+                    }
+                    offset += n
+                }
+                if (offset == limit) {
+                    buffer
+                } else {
+                    buffer.copyOf(offset)
+                }
+            }
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+internal fun classify_index_prefix(prefix: ByteArray): IndexTargetClassification {
+    val text = String(prefix, Charsets.UTF_8)
+    val match = OWNERSHIP_MARKER_REGEX.find(text)
+    if (match == null) {
+        if (text.contains("""content="html4tree/""")) {
+            return IndexTargetClassification(IndexTargetKind.UNOWNED, "malformed")
+        }
+        return IndexTargetClassification(IndexTargetKind.UNOWNED, "unowned")
+    }
+    if (match.range.start >= OWNERSHIP_NEAR_START_LIMIT) {
+        return IndexTargetClassification(IndexTargetKind.UNOWNED, "late-marker")
+    }
+    val version = match.groupValues[1].toIntOrNull()
+    if (version != GENERATED_OWNERSHIP_VERSION) {
+        return IndexTargetClassification(IndexTargetKind.UNOWNED, "unsupported-version")
+    }
+    return IndexTargetClassification(IndexTargetKind.OWNED, "owned")
+}
+
+internal fun classify_index_target(target: File): IndexTargetClassification {
+    return try {
+        val path = target.toPath()
+        if (Files.isSymbolicLink(path)) {
+            return IndexTargetClassification(IndexTargetKind.UNSAFE, "symlink")
+        }
+        if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
+            return IndexTargetClassification(IndexTargetKind.ABSENT, "absent")
+        }
+        val attrs = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        if (attrs.isDirectory) {
+            return IndexTargetClassification(IndexTargetKind.UNSAFE, "directory")
+        }
+        if (!attrs.isRegularFile) {
+            return IndexTargetClassification(IndexTargetKind.UNSAFE, "not-regular")
+        }
+        val prefix = read_index_prefix(path)
+            ?: return IndexTargetClassification(IndexTargetKind.UNSAFE, "unreadable")
+        classify_index_prefix(prefix)
+    } catch (e: Exception) {
+        IndexTargetClassification(IndexTargetKind.UNSAFE, "unreadable")
+    }
+}
+
+internal fun default_index_reporter(message: String) {
+    System.err.println(message)
+}
+
+/**
+ * Publishes [source] to an absent [target] without replacing an occupant.
+ *
+ * `Files.createLink` maps to POSIX `link(2)`, which fails with `EEXIST` and
+ * does not replace. `UnsupportedOperationException` is only the provider
+ * "not implemented" case. OpenJDK's Unix provider implements `createLink`,
+ * so a no-hard-link volume (`EPERM`, `ENOTSUP`, `EOPNOTSUPP`) surfaces as
+ * `FileSystemException` or `AccessDeniedException`. Fall back to a
+ * create-only `Files.move` (no `ATOMIC_MOVE`, no `REPLACE_EXISTING`) for
+ * those I/O failures. `FileAlreadyExistsException` is rethrown so `EEXIST`
+ * stays exclusive.
+ */
+internal fun publish_exclusive(
+    source: Path,
+    target: Path,
+    createLink: (Path, Path) -> Unit = { existing, link ->
+        Files.createLink(link, existing)
+        Unit
+    },
+    moveFile: (
+        Path,
+        Path,
+        Array<out java.nio.file.CopyOption>
+    ) -> Unit = { from, to, options ->
+        Files.move(from, to, *options)
+        Unit
+    }
+) {
+    try {
+        createLink(source, target)
+    } catch (exists: java.nio.file.FileAlreadyExistsException) {
+        throw exists
+    } catch (unsupported: UnsupportedOperationException) {
+        moveFile(source, target, arrayOf<java.nio.file.CopyOption>())
+    } catch (io: java.io.IOException) {
+        moveFile(source, target, arrayOf<java.nio.file.CopyOption>())
+    }
+}
+
+internal fun cleanup_owned_index(
+    curr_dir: File,
+    dryRun: Boolean,
+    reporter: (String) -> Unit = ::default_index_reporter,
+    classifyTarget: (File) -> IndexTargetClassification = ::classify_index_target,
+    deleteFile: (Path) -> Unit = { Files.delete(it) }
+): Boolean {
+    val indexFile = generated_index_file(curr_dir)
+    val classification = classifyTarget(indexFile)
+    return when (classification.kind) {
+        IndexTargetKind.OWNED -> {
+            if (dryRun) {
+                reporter("would-delete: ${indexFile.absolutePath}")
+                true
+            } else {
+                val confirmed = classifyTarget(indexFile)
+                if (confirmed.kind != IndexTargetKind.OWNED) {
+                    reporter("preserved: ${indexFile.absolutePath} (${confirmed.reason})")
+                    false
+                } else {
+                    try {
+                        deleteFile(indexFile.toPath())
+                        reporter("deleted: ${indexFile.absolutePath}")
+                        true
+                    } catch (e: Exception) {
+                        reporter("failed: ${indexFile.absolutePath}")
+                        false
+                    }
+                }
+            }
+        }
+        IndexTargetKind.ABSENT -> false
+        else -> {
+            reporter("preserved: ${indexFile.absolutePath} (${classification.reason})")
+            false
+        }
+    }
+}
+
+fun go(
+    topDir: String,
+    maxLevel: Int,
+    forceOverwrite: Boolean = false,
+    cleanup: Boolean = false,
+    dryRun: Boolean = false,
+    reporter: (String) -> Unit = ::default_index_reporter
+)  {
     require(topDir.isNotBlank())
     require(!topDir.contains("..")) { "Path traversal sequences are not allowed." }
     // 보안 수정: symlink 검사를 우회하는 canonicalFile 대신 absoluteFile을 사용
@@ -150,7 +363,15 @@ fun go(topDir: String, maxLevel: Int)  {
 
     val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
     ll.push(topEntry)
-    crawl_directories(ll, maxLevel)
+    if (cleanup) {
+        crawl_directories(ll, maxLevel, processDirectory = { file, _, _ ->
+            cleanup_owned_index(file, dryRun, reporter)
+        })
+    } else {
+        crawl_directories(ll, maxLevel, processDirectory = { file, exclude, files ->
+            process_dir(file, exclude, files, forceOverwrite, reporter)
+        })
+    }
 }
 
 internal fun crawl_directories(
@@ -370,6 +591,28 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 fun write_index_file(
     curr_dir: File,
     content: String,
+    forceOverwrite: Boolean = false,
+    reporter: (String) -> Unit = ::default_index_reporter,
+    classifyTarget: (File) -> IndexTargetClassification = ::classify_index_target,
+    copyFile: (
+        java.nio.file.Path,
+        java.nio.file.Path
+    ) -> Unit = { source, target ->
+        Files.copy(
+            source,
+            target,
+            LinkOption.NOFOLLOW_LINKS,
+            StandardCopyOption.REPLACE_EXISTING
+        )
+        Unit
+    },
+    createLink: (
+        java.nio.file.Path,
+        java.nio.file.Path
+    ) -> Unit = { existing, link ->
+        Files.createLink(link, existing)
+        Unit
+    },
     moveFile: (
         java.nio.file.Path,
         java.nio.file.Path,
@@ -378,32 +621,137 @@ fun write_index_file(
         Files.move(source, target, *options)
         Unit
     }
-) {
-    val indexPath = curr_dir.toPath().resolve("index.html")
+): IndexWriteResult {
+    val indexPath = curr_dir.toPath().resolve(GENERATED_INDEX_NAME)
+    val existing = classifyTarget(indexPath.toFile())
+    val replacingOwned = existing.kind == IndexTargetKind.OWNED
+    val replacingForced = existing.kind == IndexTargetKind.UNOWNED && forceOverwrite
+    if (existing.kind == IndexTargetKind.UNSAFE ||
+        (existing.kind == IndexTargetKind.UNOWNED && !forceOverwrite)
+    ) {
+        reporter("preserved: ${indexPath.toAbsolutePath()} (${existing.reason})")
+        return IndexWriteResult.PRESERVED
+    }
+
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    var backupPath: Path? = null
+    var preserveBackupAfterRestoreFailure = false
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
-        try {
-            // With ATOMIC_MOVE, Java ignores every other copy option and the
-            // existing-target policy is provider-specific.
-            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.ATOMIC_MOVE))
-        } catch (error: java.io.IOException) {
-            if (
-                error !is java.nio.file.AtomicMoveNotSupportedException &&
-                error !is java.nio.file.FileAlreadyExistsException
-            ) {
-                throw error
+        if (replacingOwned || replacingForced) {
+            val createdBackup = Files.createTempFile(curr_dir.toPath(), ".index-owned-backup-", ".html")
+            try {
+                copyFile(indexPath, createdBackup)
+                backupPath = createdBackup
+            } catch (e: Exception) {
+                Files.deleteIfExists(createdBackup)
+                reporter("preserved: ${indexPath.toAbsolutePath()} (backup-failed)")
+                return IndexWriteResult.PRESERVED
             }
-            // This compatibility fallback preserves replacement semantics but
-            // is explicitly non-atomic.
-            moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+            val stillAllowed = classifyTarget(indexPath.toFile())
+            val stillReplaceable = stillAllowed.kind == IndexTargetKind.OWNED ||
+                (forceOverwrite && stillAllowed.kind == IndexTargetKind.UNOWNED)
+            if (!stillReplaceable) {
+                reporter("preserved: ${indexPath.toAbsolutePath()} (${stillAllowed.reason})")
+                return IndexWriteResult.PRESERVED
+            }
+            try {
+                // With ATOMIC_MOVE, Java ignores every other copy option and the
+                // existing-target policy is provider-specific. Replacement is
+                // allowed only after the occupant was reclassified as owned or
+                // force-overwritable.
+                moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.ATOMIC_MOVE))
+            } catch (error: java.io.IOException) {
+                if (
+                    error !is java.nio.file.AtomicMoveNotSupportedException &&
+                    error !is java.nio.file.FileAlreadyExistsException
+                ) {
+                    throw error
+                }
+                val now = classifyTarget(indexPath.toFile())
+                val canReplace = now.kind == IndexTargetKind.ABSENT ||
+                    now.kind == IndexTargetKind.OWNED ||
+                    (forceOverwrite && now.kind == IndexTargetKind.UNOWNED)
+                if (!canReplace) {
+                    reporter("preserved: ${indexPath.toAbsolutePath()} (${now.reason})")
+                    return IndexWriteResult.PRESERVED
+                }
+                // Owned/forced replacement may use the documented non-atomic fallback.
+                // Unowned existing targets never take this path.
+                moveFile(tempPath, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+            }
+        } else {
+            val now = classifyTarget(indexPath.toFile())
+            if (now.kind != IndexTargetKind.ABSENT) {
+                reporter("preserved: ${indexPath.toAbsolutePath()} (${now.reason})")
+                return IndexWriteResult.PRESERVED
+            }
+            try {
+                // Exclusive create: hard-link first (EEXIST does not replace).
+                // Fall back to a create-only move when hard links are unavailable.
+                publish_exclusive(tempPath, indexPath, createLink, moveFile)
+            } catch (error: java.nio.file.FileAlreadyExistsException) {
+                reporter("preserved: ${indexPath.toAbsolutePath()} (unowned)")
+                return IndexWriteResult.PRESERVED
+            }
         }
+        if (backupPath != null) {
+            Files.deleteIfExists(backupPath)
+            backupPath = null
+        }
+        reporter(
+            if (replacingOwned || replacingForced) {
+                "replaced: ${indexPath.toAbsolutePath()}"
+            } else {
+                "created: ${indexPath.toAbsolutePath()}"
+            }
+        )
+        return if (replacingOwned || replacingForced) {
+            IndexWriteResult.REPLACED
+        } else {
+            IndexWriteResult.CREATED
+        }
+    } catch (error: Exception) {
+        val restoreFrom = backupPath
+        if (restoreFrom != null && Files.exists(restoreFrom, LinkOption.NOFOLLOW_LINKS)) {
+            val occupant = classifyTarget(indexPath.toFile())
+            var restored = false
+            if (occupant.kind == IndexTargetKind.ABSENT || occupant.kind == IndexTargetKind.OWNED) {
+                try {
+                    if (occupant.kind == IndexTargetKind.ABSENT) {
+                        publish_exclusive(restoreFrom, indexPath, createLink, moveFile)
+                        Files.deleteIfExists(restoreFrom)
+                    } else {
+                        moveFile(restoreFrom, indexPath, arrayOf(StandardCopyOption.REPLACE_EXISTING))
+                    }
+                    restored = true
+                    backupPath = null
+                } catch (_: Exception) {
+                    restored = false
+                }
+            }
+            if (!restored) {
+                preserveBackupAfterRestoreFailure = true
+                reporter("backup-retained: ${restoreFrom.toAbsolutePath()}")
+            }
+        }
+        throw error
     } finally {
         Files.deleteIfExists(tempPath)
+        val leftoverBackup = backupPath
+        if (leftoverBackup != null && !preserveBackupAfterRestoreFailure) {
+            Files.deleteIfExists(leftoverBackup)
+        }
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
+fun process_dir(
+    curr_dir: File,
+    excludeSet: Set<String>? = null,
+    dirFiles: Array<File>? = null,
+    forceOverwrite: Boolean = false,
+    reporter: (String) -> Unit = ::default_index_reporter
+){
     
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
@@ -412,6 +760,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 <html lang="ko">
      <head>
         <meta charset="UTF-8">
+        $GENERATED_OWNERSHIP_MARKER
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="color-scheme" content="light dark">
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
@@ -483,7 +832,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 """
 
    try {
-       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+       write_index_file(curr_dir, index_top+index_middle()+index_bottom, forceOverwrite, reporter)
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
