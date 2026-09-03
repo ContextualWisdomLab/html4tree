@@ -176,6 +176,7 @@ internal fun crawl_directories(
             lle = ll.pull()
             continue
         }
+
         val currentIdentity = readIdentity(lle.file)
         if (!currentIdentity.readable || (lle.fileKey != null && currentIdentity.key != lle.fileKey)) {
             lle = ll.pull()
