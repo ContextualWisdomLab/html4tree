@@ -36,7 +36,7 @@ class CspHashTest {
                     .digest(styleContent.toByteArray(Charsets.UTF_8))
             )
             assertEquals(declaredHash, actualHash)
-            assertTrue(styleContent.startsWith("body {"))
+            assertTrue(styleContent.startsWith(":root {"))
             assertTrue(styleContent.endsWith("}"))
         } finally {
             directory.listFiles()?.forEach { it.delete() }

@@ -7,6 +7,9 @@ import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -14,18 +17,35 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.int
 
 private val CSS_CONTENT = """
+:root {
+  --listing-text: #1f2328;
+  --listing-link: #0969da;
+  --listing-surface-hover: #f6f8fa;
+  --listing-row-rule: #d0d7de;
+  --listing-empty-text: #656d76;
+  --listing-dark-bg: #0d1117;
+  --listing-dark-text: #c9d1d9;
+  --listing-dark-link: #58a6ff;
+  --listing-dark-surface-hover: #161b22;
+  --listing-dark-row-rule: #21262d;
+  --listing-dark-empty-text: #8b949e;
+  --listing-meta: #656d76;
+  --listing-dark-meta: #8b949e;
+}
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.5;
   padding: 1rem;
-  color: #1f2328;
+  color: var(--listing-text);
 }
 main {
   max-width: 800px;
   margin: 0 auto;
 }
-h1 {
+h1,
+.entry-name {
   overflow-wrap: anywhere;
+  unicode-bidi: isolate;
 }
 ul {
   list-style-type: none;
@@ -47,16 +67,16 @@ a.dir-link {
 a {
   padding: 0.75rem 0.5rem;
   text-decoration: none;
-  color: #0969da;
+  color: var(--listing-link);
   border-radius: 4px;
   transition: background-color 0.2s ease, outline-color 0.2s ease;
 }
 a:hover, a:focus-visible {
-  background-color: #f6f8fa;
-  outline: 2px solid #0969da;
+  background-color: var(--listing-surface-hover);
+  outline: 2px solid var(--listing-link);
   outline-offset: -2px;
 }
-a:hover span:last-child, a:focus-visible span:last-child {
+a:hover .entry-name, a:focus-visible .entry-name {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -65,14 +85,14 @@ a:hover span:last-child, a:focus-visible span:last-child {
   }
 }
 li + li {
-  border-top: 1px solid #d0d7de;
+  border-top: 1px solid var(--listing-row-rule);
 }
 .empty-dir {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem 0.5rem;
-  color: #656d76;
+  color: var(--listing-empty-text);
   font-style: italic;
 }
 .visually-hidden {
@@ -86,29 +106,55 @@ li + li {
   white-space: nowrap;
   border: 0;
 }
+.entry-meta {
+  margin-left: auto;
+  display: flex;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  color: var(--listing-meta);
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+.entry-size,
+.entry-mtime {
+  direction: ltr;
+}
+.entry-size {
+  min-width: 4.5rem;
+  text-align: right;
+}
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #0d1117;
-    color: #c9d1d9;
+    background-color: var(--listing-dark-bg);
+    color: var(--listing-dark-text);
   }
   a {
-    color: #58a6ff;
+    color: var(--listing-dark-link);
   }
   a:hover, a:focus-visible {
-    background-color: #161b22;
-    outline-color: #58a6ff;
+    background-color: var(--listing-dark-surface-hover);
+    outline-color: var(--listing-dark-link);
   }
   li + li {
-    border-top-color: #21262d;
+    border-top-color: var(--listing-dark-row-rule);
   }
   .empty-dir {
-    color: #8b949e;
+    color: var(--listing-dark-empty-text);
+  }
+  .entry-meta {
+    color: var(--listing-dark-meta);
   }
 }
 """.trimIndent()
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
+private const val MAX_SAFE_DEPTH: Int = 100 // Defense-in-depth: hard limit on directory traversal to prevent resource exhaustion
+private const val KIBIBYTE: Long = 1024L
+private const val MEBIBYTE: Long = 1024L * 1024L
+private const val GIBIBYTE: Long = 1024L * 1024L * 1024L
+private val UTC_MINUTE_FORMATTER: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", java.util.Locale.ROOT).withZone(ZoneOffset.UTC)
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -123,6 +169,8 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
+
+internal data class EntryListingMeta(val sizeBytes: Long, val mtimeMillis: Long)
 
 
 internal fun read_file_identity(file: File): FileIdentity {
@@ -150,13 +198,25 @@ fun go(topDir: String, maxLevel: Int)  {
 
     val topEntry = LinkedListEntry(top_dir,0, read_file_identity(top_dir).key)
     ll.push(topEntry)
-    crawl_directories(ll, maxLevel)
+    crawl_directories(ll, maxLevel, listingRoot = top_dir)
+}
+
+internal fun same_normalized_path(left: File, right: File): Boolean {
+    return left.absoluteFile.toPath().normalize() == right.absoluteFile.toPath().normalize()
 }
 
 internal fun crawl_directories(
     ll: LinkedList,
     maxLevel: Int,
-    processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files -> process_dir(file, exclude, files) },
+    listingRoot: File? = null,
+    processDirectory: (File, Set<String>, Array<File>?) -> Unit = { file, exclude, files ->
+        process_dir(
+            file,
+            exclude,
+            files,
+            includeParentLink = listingRoot == null || !same_normalized_path(file, listingRoot)
+        )
+    },
     processIgnoreFile: (File, Array<String>?) -> Set<String> = { file, names -> process_ignore_file(file, names) },
     listFiles: (File) -> Array<File>? = { it.listFiles() },
     readAttributes: (File) -> BasicFileAttributes? = {
@@ -184,6 +244,11 @@ internal fun crawl_directories(
         }
 
         val currentLevel: Int = lle.level
+        // Defense-in-depth: prevent excessive resource consumption by limiting directory traversal depth
+        if (currentLevel >= MAX_SAFE_DEPTH) {
+            lle = ll.pull()
+            continue
+        }
 
         // ⚡ Bolt Performance Optimization: 디렉토리 목록을 캐싱하여 중복된 I/O 시스템 호출을 줄임
         val dirFiles = listFiles(lle.file)
@@ -199,11 +264,11 @@ internal fun crawl_directories(
 
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
-        }
+        } ?: emptyArray()
         val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
-           processDirectory(lle.file, exclude, dirFiles)
+           processDirectory(lle.file, exclude, dirFiles ?: emptyArray())
 
         if(maxLevel == -1 || currentLevel < maxLevel) {
             dirFiles?.forEach {
@@ -258,6 +323,94 @@ fun String.escapeHtml(): String {
     return sb?.toString() ?: this
 }
 
+/**
+ * Wraps [value] in Unicode First Strong Isolate / Pop Directional Isolate
+ * so a filename used in a plain-text `title` cannot reorder adjacent
+ * Korean type labels. HTML `dir="auto"` already isolates element text;
+ * attributes have no `dir`, so they need explicit isolate characters.
+ *
+ * See Unicode Standard Annex #9 (Unicode 17.0.0, revision 51).
+ */
+internal fun isolate_bidi_plain_text(value: String): String {
+    return "\u2068$value\u2069"
+}
+
+/**
+ * True for Unicode bidirectional format controls that can reorder
+ * neighboring glyphs (embeddings, overrides, isolates, and marks).
+ *
+ * These are neutralized in the *display* name only. The real
+ * filesystem name stays in `href` so the generated link still opens.
+ */
+internal fun is_bidi_control(character: Char): Boolean {
+    val code = character.toInt()
+    return code == 0x061C ||
+        code == 0x200E ||
+        code == 0x200F ||
+        code in 0x202A..0x202E ||
+        code in 0x2066..0x2069
+}
+
+/**
+ * Replaces bidirectional format controls with U+FFFD so a filename
+ * cannot hide its extension (Trojan Source) while still showing that
+ * something was removed. Does not strip the FSI/PDI marks that
+ * [isolate_bidi_plain_text] later wraps around the cleaned name.
+ */
+internal fun neutralize_bidi_controls(value: String): String {
+    var builder: StringBuilder? = null
+    for (index in 0 until value.length) {
+        val character = value[index]
+        if (is_bidi_control(character)) {
+            if (builder == null) {
+                builder = StringBuilder(value.length)
+                builder.append(value as CharSequence, 0, index)
+            }
+            builder.append('\uFFFD')
+        } else {
+            builder?.append(character)
+        }
+    }
+    return builder?.toString() ?: value
+}
+
+internal fun format_byte_size(size: Long): String {
+    if (size < KIBIBYTE) {
+        val bounded = if (size < 0L) 0L else size
+        return "$bounded B"
+    }
+    if (size < MEBIBYTE) {
+        return format_scaled_size(size, KIBIBYTE, "KiB")
+    }
+    if (size < GIBIBYTE) {
+        return format_scaled_size(size, MEBIBYTE, "MiB")
+    }
+    return format_scaled_size(size, GIBIBYTE, "GiB")
+}
+
+internal fun format_scaled_size(size: Long, unit: Long, label: String): String {
+    if (size < 0L || unit <= 0L) {
+        return "0 B"
+    }
+    if (size > Long.MAX_VALUE / 10L) {
+        return "${size / unit}.0 $label"
+    }
+    val tenths = (size * 10L + unit / 2L) / unit
+    return "${tenths / 10L}.${tenths % 10L} $label"
+}
+
+internal fun format_iso_instant(millis: Long): String {
+    return Instant.ofEpochMilli(millis).toString()
+}
+
+internal fun format_utc_minute(millis: Long): String {
+    return UTC_MINUTE_FORMATTER.format(Instant.ofEpochMilli(millis)) + " UTC"
+}
+
+internal fun directory_size_label(): String {
+    return "\u2014"
+}
+
 fun String.urlEncodePath(): String {
     val bytes = this.toByteArray(Charsets.UTF_8)
     var encoded: StringBuilder? = null
@@ -293,6 +446,21 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
+/**
+ * Builds the exclusion set for one directory listing.
+ *
+ * Pass [dirFilesNames] from the same `listFiles()` snapshot used to render
+ * and enqueue children. The CLI crawl already does this, including when
+ * that snapshot is null (it then passes an empty name array so this
+ * function does not call [File.list]). [process_dir] does the same when
+ * the caller omits both the exclusion set and the file array. When names
+ * are omitted, the directory is listed at most once and that snapshot is
+ * reused for both `.html4ignore` globs and default sensitive-name
+ * filtering.
+ *
+ * Next action: open the generated `index.html` and confirm kept names appear
+ * as `href="./name"` links while ignored and secret names do not.
+ */
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -303,8 +471,10 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
+    val cachedDirFilesNames = dirFilesNames ?: curr_dir.list()
+
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
-    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
+    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 패턴 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
@@ -323,19 +493,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            }
        }
 
-       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
-           val current = it
+       // Compare a normalized candidate, but always retain the exact observed filesystem entry
+       // in the exclusion set because downstream admission compares against File.name verbatim.
+       val list = cachedDirFilesNames
+       list?.forEach { observedName ->
+           val normalizedCandidate = observedName.trim()
            val pathCurrent = try {
-               java.nio.file.Paths.get(current)
+               java.nio.file.Paths.get(normalizedCandidate)
            } catch (_: java.nio.file.InvalidPathException) {
-               files_to_exclude.add(current)
+               files_to_exclude.add(observedName)
                return@forEach
            }
            for (matcher in ignored_matchers) {
               if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
+                 files_to_exclude.add(observedName)
                  break
               }
            }
@@ -349,18 +520,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
-    // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
-    (dirFilesNames ?: curr_dir.list())?.forEach {
-        val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
+    // 보안 향상: match sensitive aliases after trimming/case normalization, but exclude the exact
+    // observed entry name so padded filesystem names cannot bypass downstream exact membership.
+    cachedDirFilesNames?.forEach { observedName ->
+        val normalizedCandidate = observedName.trim()
+        val normalizedName = normalizedCandidate.toLowerCase(java.util.Locale.ROOT)
         if (
-            it.isHiddenFile() ||
+            normalizedCandidate.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
             Constants.defaultSensitiveExtensions.any { extension ->
                 normalizedName.endsWith(extension)
             }
         ) {
-            files_to_exclude.add(it)
+            files_to_exclude.add(observedName)
         }
     }
 
@@ -403,10 +576,43 @@ fun write_index_file(
     }
 }
  
-fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
-    val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
+/**
+ * Writes one directory's `index.html` listing.
+ *
+ * When [excludeSet] is omitted, this function lists the directory once with
+ * [File.listFiles] (or reuses [dirFiles]) and builds the exclusion set from
+ * those names so ignore globs and the rendered page observe the same
+ * snapshot. The CLI crawl passes [dirFiles] as an empty array when its
+ * `listFiles()` snapshot is null so this function does not list again.
+ * [includeParentLink] is true for nested directories and for direct
+ * `process_dir` callers. The CLI crawl sets it false on the listing root
+ * so a published tree does not offer `href="./.."` that leaves the site.
+ * Next action: open the generated page and confirm kept files appear as
+ * `href="./name"` links while ignored and secret names do not. On the
+ * crawl root, confirm there is no parent `..` row.
+ */
+fun process_dir(
+    curr_dir: File,
+    excludeSet: Set<String>? = null,
+    dirFiles: Array<File>? = null,
+    includeParentLink: Boolean = true
+){
+    val filesList = dirFiles ?: curr_dir.listFiles()
+    val exclude: Set<String> = excludeSet ?: process_ignore_file(
+        curr_dir,
+        filesList?.let { files ->
+            Array(files.size) { index -> files[index].name }
+        } ?: emptyArray()
+    )
     val directoryName = curr_dir.name.ifEmpty { "Root" }
+    val displayDirectoryName = neutralize_bidi_controls(directoryName)
+    val directoryTitle = "${isolate_bidi_plain_text(displayDirectoryName)} - 디렉토리 목록".escapeHtml()
+    val parentRow = if (includeParentLink) {
+        """            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span class="entry-name" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
+"""
+    } else {
+        ""
+    }
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -421,21 +627,19 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <meta name="robots" content="noindex, nofollow">
-        <title>${directoryName.escapeHtml()} - 디렉토리 목록</title>
+        <title>${directoryTitle}</title>
         <style>${CSS_CONTENT}</style>
      </head>
      <body>
        <main>
-         <h1>${directoryName.escapeHtml()}</h1>
+         <h1 dir="auto">${displayDirectoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
-""" 
+$parentRow""" 
 
     val index_middle = fun():String{ 
         val l = StringBuilder()
 
-        val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
         val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
@@ -447,27 +651,48 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            if (!fileName.isHiddenFile() && fileName !in exclude) {
                var isLinkedDirectory = false
                var isSymbolicLink = false
+               var listingMeta: EntryListingMeta? = null
                try {
                    // ⚡ Bolt Performance Optimization: Replace 3 separate OS stat calls (isDirectory, it.isDirectory(), isSymbolicLink)
                    // with a single readAttributes call to reduce I/O overhead.
                    val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
                    isLinkedDirectory = attrs.isDirectory
                    isSymbolicLink = attrs.isSymbolicLink
+                   listingMeta = EntryListingMeta(attrs.size(), attrs.lastModifiedTime().toMillis())
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
+                  val displayName = neutralize_bidi_controls(fileName)
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
+                  val titleText = "${isolate_bidi_plain_text(displayName)} $typeLabel".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  val bidiWarning = if (displayName != fileName) {
+                      """ <span class="visually-hidden">이름에 방향 제어 문자가 있습니다</span>"""
+                  } else {
+                      ""
+                  }
+                  val observedMeta = listingMeta
+                  val entryMeta = if (observedMeta != null) {
+                      val isoTime = format_iso_instant(observedMeta.mtimeMillis)
+                      val displayTime = format_utc_minute(observedMeta.mtimeMillis)
+                      val sizeText = if (isLinkedDirectory) {
+                          directory_size_label()
+                      } else {
+                          format_byte_size(observedMeta.sizeBytes)
+                      }
+                      """ <span class="entry-meta"><span class="entry-size">$sizeText</span> <time class="entry-mtime" datetime="$isoTime" dir="ltr">$displayTime</time></span>"""
+                  } else {
+                      ""
+                  }
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleText}"><span class="icon" aria-hidden="true">${icon}</span> <span class="entry-name" dir="auto">${displayName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span>${bidiWarning}${entryMeta}</a></li>""")
                   l.append('\n')
                }
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
+            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span dir="auto">이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
 
