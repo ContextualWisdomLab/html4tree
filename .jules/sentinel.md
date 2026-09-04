@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-09-04 - Prevent TOCTOU in file reading
+**Vulnerability:** `File.useLines` implicitly resolves symbolic links internally, which can lead to Time-of-Check-to-Time-of-Use (TOCTOU) if the file is replaced by a symlink after validation.
+**Learning:** Even if symlinks are verified as absent prior to reading, Kotlin's standard library file readers might still traverse them during the reading phase, opening a TOCTOU window.
+**Prevention:** Replace `File.useLines` with `Files.newInputStream(..., StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines` to strictly disallow symlink traversal when opening the file.
