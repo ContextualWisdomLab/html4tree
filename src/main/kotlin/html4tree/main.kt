@@ -297,11 +297,12 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val ignore_filename = ".html4ignore"
  
-    val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
-
-    val ignore_file = File(ignore_file_path)
-
     val files_to_exclude = mutableSetOf<String>()
+
+    try {
+        val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
+
+        val ignore_file = File(ignore_file_path)
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
@@ -340,6 +341,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
               }
            }
        }
+    }
+    } catch (ignored: java.io.IOException) {
+    } catch (ignored: java.io.UncheckedIOException) {
     }
 
     if ("index.html" !in files_to_exclude)
