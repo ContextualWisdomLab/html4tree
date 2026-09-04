@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-09-04 - Path Length Limit for File System APIs
+**Vulnerability:** DoS and OOM via unbounded directory paths
+**Learning:** Passing excessively long, unbounded strings to file system operations (like File.absoluteFile) can cause excessive memory allocation and I/O hangs, leading to Denial of Service.
+**Prevention:** Enforce explicit maximum length boundaries (e.g., 4096 characters) on user-provided path inputs before executing any expensive File/NIO API operations.

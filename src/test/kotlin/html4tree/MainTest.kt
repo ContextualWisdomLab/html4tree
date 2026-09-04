@@ -128,6 +128,14 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsExtremelyLongPath() {
+        val longPath = "a".repeat(4097)
+        assertFailsWith<IllegalArgumentException> {
+            go(longPath, -1)
+        }
+    }
+
+    @Test
     fun testGoIgnoresHiddenFilesAndDirectories() {
         val hiddenFile = File(tempDir, ".hidden_file.txt")
         hiddenFile.createNewFile()
