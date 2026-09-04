@@ -56,6 +56,12 @@ a:hover, a:focus-visible {
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
+a:active {
+  background-color: #eaeef2;
+  outline: 2px solid #0969da;
+  outline-offset: -2px;
+  transform: scale(0.98);
+}
 a:hover span:last-child, a:focus-visible span:last-child {
   text-decoration: underline;
 }
@@ -97,6 +103,11 @@ li + li {
   a:hover, a:focus-visible {
     background-color: #161b22;
     outline-color: #58a6ff;
+  }
+  a:active {
+    background-color: #21262d;
+    outline-color: #58a6ff;
+    transform: scale(0.98);
   }
   li + li {
     border-top-color: #21262d;

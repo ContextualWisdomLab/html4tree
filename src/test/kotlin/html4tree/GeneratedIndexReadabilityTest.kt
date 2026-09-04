@@ -144,6 +144,13 @@ class GeneratedIndexReadabilityTest {
         assertNotNull(completeTargetRule)
         assertFalse(completeTargetRule.contains("text-decoration"))
         assertTrue(completeTargetRule.contains("outline: 2px solid #0969da;"))
+
+        val activeTargetRule = Regex("""a:active \{([\s\S]*?)\}""")
+            .find(style)
+            ?.groupValues
+            ?.get(1)
+        assertNotNull(activeTargetRule)
+        assertTrue(activeTargetRule.contains("transform: scale(0.98);"))
         assertTrue(
             style.contains(
                 """
