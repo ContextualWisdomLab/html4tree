@@ -229,22 +229,29 @@ fun String.isHiddenFile(): Boolean {
     }
 }
 
+private object HtmlEscapeHelper {
+    @JvmField
+    val REPLACEMENTS: Array<String?> = Array<String?>(128) { null }.apply {
+        this['&'.toInt()] = "&amp;"
+        this['<'.toInt()] = "&lt;"
+        this['>'.toInt()] = "&gt;"
+        this['"'.toInt()] = "&quot;"
+        this['\''.toInt()] = "&#x27;"
+        this['`'.toInt()] = "&#x60;"
+    }
+}
+
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
+// ⚡ Bolt Performance Optimization: Array-based lookup table
+// Direct array-based lookups are significantly faster than conditional jump tables (`when`) in hot paths.
 fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        val cInt = c.toInt()
+        val replacement = if (cInt < 128) HtmlEscapeHelper.REPLACEMENTS[cInt] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
