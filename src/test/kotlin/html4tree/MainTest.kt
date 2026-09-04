@@ -12,6 +12,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -946,4 +947,26 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+    @Test
+    fun testProcessIgnoreFileToctouExceptionHandling() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.createNewFile()
+
+        var t = kotlin.concurrent.thread {
+            while (!Thread.currentThread().isInterrupted) {
+                ignoreFile.setReadable(true)
+                ignoreFile.setReadable(false)
+                ignoreFile.delete()
+                ignoreFile.createNewFile()
+            }
+        }
+
+        for (i in 1..100) {
+            val excluded = process_ignore_file(tempDir, null)
+            assertNotNull(excluded)
+        }
+
+        t.interrupt()
+        t.join(1000)
+    }
 }
