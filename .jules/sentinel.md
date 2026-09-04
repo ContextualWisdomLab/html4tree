@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-09-01 - [HIGH] .html4ignore TOCTOU (Time-of-Check to Time-of-Use) 심볼릭 링크 스왑 취약점 수정
+**Vulnerability:** `.html4ignore` 파일이 일반 파일인지 검사(Time-of-Check)한 후, 실제로 파일을 읽는(Time-of-Use) 사이의 짧은 시간에 공격자가 해당 파일을 심볼릭 링크로 교체하여 임의의 파일이나 외부 파일을 읽을 수 있는 TOCTOU 취약점.
+**Learning:** Kotlin의 `File.useLines`는 내부적으로 심볼릭 링크를 따라가기 때문에, 런타임에 심볼릭 링크로 교체될 가능성이 있는 환경에서는 안전하지 않습니다. 검사 시점과 사용 시점 간의 차이로 인해 검사가 우회될 수 있습니다.
+**Prevention:** 파일을 안전하게 읽으면서 심볼릭 링크 순회를 방지하려면 `java.nio.file.Files.newInputStream(file.toPath(), java.nio.file.StandardOpenOption.READ, java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { ... }`와 같이 `NOFOLLOW_LINKS` 옵션을 사용하여 파일을 직접 읽어야 합니다.

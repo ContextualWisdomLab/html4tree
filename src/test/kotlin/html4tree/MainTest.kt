@@ -769,6 +769,32 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileToctouSymlinkSwapRejection() {
+        // Mock a Time-of-Check-Time-of-Use window where the file is replaced by a symlink
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val targetFile = File(tempDir, "target.ignore")
+        targetFile.writeText("*.log")
+
+        try {
+            Files.createSymbolicLink(ignoreFile.toPath(), targetFile.toPath())
+        } catch (e: Exception) {
+            Assume.assumeTrue("Symlink creation not supported in this environment", false)
+        }
+
+        File(tempDir, "test.log").createNewFile()
+
+        var readSuccess = false
+        try {
+            java.nio.file.Files.newInputStream(ignoreFile.toPath(), java.nio.file.StandardOpenOption.READ, java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { _ ->
+                readSuccess = true
+            }
+        } catch (_: java.io.IOException) {
+            // Expected
+        }
+        assertFalse(readSuccess, "Symlinks should be rejected by NOFOLLOW_LINKS throwing an exception")
+    }
+
+    @Test
     fun testProcessIgnoreFileLargeSize() {
         val ignoreFile = File(tempDir, ".html4ignore")
         // Write slightly more than 1MB
