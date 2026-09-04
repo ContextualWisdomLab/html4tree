@@ -316,9 +316,8 @@ internal fun process_ignore_file(
     // The opener below still uses NOFOLLOW_LINKS because an attacker can replace the
     // directory entry after these checks and before the actual open.
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
-       val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
-
-       try {
+       val ignored_matchers: List<java.nio.file.PathMatcher> = try {
+           val parsed_matchers = mutableListOf<java.nio.file.PathMatcher>()
            openIgnoreFile(ignore_file.toPath()).useLines { lines ->
                for ((lineIndex, it) in lines.withIndex()) {
                    // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
@@ -326,14 +325,16 @@ internal fun process_ignore_file(
                    val pattern = it.trim()
                    if (pattern.isNotEmpty() && pattern.length <= 100) {
                        try {
-                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                           parsed_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
                        } catch (_: IllegalArgumentException) {
                        }
                    }
                }
            }
+           parsed_matchers
        } catch (_: java.io.IOException) {
-           // A raced or otherwise unavailable ignore file contributes no user patterns.
+           // User patterns are committed only after a complete successful read.
+           emptyList()
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
