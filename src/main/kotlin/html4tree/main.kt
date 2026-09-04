@@ -356,7 +356,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
             it.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
-            Constants.defaultSensitiveExtensions.any { extension ->
+            Constants.defaultSensitiveExtensionsArray.any { extension ->
                 normalizedName.endsWith(extension)
             }
         ) {
@@ -526,4 +526,7 @@ private object Constants {
         ".swo",
         ".swpx"
     )
+
+    // ⚡ Bolt Performance Optimization: Iterator 할당을 피하기 위해 배열로 변환
+    val defaultSensitiveExtensionsArray = defaultSensitiveExtensions.toTypedArray()
 }
