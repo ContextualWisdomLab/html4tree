@@ -309,7 +309,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
+        // 보안 향상: TOCTOU(Time-of-Check to Time-of-Use) 취약점 방지
+        // isSymbolicLink 검사 후 읽기 작업 전에 심볼릭 링크로 교체되는 것을 막기 위해 NOFOLLOW_LINKS를 사용하여 읽기 중에도 심볼릭 링크를 따라가지 않도록 합니다.
+       java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { lines ->
            for ((lineIndex, it) in lines.withIndex()) {
                // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                if (lineIndex >= 1000) break
