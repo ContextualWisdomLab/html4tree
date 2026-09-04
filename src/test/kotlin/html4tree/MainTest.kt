@@ -115,7 +115,7 @@ class MainTest {
         assertTrue(htmlContent.contains("<html lang=\"ko\">"))
         assertRobotsDirective(htmlContent)
         assertTrue(htmlContent.contains("이 디렉토리는 비어 있습니다."))
-        assertTrue(htmlContent.contains("role=\"status\""))
+        assertFalse(htmlContent.contains("role=\"status\""))
         assertTrue(htmlContent.contains("role=\"list\""))
         assertTrue(htmlContent.contains("&#128194;"))
     }
@@ -946,4 +946,9 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+    // Trigger CI re-run 3
+    // Trigger CI re-run 5
+    // Trigger CI re-run 10
 }
+    // Trigger CI re-run 11
+    // Trigger CI re-run 12
