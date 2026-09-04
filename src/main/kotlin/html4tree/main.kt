@@ -229,22 +229,14 @@ fun String.isHiddenFile(): Boolean {
     }
 }
 
-// ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
-// Chained `.replace()` calls allocate multiple intermediate strings.
-// A single pass over the string lazily allocating a StringBuilder is much faster.
+// ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder and direct array lookup
+// Using an array lookup for ASCII characters is significantly faster than a conditional jump table (when expression).
 fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        val cInt = c.toInt()
+        val replacement = if (cInt < 128) Constants.HTML_ESCAPES[cInt] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -496,6 +488,16 @@ fun help() {
 }
 
 private object Constants {
+    @JvmField
+    val HTML_ESCAPES = Array<String?>(128) { null }.apply {
+        this['&'.toInt()] = "&amp;"
+        this['<'.toInt()] = "&lt;"
+        this['>'.toInt()] = "&gt;"
+        this['"'.toInt()] = "&quot;"
+        this['\''.toInt()] = "&#x27;"
+        this['`'.toInt()] = "&#x60;"
+    }
+
     @JvmField
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
 
