@@ -44,7 +44,7 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span class=\"entry-name\" aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
@@ -144,7 +144,7 @@ class GeneratedIndexReadabilityTest {
             ?.groupValues
             ?.get(1)
         assertNotNull(linkedRow)
-        assertTrue(linkedRow.contains("<span class=\"entry-name\">visible-name.txt</span>"))
+        assertTrue(linkedRow.contains("<span class=\"entry-name\" dir=\"auto\">visible-name.txt</span>"))
         assertTrue(linkedRow.contains("<span class=\"icon\" aria-hidden=\"true\">"))
         assertTrue(linkedRow.contains("<span class=\"visually-hidden\">파일</span>"))
         assertFalse(linkedRow.contains("class=\"icon entry-name\""))

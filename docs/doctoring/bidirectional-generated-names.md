@@ -1,35 +1,35 @@
-# Bidirectional direction for generated names
+# 생성된 이름에 대한 양방향 텍스트(BiDi) 방향성
 
-## Problem and scope
+## 문제 및 범위
 
-`html4tree` emits directory and file names supplied by the filesystem into a Korean generated index. Their base direction is not known in advance. A fixed page direction is therefore not a reliable direction source for Arabic, Hebrew, or mixed-script names.
+`html4tree`는 파일 시스템에서 제공받은 디렉토리 및 파일 이름을 한국어로 생성된 인덱스 파일에 출력합니다. 이때 문자열의 기본 방향성을 미리 알 수 없습니다. 따라서 고정된 페이지 방향성만으로는 아랍어, 히브리어, 또는 양방향 혼합 문자열이 포함된 파일명을 제대로 처리할 수 없습니다.
 
-The product boundary is deliberately narrow: apply HTML `dir="auto"` to the dynamic directory heading and visible filename span only. Fixed product copy such as the parent-navigation `..` token, icon semantics, file/directory type labels, and empty-state copy keep their existing page semantics. This decision does not claim that `dir="auto"` solves every punctuation or mixed-direction corner case.
+제품 적용 범위는 의도적으로 제한했습니다: HTML의 `dir="auto"` 속성은 동적으로 변경되는 디렉토리 제목과 눈에 보이는 파일명 요소(`span`)에만 적용됩니다. 상위 디렉토리로 이동하는 `..` 링크나 아이콘의 시맨틱 요소, 숨겨진 파일/디렉토리 타입 라벨, 빈 상태 표시 등의 고정된 텍스트 요소에는 기존 페이지의 기본 방향성을 유지합니다. 이러한 결정이 `dir="auto"`로 구두점이나 모든 복잡한 텍스트 방향 문제 완벽히 해결한다는 의미는 아닙니다.
 
-## Decision
+## 결정
 
-Use `dir="auto"` on the elements that tightly wrap the externally supplied directory and filename strings. Preserve the semantic `.entry-name` target used by the interaction styling contract; directionality must not regress that markup into a positional selector.
+외부에서 동적으로 제공된 디렉토리 및 파일 이름 문자열을 감싸고 있는 요소에만 제한적으로 `dir="auto"`를 사용합니다. 인터랙션 스타일링 규칙에 의존하는 시맨틱한 `.entry-name` 타겟 클래스는 유지해야 하며, 방향성 속성 추가로 인해 마크업이 위치 선택자에 의존하는 퇴행적 형태로 바뀌어서는 안 됩니다.
 
-The WHATWG HTML Standard defines the `auto` state as directionally isolated text whose direction is determined from element content, using a first-strong-character heuristic. W3C Internationalization likewise recommends `dir="auto"` when inserted text can be multilingual and its direction is not known in advance, while noting that corner cases remain.
+WHATWG HTML 표준에서는 `auto` 상태를 요소의 내용을 바탕으로 첫 번째 강력한 문자의 휴리스틱을 사용하여 방향을 격리하여 결정하도록 정의합니다. W3C 국제화 가이드라인도 삽입된 텍스트가 다국어를 포함할 수 있고 미리 방향을 알 수 없을 때 `dir="auto"` 사용을 권장하면서, 모든 예외 상황을 처리하지는 못한다는 점을 언급하고 있습니다.
 
-## Verification
+## 검증
 
-`BidirectionalTextDirectionTest` generates a real index for mixed Arabic/Latin directory and filename text and requires:
+`BidirectionalTextDirectionTest` 테스트는 아랍어/라틴어가 혼합된 디렉토리 및 파일명을 사용하여 실제 인덱스 파일을 생성하며 다음 사항을 요구합니다:
 
-- `dir="auto"` on the dynamic `<h1>`;
-- `dir="auto"` on the visible `.entry-name` filename span;
-- no `dir="auto"` on the fixed parent-navigation row;
-- no `dir="auto"` on the fixed visually hidden file-type label.
+- 동적으로 생성된 `<h1>`에 `dir="auto"` 존재 확인;
+- 화면에 표시되는 파일명인 `.entry-name` `span`에 `dir="auto"` 존재 확인;
+- 고정된 상위 디렉토리 탐색(parent-navigation) 링크에는 `dir="auto"`가 적용되지 않았음을 확인;
+- 고정된 시각적으로 숨겨진 파일 타입 라벨에는 `dir="auto"`가 적용되지 않았음을 확인.
 
-The existing generated-index readability regression remains authoritative for `.entry-name` hover, focus-visible, and active styling. Browser rendering and accessibility-tree evidence on the exact head remain promotion evidence rather than being inferred from source inspection.
+기존에 존재하는 `.entry-name`의 호버(hover), 포커스(focus-visible), 액티브(active) 상태 스타일에 대한 렌더링 회귀 테스트 역시 정상 작동해야 합니다. 정확한 커밋(head)에 대한 브라우저 렌더링 및 접근성 트리의 증거는 소스 검사에서 추론된 것보다 상위의 증거로 취급됩니다.
 
-## Alternatives and rollback
+## 대안 및 롤백
 
-A document-wide `dir="rtl"` or `dir="auto"` was rejected because the page chrome and localized Korean copy have known direction. CSS-only direction control was rejected because HTML direction metadata remains meaningful when CSS is unavailable. Unicode directional control characters were rejected because the dynamic text already has an element boundary and invisible control state would make the contract harder to audit.
+전체 문서 수준에서 `dir="rtl"` 또는 `dir="auto"`를 적용하는 방식은, 한국어 텍스트와 UI 요소가 이미 알려진 LTR 방향을 가지기 때문에 거부되었습니다. CSS로만 텍스트 방향을 제어하는 방식은 CSS를 사용할 수 없는 환경에서도 HTML 텍스트 방향 메타데이터가 의미를 가져야 하기 때문에 채택되지 않았습니다. 유니코드 텍스트 제어 문자를 사용하는 방식은 동적 텍스트가 이미 별도의 엘리먼트 경계를 가지고 있고 안 보이는 문자열이 추가되면 유지 보수 측면에서 검증이 어려워지기 때문에 채택되지 않았습니다.
 
-Rollback is the removal of the two `dir="auto"` attributes and this focused regression if current browser evidence shows a product regression. The `.entry-name` semantic interaction target is independent and must remain intact.
+향후 최신 브라우저 환경에서 제품의 접근성이 퇴보(regression)하는 증거가 발견된다면 추가된 두 개의 `dir="auto"` 속성과 관련된 회귀 테스트를 제거하는 롤백을 수행할 수 있습니다. 단, 시맨틱 인터랙션 타겟인 `.entry-name` 클래스는 구조적으로 완전히 독립적이므로 변경 없이 보존되어야 합니다.
 
-## References
+## 참고 자료
 
 WHATWG. (n.d.). *HTML standard: The `dir` attribute*. Retrieved September 5, 2026, from https://html.spec.whatwg.org/multipage/dom.html#the-dir-attribute
 
