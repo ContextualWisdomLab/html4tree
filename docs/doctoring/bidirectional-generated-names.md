@@ -31,6 +31,6 @@ Rollback is the removal of the two `dir="auto"` attributes and this focused regr
 
 ## References
 
-WHATWG. (2026). *HTML Standard: The `dir` attribute*. https://html.spec.whatwg.org/multipage/dom.html#the-dir-attribute
+WHATWG. (n.d.). *HTML standard: The `dir` attribute*. Retrieved September 5, 2026, from https://html.spec.whatwg.org/multipage/dom.html#the-dir-attribute
 
-W3C Internationalization. (n.d.). *Structural markup and right-to-left text in HTML*. https://www.w3.org/International/questions/qa-html-dir
+W3C Internationalization. (n.d.). *Structural markup and right-to-left text in HTML*. Retrieved September 5, 2026, from https://www.w3.org/International/questions/qa-html-dir
