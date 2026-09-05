@@ -1,7 +1,64 @@
-## 2024-09-05 - [성능 최적화: escapeHtml 배열 기반 조회로 변경]
-**Learning:** Kotlin에서 문자를 매핑할 때, 핫 패스(예: HTML 이스케이프)에서 `when` 조건 분기 테이블을 사용하는 것보다 직접 배열 기반 조회(예: `Array<String?>(128)`)를 사용하는 것이 훨씬 더 빠릅니다. `ArrayIndexOutOfBoundsException`을 방지하기 위해 배열 접근 전에 반드시 범위 검사(예: `cInt < 128`)를 수행해야 합니다. 그리고 JaCoCo 테스트 커버리지를 유지하기 위해 속성을 `private object` 안에 넣고 `@JvmField` 어노테이션을 사용하여 암묵적 getter 생성을 방지해야 합니다.
-**Action:** 빈번하게 호출되는 문자 변환이나 이스케이프 로직을 최적화할 때는 배열 조회를 사용하고, 커버리지 유지를 위해 `@JvmField`를 적극 활용합니다.
+## 2024-06-21 - 루프 내 정규식 컴파일
+**학습:** Kotlin에서 무시 파일을 처리할 때 파일 반복 루프 내에서 정규식(`.toRegex()`)을 컴파일하는 것은 O(N * M)의 심각한 성능 병목을 일으킵니다 (N 파일 * M 규칙).
+**조치:** 불필요한 정규식 재컴파일을 피하기 위해 항상 파일 반복 루프 외부에서 문자열 규칙을 컴파일된 `Regex` 객체로 매핑합니다 (O(M) 컴파일).
 
-## 2024-09-05 - [성능 최적화: escapeHtml 배열 기반 조회로 변경]
-**Learning:** Kotlin에서 문자를 매핑할 때, 핫 패스(예: HTML 이스케이프)에서 `when` 조건 분기 테이블을 사용하는 것보다 직접 배열 기반 조회(예: `Array<String?>(128)`)를 사용하는 것이 훨씬 더 빠릅니다. `ArrayIndexOutOfBoundsException`을 방지하기 위해 배열 접근 전에 반드시 범위 검사(예: `cInt < 128`)를 수행해야 합니다. 그리고 JaCoCo 테스트 커버리지를 유지하기 위해 속성을 `private object` 안에 넣고 `@JvmField` 어노테이션을 사용하여 암묵적 getter 생성을 방지해야 합니다.
-**Action:** 빈번하게 호출되는 문자 변환이나 이스케이프 로직을 최적화할 때는 배열 조회를 사용하고, 커버리지 유지를 위해 `@JvmField`를 적극 활용합니다.
+## 2024-05-24 - 루프 내 할당 핫 패스
+**학습:** 디렉토리 항목을 렌더링할 때 반복적인 문자열 연결과 리스트 기반 제외 조회를 사용하면 대규모 디렉토리에서 불필요한 할당 및 조회 비용이 발생합니다.
+**조치:** 항목 렌더링에 `StringBuilder`를 사용하고 제외된 파일 이름에 대해 `Set`을 사용합니다.
+
+## 2024-07-26 - 중간 문자열 할당
+**학습:** Kotlin에서 문자열에 연결된 `.replace()` 호출 (예: HTML 이스케이프)은 각 단계에서 중간 문자열을 할당하여 요소가 많은 핫 패스에서 성능 및 가비지 컬렉션에 큰 영향을 미칩니다.
+**조치:** 연결된 `.replace()` 호출을 문자를 한 번만 반복하는 단일 패스 루프로 바꾸고, 변환된 출력을 추가하기 위해 `StringBuilder`를 지연 초기화합니다.
+
+## 2024-07-08 - URL 인코딩 문자열 할당 병목
+**학습:** 핫 패스 루프 내에서 예약된 바이트당 최대 3개의 문자열을 할당하는 `byte.toString(16).padStart(2, '0').toUpperCase()`는 상당한 GC 압력을 유발합니다. 이는 디렉토리 크롤러에서 대규모 문자열이나 수많은 파일을 처리할 때 Kotlin에서 흔히 볼 수 있는 위험한 안티 패턴입니다.
+**조치:** 중간 문자열 생성을 완전히 피하기 위해 포맷된 16진수 출력을 작성할 때 연결된 문자열 연산을 직접 문자 매핑 및 비트 연산(`ushr`, `and`)으로 바꿉니다. 10 미만 및 9 초과의 16진수 값을 모두 포괄하는 테스트 입력을 통해 100% 브랜치 커버리지를 보장합니다.
+
+## 2026-07-10 - 저렴한 메모리 내 검사 전 비싼 OS stat 호출
+**학습:** Kotlin/Java에서 `java.nio.file.Files`를 통해 파일 속성 (예: `isDirectory` 또는 `isSymbolicLink`)을 확인하려면 `Path` 객체를 할당해야 하며 비싼 네이티브 OS stat 호출을 수행합니다. 파일 목록을 처리할 때 파일 시스템을 건드리는 메서드를 호출하기 전에 제외 목록 (저렴한 메모리 내 문자열 연산 사용)과 비교하여 파일 시스템 검사를 단축합니다.
+**조치:** `Files.isDirectory` 및 `Files.isSymbolicLink`를 호출하기 전에 `exclude` 세트를 확인하도록 조건문을 재배열했습니다.
+
+
+## 2026-07-12 - 이중 루프 내 패턴 매칭 조기 종료 (Short-Circuit)
+**학습:** 무시할 파일(ignore patterns)을 확인할 때, 각 파일에 대해 모든 패턴을 순회(`forEach`)하는 것은 비효율적입니다. 파일이 하나의 패턴에 매칭되어 제외 목록에 추가되면 나머지 패턴을 확인할 필요가 없습니다. 이를 조기 종료(Short-circuit)하지 않으면 불필요한 O(N * M) 정규식/패턴 매칭 평가가 발생합니다.
+**조치:** 무시 목록 평가 등 조건을 만족할 때 더 이상 확인이 필요 없는 경우에는 `forEach` 대신 일반 `for` 루프와 `break`를 사용하거나 `any`를 활용하여 연산을 단축합니다.
+
+## 2024-07-28 - 디렉토리 목록 불필요한 정렬 오버헤드
+**학습:** 디렉토리 목록(`list()` 또는 `listFiles()`)을 단순히 필터링하여 `Set`에 추가하는 경우처럼 특정 순서가 필요하지 않은 작업에서 `.sorted()`를 호출하면 불필요한 O(N log N) 오버헤드가 발생합니다.
+**조치:** `Set`과 같은 순서에 무관한 자료구조에 요소를 추가하기 위한 필터링 작업에서는 디렉토리 목록에서 `.sorted()` 호출을 제거하여 성능을 최적화합니다.
+
+## 2024-05-18 - [디렉토리 목록 캐싱을 통한 I/O 오버헤드 최적화]
+**Learning:** `process_dir` 및 `process_ignore_file`과 같은 함수에서 동일한 디렉토리에 대해 `listFiles()` 또는 `list()`를 반복적으로 호출하면, 파일 시스템 I/O로 인한 불필요한 성능 저하가 발생합니다.
+**Action:** 디렉토리를 순회할 때 상위 루프에서 `listFiles()`를 한 번만 호출하여 캐싱한 후, 결과를 인자로 전달(예: `dirFiles` 배열)하여 중복된 파일 시스템 호출을 제거해야 합니다.
+
+## 2024-08-01 - URL 인코딩 빌더 지연 생성
+**학습:** URL 인코딩이 필요 없는 안전한 경로 문자열에서도 항상 `StringBuilder`를 생성하면 hot path에서 불필요한 할당이 발생합니다.
+**조치:** 예약 바이트를 처음 만났을 때만 `StringBuilder`를 만들고, 그 전까지는 원본 문자열을 그대로 반환하는 지연 생성 패턴을 사용합니다.
+## 2026-08-11 - Optimize OS stat calls in file listing
+**Learning:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
+**Action:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
+## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
+**학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
+**조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
+**학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
+**조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화 (순회 루프)
+**학습:** 디렉토리 순회 루프 내에서 isDirectory 및 isSymbolicLink 두 번의 stat을 각각 호출하면 파일 시스템 I/O 오버헤드가 배가됩니다. 메모리 내 제외 규칙 확인 후 한 번의 readAttributes로 속성을 한 번에 가져오는 것이 훨씬 빠릅니다.
+**조치:** Files.isDirectory 및 Files.isSymbolicLink를 단일 Files.readAttributes 호출로 교체하여 O(N) I/O 통신을 최적화했습니다.
+
+## 2026-08-09 - 반복 호출되는 함수 내 정적 리스트 최적화
+**Learning:** 디렉토리를 탐색할 때마다 호출되는 함수(process_ignore_file) 내부에서 listOf()로 고정된 리스트를 할당하면 불필요한 메모리 할당과 GC 부하가 발생합니다.
+**Action:** 정적인 컬렉션은 private object로 추출하고 @JvmField 등을 활용하여 단 한 번만 초기화되도록 최적화해야 합니다.
+
+## 2026-08-11 - Comparator 객체 재사용
+**학습:** 반복 호출되는 디렉터리 정렬 경계에서 `compareBy<File> { it.name }`를 매번 만들 필요는 없습니다. 정렬 의미가 상태와 무관하면 하나의 불변 비교자를 재사용할 수 있습니다.
+**조치:** 파일명 비교자를 최상위 `private val`로 한 번 생성하고 `process_dir`의 정렬에서 재사용합니다. 정렬 순서와 파일 시스템 경계는 변경하지 않습니다.
+
+## 2026-08-11 - 파일명 배열 직접 생성
+**학습:** 파일 배열에서 이름 배열을 만들 때 `map(...).toTypedArray()`는 결과 배열 외에 중간 컬렉션도 생성합니다. 호출 경계가 이미 배열을 제공한다면 크기를 알고 있는 결과 배열을 직접 채울 수 있습니다.
+**조치:** `crawl_directories`에서 `Array(files.size)`로 파일명 배열을 직접 생성합니다. 순서, null 처리, ignore 입력과 파일 시스템 호출 횟수는 변경하지 않습니다.
+
+## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
+**학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
+**조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
