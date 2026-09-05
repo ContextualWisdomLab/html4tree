@@ -58,6 +58,30 @@ class IgnoreFileReadFailureTest {
     }
 
     @Test
+    fun processIgnoreFileFailsClosedForDeclaredSymlinkWithoutInjectedSnapshot() {
+        val replacementTarget = File(tempDir, "replacement-policy")
+        replacementTarget.writeText("public-*\n")
+        Files.createSymbolicLink(File(tempDir, ".html4ignore").toPath(), replacementTarget.toPath())
+
+        val error = assertFailsWith<IgnoreFileReadException> {
+            process_ignore_file(tempDir)
+        }
+
+        assertTrue(error.cause is IOException)
+    }
+
+    @Test
+    fun processIgnoreFileFailsClosedForDeclaredDirectoryWithoutInjectedSnapshot() {
+        File(tempDir, ".html4ignore").mkdir()
+
+        val error = assertFailsWith<IgnoreFileReadException> {
+            process_ignore_file(tempDir)
+        }
+
+        assertTrue(error.cause is IOException)
+    }
+
+    @Test
     fun crawlDoesNotPublishDirectoryWhenAdmittedIgnoreFileReadFails() {
         File(tempDir, "public.txt").writeText("visible only when policy evaluation succeeds")
         val queue = LinkedList()
