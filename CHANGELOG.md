@@ -16,6 +16,9 @@ All notable changes to this project are documented in this file.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
+- Apply `dir="auto"` to externally supplied directory and filename text whose
+  base direction is unknown, while leaving fixed parent-navigation and type
+  labels under the page's normal Korean direction.
 
 ### Fixed
 
@@ -30,6 +33,8 @@ All notable changes to this project are documented in this file.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
   cascade ordering, reduced-motion retention, text-only decoration, and numeric
   text/focus contrast thresholds.
+- Add a generated-output BiDi regression using mixed Arabic/Latin directory and
+  filename text, including fixed parent-navigation and type-label boundaries.
 
 ### Documentation
 
@@ -40,3 +45,5 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+- Record the `dir="auto"` scope and heuristic boundary for unknown-direction
+  externally supplied names in `docs/doctoring/bidirectional-generated-names.md`.
