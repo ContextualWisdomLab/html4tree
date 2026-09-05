@@ -124,6 +124,9 @@ fun main(args: Array<String>)  = Html4tree().main(args)
 
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
 
+internal class IgnoreFileReadException(cause: java.io.IOException) :
+    RuntimeException("Unable to read an admitted .html4ignore file", cause)
+
 
 internal fun read_file_identity(file: File): FileIdentity {
     return try {
@@ -200,7 +203,14 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = processIgnoreFile(lle.file, dirFilesNames)
+        val exclude = try {
+            processIgnoreFile(lle.file, dirFilesNames)
+        } catch (_: IgnoreFileReadException) {
+            // An admitted ignore policy that cannot be read is not equivalent to no policy.
+            // Skip publication and traversal for this directory rather than exposing names.
+            lle = ll.pull()
+            continue
+        }
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
            processDirectory(lle.file, exclude, dirFiles)
@@ -293,7 +303,13 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
-fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
+fun process_ignore_file(
+    curr_dir: File,
+    dirFilesNames: Array<String>? = null,
+    readIgnoreLines: (File, (Sequence<String>) -> Unit) -> Unit = { file, consume ->
+        file.useLines { lines -> consume(lines) }
+    }
+): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -310,7 +326,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        try {
-           ignore_file.useLines { lines ->
+           readIgnoreLines(ignore_file) { lines ->
                for ((lineIndex, it) in lines.withIndex()) {
                    // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                    if (lineIndex >= 1000) break
@@ -323,8 +339,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                    }
                }
            }
-       } catch (_: java.io.IOException) {
-           // Catch TOCTOU exceptions such as FileNotFoundException caused by race conditions.
+       } catch (error: java.io.IOException) {
+           throw IgnoreFileReadException(error)
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
