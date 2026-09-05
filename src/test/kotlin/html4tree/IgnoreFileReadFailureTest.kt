@@ -57,6 +57,34 @@ class IgnoreFileReadFailureTest {
     }
 
     @Test
+    fun crawlDoesNotPublishWhenListedIgnoreFileDisappearsBeforePolicyRead() {
+        File(tempDir, ".html4ignore").writeText("private-*\n")
+        File(tempDir, "private-report.txt").writeText("must remain hidden")
+        val queue = LinkedList()
+        queue.push(LinkedListEntry(tempDir, 0, read_file_identity(tempDir).key))
+        var published = false
+        var listedIgnorePolicy = false
+
+        crawl_directories(
+            queue,
+            -1,
+            processDirectory = { _, _, _ -> published = true },
+            listFiles = { directory ->
+                val snapshot = directory.listFiles()
+                listedIgnorePolicy = snapshot?.any { it.name == ".html4ignore" } == true
+                File(directory, ".html4ignore").delete()
+                snapshot
+            }
+        )
+
+        assertTrue(listedIgnorePolicy)
+        assertFalse(
+            published,
+            "a policy present in the admitted directory snapshot must not become an empty policy when it disappears before read"
+        )
+    }
+
+    @Test
     fun readableIgnoreFileStillAppliesConfiguredGlob() {
         File(tempDir, ".html4ignore").writeText("private-*\n")
 
