@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2026-09-05 - [html4tree] TOCTOU (Time-of-Check to Time-of-Use) 취약점 심화 - 스냅샷 불일치 방어
-**Vulnerability:** 디렉토리 크롤링 시 `listFiles()`로 얻은 스냅샷에는 `.html4ignore`가 존재했지만, `process_ignore_file()`을 호출하기 직전에 해당 파일이 삭제되거나 권한이 손실될 경우(TOCTOU) 빈 무시 규칙(empty matcher set)이 반환되어 숨겨져야 할 파일들이 유출되는 취약점.
-**Learning:** `isFile`, `canRead`, `length` 검사를 통과하지 못해 무시 파일을 열지 못한 경우라도, 초기 디렉토리 스냅샷에 무시 정책(`.html4ignore`)이 있었다는 증거가 있다면 안전하게 실패(fail-closed)해야 합니다. 이를 단순한 '정책 없음(no policy)'으로 취급하면 기밀 데이터가 노출될 수 있습니다.
-**Prevention:** 런타임에 보안 정책 파일을 평가할 때, 사전에 얻은 스냅샷(디렉토리 목록)에 정책 파일이 존재했다면 읽기/권한 검사 실패 시 반드시 명시적인 예외(`IgnoreFileReadException`)를 던져 크롤링(및 데이터 노출)을 억제해야 합니다.
