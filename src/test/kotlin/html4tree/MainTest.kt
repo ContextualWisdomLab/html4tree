@@ -50,6 +50,18 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileWithTryCatchCoverage() {
+        val tempDir = Files.createTempDirectory("test-ignore-coverage").toFile()
+        try {
+            File(tempDir, ".html4ignore").writeText("test\n")
+            process_ignore_file(tempDir)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+
+    @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
