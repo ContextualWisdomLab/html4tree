@@ -133,10 +133,23 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
-    fun hoverAndKeyboardFocusUnderlineOnlyLinkText() {
-        process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
+    fun interactiveStatesUnderlineVisibleFilenameOnly() {
+        val linkedFile = File(temporaryDirectory, "visible-name.txt").apply { writeText("target") }
+        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(linkedFile))
 
+        val html = generatedHtml()
         val style = emittedStyle()
+        val linkedRow = Regex("""<a class="dir-link"[^>]*>([\s\S]*?visible-name\.txt[\s\S]*?)</a>""")
+            .find(html)
+            ?.groupValues
+            ?.get(1)
+        assertNotNull(linkedRow)
+        assertTrue(linkedRow.contains("<span class=\"entry-name\">visible-name.txt</span>"))
+        assertTrue(linkedRow.contains("<span class=\"icon\" aria-hidden=\"true\">"))
+        assertTrue(linkedRow.contains("<span class=\"visually-hidden\">파일</span>"))
+        assertFalse(linkedRow.contains("class=\"icon entry-name\""))
+        assertFalse(linkedRow.contains("class=\"visually-hidden entry-name\""))
+
         val completeTargetRule = Regex("""a:hover, a:focus-visible, a:active \{([\s\S]*?)\}""")
             .find(style)
             ?.groupValues
@@ -147,12 +160,13 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover span:last-child, a:focus-visible span:last-child, a:active span:last-child {
+                a:hover .entry-name, a:focus-visible .entry-name, a:active .entry-name {
                   text-decoration: underline;
                 }
                 """.trimIndent()
             )
         )
+        assertFalse(style.contains("span:last-child"))
         assertTrue(style.contains("@media (prefers-reduced-motion: reduce)"))
     }
 
