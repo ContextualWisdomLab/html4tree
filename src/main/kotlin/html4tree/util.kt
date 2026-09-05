@@ -1,19 +1,47 @@
 package html4tree
 
 import java.io.File
-import java.util.ArrayDeque
+
+data class Entry (val data: File, val level: Int, var next: Entry?, val fileKey: Any? = null)
 
 data class LinkedListEntry(val file: File, val level: Int, var fileKey: Any? = null)
 
 class LinkedList {
-    private val deque = ArrayDeque<LinkedListEntry>()
+    var first: Entry? = null
+    var last: Entry? = null
 
     fun push(lle: LinkedListEntry) {
-        // Performance optimization: Using ArrayDeque avoids allocating Entry wrapper nodes
-        deque.addLast(lle)
+        if(last == null){
+            last = Entry(lle.file, lle.level, null, lle.fileKey)
+            first = last
+        } else {
+            val nextEntry = Entry(lle.file, lle.level, null, lle.fileKey)
+            val currentFirst = first
+            if (currentFirst == null) {
+                var currentLast = last!!
+                while (currentLast.next != null) {
+                    currentLast = currentLast.next!!
+                }
+                currentLast.next = nextEntry
+            } else {
+                currentFirst.next = nextEntry
+            }
+            first = nextEntry
+        }
     }
 
     fun pull(): LinkedListEntry? {
-        return deque.pollFirst()
+        val l: Entry? = last
+        if(l != null) {
+            last = l.next
+        }
+
+        if(l == null){
+            return null
+        } else {
+            l.next = null
+            return LinkedListEntry(l.data, l.level, l.fileKey)
+        }
     }
+
 }
