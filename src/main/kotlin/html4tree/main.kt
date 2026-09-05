@@ -360,6 +360,8 @@ fun process_ignore_file(
               }
            }
        }
+    } else if (dirFilesNames?.contains(".html4ignore") == true) {
+       throw IgnoreFileReadException(java.io.IOException(".html4ignore disappeared or became inaccessible before read"))
     }
 
     if ("index.html" !in files_to_exclude)
