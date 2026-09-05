@@ -19,12 +19,18 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- Fail closed for a directory when an admitted `.html4ignore` cannot be read,
+  instead of publishing entries with an empty custom-ignore policy after a
+  read-time filesystem race.
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
 
 ### Tests
 
+- Replace the scheduler- and permission-dependent `.html4ignore` race test with
+  deterministic injected-I/O regressions for typed failure propagation,
+  directory-publication suppression, and the normal readable glob path.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
