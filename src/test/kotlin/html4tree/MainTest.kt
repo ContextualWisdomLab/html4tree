@@ -642,6 +642,25 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileRejectsSymlink() {
+        val tempDir = Files.createTempDirectory("test-ignore-symlink").toFile()
+        try {
+            val ignoreTarget = File(tempDir, "target.txt")
+            ignoreTarget.writeText("secret.txt")
+            val ignoreLink = File(tempDir, ".html4ignore")
+            try {
+                Files.createSymbolicLink(ignoreLink.toPath(), ignoreTarget.toPath())
+            } catch (e: UnsupportedOperationException) {
+                return
+            }
+            val excluded = process_ignore_file(tempDir)
+            assertFalse(excluded.contains("secret.txt"))
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively() {
         val sensitiveNames = listOf("ID_RSA", "Secrets.YML", "CONFIG.JSON")
         sensitiveNames.forEach { File(tempDir, it).writeText("secret") }
