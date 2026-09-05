@@ -13,9 +13,6 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
-- Label the generated directory navigation from an in-document, visually
-  hidden heading so the landmark and heading hierarchy share one descriptive
-  text source without changing the visible layout.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
@@ -28,8 +25,6 @@ All notable changes to this project are documented in this file.
 
 ### Tests
 
-- Add a generated-page regression that proves the navigation landmark has one
-  unique heading reference and does not retain a competing `aria-label`.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
@@ -38,8 +33,6 @@ All notable changes to this project are documented in this file.
 
 ### Documentation
 
-- Record the navigation-landmark labeling choice, alternatives, standards basis,
-  evidence limits, and rollback contract in `docs/doctoring/navigation-landmark-label.md`.
 - Record the generated-page robots indexing preference, crawler-access
   prerequisite, non-security boundary, rollback contract, and current Google
   Search Central reference in `docs/doctoring/robots-indexing-preference.md`.
