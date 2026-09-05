@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2026-08-11 - [CRITICAL] 정책 파일(.html4ignore) TOCTOU 실패 시 Fail-Closed 처리 누락 방지
-**Vulnerability:** 파일 디렉토리 스냅샷에 `.html4ignore`가 존재하지만 실제로 읽으려 할 때 접근 불가, 심볼릭 링크 변경, 또는 디렉토리인 경우, 이를 단순히 무시(Fail-Open)하고 모든 파일을 노출하는 TOCTOU (Time-of-Check to Time-of-Use) 취약점.
-**Learning:** 보안 및 무시 규칙이 명시된 파일이 존재함에도 불구하고 이를 읽지 못할 때 기본적으로 무시하고 계속 진행하면, 민감한 파일이 의도치 않게 인덱싱될 수 있습니다. (Implicit Trust)
-**Prevention:** 정책 파일이 디렉토리 스냅샷에 포함되어 있다면 이를 파싱하기 전 검증 실패나 접근 오류 시 반드시 예외(`IgnoreFileReadException`)를 던지고, 상위 디렉토리 크롤링 로직에서 이 예외를 잡아 해당 디렉토리 전체에 대한 렌더링 및 하위 탐색을 즉시 중단(Fail-Closed)해야 합니다.
