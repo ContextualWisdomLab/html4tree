@@ -5,6 +5,7 @@ import java.security.MessageDigest
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
@@ -303,12 +304,19 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
+internal fun read_ignore_lines_no_follow(
+    file: File,
+    consume: (Sequence<String>) -> Unit
+) {
+    Files.newInputStream(file.toPath(), StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
+        .bufferedReader(Charsets.UTF_8)
+        .useLines { lines -> consume(lines) }
+}
+
 fun process_ignore_file(
     curr_dir: File,
     dirFilesNames: Array<String>? = null,
-    readIgnoreLines: (File, (Sequence<String>) -> Unit) -> Unit = { file, consume ->
-        file.useLines { lines -> consume(lines) }
-    }
+    readIgnoreLines: (File, (Sequence<String>) -> Unit) -> Unit = ::read_ignore_lines_no_follow
 ): Set<String> {
 
     val ignore_filename = ".html4ignore"
