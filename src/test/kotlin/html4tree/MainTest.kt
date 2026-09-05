@@ -60,6 +60,11 @@ class MainTest {
         assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
         assertEquals("mix text &amp; and &lt;tag&gt;", "mix text & and <tag>".escapeHtml())
+        assertEquals("가나다라", "가나다라".escapeHtml())
+        assertEquals("こんにちは", "こんにちは".escapeHtml())
+        assertEquals("👨‍👩‍👧‍👦 emoji", "👨‍👩‍👧‍👦 emoji".escapeHtml())
+        assertEquals("", "".escapeHtml())
+        assertEquals("A B C !@# 123", "A B C !@# 123".escapeHtml())
     }
 
     @Test
