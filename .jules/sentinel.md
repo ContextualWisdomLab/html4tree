@@ -99,7 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-## 2024-09-06 - Limit path length to prevent DoS
-**Vulnerability:** Unbounded directory path inputs could lead to Denial of Service (DoS) or Out-Of-Memory (OOM) via excessive memory allocations during path resolution.
-**Learning:** External inputs like top-level directory paths must always have defined constraints before passing to expensive filesystem operations.
-**Prevention:** Explicitly enforce a maximum length limit (e.g., 4096 characters) on user-provided path strings early in the validation phase.
