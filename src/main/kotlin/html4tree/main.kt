@@ -309,7 +309,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.StandardOpenOption.READ, java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { lines ->
+       ignore_file.useLines { lines ->
            for ((lineIndex, it) in lines.withIndex()) {
                // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                if (lineIndex >= 1000) break
@@ -426,7 +426,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
      </head>
      <body>
        <main>
-         <h1>${directoryName.escapeHtml()}</h1>
+         <h1 dir="auto">${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
@@ -460,7 +460,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
