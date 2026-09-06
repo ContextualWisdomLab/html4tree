@@ -73,7 +73,3 @@
 ## 2026-08-17 - 브라우저 번역과 화면 판독기의 호환성을 위한 텍스트 처리
 **Learning:** `aria-label` 속성으로 지정된 화면 판독기용 대체 텍스트는 Chrome Translate 등 브라우저 번역 도구에 의해 번역되지 않는 경우가 많습니다. 이로 인해 문서 언어가 변환되어도 스크린 리더에서는 원본 언어(예: 영어)로 읽혀 다국어 접근성이 저하됩니다.
 **Action:** 화면 판독기를 위한 숨겨진 설명 텍스트를 제공할 때 `aria-label` 대신 CSS `.visually-hidden` 클래스를 적용한 `<span>` 요소를 사용하여, 브라우저가 일반 텍스트로 인식하고 번역할 수 있도록 하여 다국어 접근성 호환성을 확보하십시오.
-
-## 2024-09-01 - Fix unexpected underline on hidden a11y text
-**Learning:** `a:hover span:last-child`와 같은 구조적 가상 클래스(structural pseudo-classes)를 호버 스타일에 사용하면, 시각적으로는 보이지 않지만 스크린 리더를 위해 추가된 숨겨진 텍스트(예: `<span class="visually-hidden">`)를 의도치 않게 타겟팅하게 되어 텍스트가 없는 빈 공간에 밑줄이 생기는 오류가 발생할 수 있습니다.
-**Action:** 컨테이너 끝에 접근성 향상을 위한 숨김 요소(예: `.visually-hidden`)를 추가할 때는, 시각적 호버(hover) 스타일이 DOM 구조 변경에 영향을 받지 않도록 취약한 `:last-child` 선택자를 제거하고 대상 요소에 명시적인 시맨틱 클래스(예: `.filename`)를 사용하십시오.
