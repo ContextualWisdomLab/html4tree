@@ -14,7 +14,7 @@ Apache-2.0 components are commercially usable under their terms. The repository'
 ## Test-only dependencies
 
 - **JUnit 4.13.2** — Eclipse Public License 1.0. It is declared through `testCompile` and is not part of the intended runtime dependency surface.
-- **Kotlin test/JUnit support 1.3.72** — test-only Kotlin support; Kotlin artifacts retain their own license terms.
+- **Kotlin test/JUnit support 1.3.72** (`org.jetbrains.kotlin:kotlin-test-junit`) — Apache License 2.0; test-only and not part of the intended runtime dependency surface.
 
 Test-only status must be verified from the exact built artifact rather than inferred from this file if packaging logic changes.
 
