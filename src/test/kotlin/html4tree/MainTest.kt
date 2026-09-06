@@ -951,4 +951,33 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+    @Test
+    fun testProcessIgnoreFileThrowsWhenInaccessible() {
+        val subdir = File(tempDir, "toctou_ignore_test")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "mock-key"
+        ll.push(entry)
+
+        var processed = false
+        var listed = false
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock") },
+            listFiles = {
+                listed = true
+                arrayOf(File(subdir, ".html4ignore"))
+            },
+            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = { FileIdentity("mock-key", true) }
+        )
+
+        assertTrue(listed, "listFiles must be called before processIgnoreFile")
+        assertFalse(processed, "Directory with inaccessible ignore file must not be processed")
+    }
+
 }
