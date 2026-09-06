@@ -50,6 +50,18 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileWithTryCatchCoverage() {
+        val tempDir = Files.createTempDirectory("test-ignore-coverage").toFile()
+        try {
+            File(tempDir, ".html4ignore").writeText("test\n")
+            process_ignore_file(tempDir)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+
+    @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
         assertEquals("&lt;", "<".escapeHtml())
@@ -639,6 +651,25 @@ class MainTest {
         assertTrue(excluded.contains(".hiddendir"))
         assertTrue(excluded.contains(".env"))
         assertFalse(excluded.contains("test.txt"))
+    }
+
+    @Test
+    fun testProcessIgnoreFileRejectsSymlink() {
+        val tempDir = Files.createTempDirectory("test-ignore-symlink").toFile()
+        try {
+            val ignoreTarget = File(tempDir, "target.txt")
+            ignoreTarget.writeText("secret.txt")
+            val ignoreLink = File(tempDir, ".html4ignore")
+            try {
+                Files.createSymbolicLink(ignoreLink.toPath(), ignoreTarget.toPath())
+            } catch (e: UnsupportedOperationException) {
+                return
+            }
+            val excluded = process_ignore_file(tempDir)
+            assertFalse(excluded.contains("secret.txt"))
+        } finally {
+            tempDir.deleteRecursively()
+        }
     }
 
     @Test

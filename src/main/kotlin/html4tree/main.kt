@@ -303,24 +303,37 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
-    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
+    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하여 DoS 및 경로 조작을 방지합니다.
+    // (TOCTOU 방지를 위해 최종 읽기 시점에서 NOFOLLOW_LINKS를 사용하므로, 중복된 isSymbolicLink 검사를 제거합니다)
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
+    if(ignore_file.isFile && ignore_file.canRead() && ignore_file.length() <= 1048576){
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
-           for ((lineIndex, it) in lines.withIndex()) {
-               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-               if (lineIndex >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: IllegalArgumentException) {
+       // 🛡️ Sentinel: Fix TOCTOU (Time-of-Check-Time-of-Use) vulnerability.
+       // Prevent symlink traversal by securely reading the file without following symlinks.
+       try {
+           val input = java.nio.file.Files.newInputStream(ignore_file.toPath(), java.nio.file.StandardOpenOption.READ, java.nio.file.LinkOption.NOFOLLOW_LINKS)
+           try {
+               val reader = java.io.InputStreamReader(input, Charsets.UTF_8)
+               val bufferedReader = java.io.BufferedReader(reader)
+               var lineIndex = 0
+               while (lineIndex < 1000) {
+                   val line = bufferedReader.readLine() ?: break
+                   val pattern = line.trim()
+                   if (pattern.isNotEmpty() && pattern.length <= 100) {
+                       try {
+                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                       } catch (_: IllegalArgumentException) {
+                       }
                    }
+                   lineIndex++
                }
+           } finally {
+               input.close()
            }
+       } catch (e: Exception) {
+           // 파일 시스템 계층에서 심볼릭 링크 스왑(TOCTOU)이 감지되어 읽기가 실패한 경우 무시하고 계속 진행(Fail Securely)
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
