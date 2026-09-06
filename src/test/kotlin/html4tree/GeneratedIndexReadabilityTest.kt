@@ -45,9 +45,9 @@ class GeneratedIndexReadabilityTest {
 
         val generatedHtml = generatedHtml()
         val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
-        val firstIndex = generatedHtml.indexOf("alpha.txt")
-        val middleIndex = generatedHtml.indexOf("middle.txt")
-        val lastIndex = generatedHtml.indexOf("zulu.txt")
+        val firstIndex = generatedHtml.indexOf("<span dir=\"auto\">alpha.txt</span>")
+        val middleIndex = generatedHtml.indexOf("<span dir=\"auto\">middle.txt</span>")
+        val lastIndex = generatedHtml.indexOf("<span dir=\"auto\">zulu.txt</span>")
 
         assertTrue(parentIndex >= 0)
         assertTrue(parentIndex < firstIndex)
