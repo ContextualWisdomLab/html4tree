@@ -19,6 +19,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- 구조적으로 숨겨진 접근성 요소(`.visually-hidden`) 추가 시 기존 호버 및 포커스 밑줄 스타일이 깨지는 문제를 해결하기 위해 CSS 구조적 가상 클래스를 `:last-child`에서 `:nth-child(2)`로 변경했습니다.
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
