@@ -37,7 +37,6 @@
 ## 2024-05-24 - [a 태그에 부드러운 트랜지션 추가 및 사용자의 모션 설정 존중]
 **Learning:** CSS 트랜지션(`transition: all`)을 추가하면 의도치 않은 애니메이션과 성능 문제를 일으킬 수 있습니다. 또한, 애니메이션은 전정 운동 장애가 있는 사용자에게 문제를 유발할 수 있습니다.
 **Action:** CSS 트랜지션을 추가할 때 `transition: all` 대신 속성(`background-color`, `outline-color` 등)을 명시적으로 지정하십시오. 접근성을 위해 항상 `@media (prefers-reduced-motion: reduce)` 오버라이드를 포함하여 `transition: none`으로 설정하십시오.
-
 ## 2024-07-10 - 다크 모드 지원 및 지역화 일관성 확보
 **Learning:** `html4tree` CLI로 생성되는 정적 HTML에서 사용자는 네이티브 다크 모드를 기대하며(접근성, 가독성 문제), `<nav>` 레이블("Directory listing")이 다른 UI와 다르게 영문으로 되어 있어 스크린 리더 환경 등에서 지역화(Localization) 일관성을 해칩니다.
 **Action:** `prefers-color-scheme: dark` 미디어 쿼리를 CSS에 추가하여 네이티브 다크 모드를 지원하고, `<nav aria-label="Directory listing">`을 `<nav aria-label="디렉토리 목록">`으로 수정하여 UI를 한국어로 통일했습니다.
@@ -73,7 +72,3 @@
 ## 2026-08-17 - 브라우저 번역과 화면 판독기의 호환성을 위한 텍스트 처리
 **Learning:** `aria-label` 속성으로 지정된 화면 판독기용 대체 텍스트는 Chrome Translate 등 브라우저 번역 도구에 의해 번역되지 않는 경우가 많습니다. 이로 인해 문서 언어가 변환되어도 스크린 리더에서는 원본 언어(예: 영어)로 읽혀 다국어 접근성이 저하됩니다.
 **Action:** 화면 판독기를 위한 숨겨진 설명 텍스트를 제공할 때 `aria-label` 대신 CSS `.visually-hidden` 클래스를 적용한 `<span>` 요소를 사용하여, 브라우저가 일반 텍스트로 인식하고 번역할 수 있도록 하여 다국어 접근성 호환성을 확보하십시오.
-
-## 2024-09-01 - Fix unexpected underline on hidden a11y text
-**Learning:** `a:hover span:last-child`와 같은 구조적 가상 클래스(structural pseudo-classes)를 호버 스타일에 사용하면, 시각적으로는 보이지 않지만 스크린 리더를 위해 추가된 숨겨진 텍스트(예: `<span class="visually-hidden">`)를 의도치 않게 타겟팅하게 되어 텍스트가 없는 빈 공간에 밑줄이 생기는 오류가 발생할 수 있습니다.
-**Action:** 컨테이너 끝에 접근성 향상을 위한 숨김 요소(예: `.visually-hidden`)를 추가할 때는, 시각적 호버(hover) 스타일이 DOM 구조 변경에 영향을 받지 않도록 취약한 `:last-child` 선택자를 제거하고 대상 요소에 명시적인 시맨틱 클래스(예: `.filename`)를 사용하십시오.
