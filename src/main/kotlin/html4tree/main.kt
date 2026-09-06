@@ -110,6 +110,8 @@ li + li {
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
 
+class IgnoreFileReadException(message: String) : java.io.IOException(message)
+
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
     val topDir: String by argument(help="Top directory to crawl")
@@ -200,7 +202,12 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = processIgnoreFile(lle.file, dirFilesNames)
+        val exclude = try {
+            processIgnoreFile(lle.file, dirFilesNames)
+        } catch (e: IgnoreFileReadException) {
+            lle = ll.pull()
+            continue
+        }
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
            processDirectory(lle.file, exclude, dirFiles)
@@ -303,6 +310,14 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
+    val list = dirFilesNames ?: curr_dir.list()
+
+    if (list?.contains(ignore_filename) == true) {
+        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead()) {
+            throw IgnoreFileReadException("Policy file $ignore_filename is present in directory snapshot but inaccessible or invalid")
+        }
+    }
+
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
@@ -324,7 +339,6 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       val list = dirFilesNames ?: curr_dir.list()
        list?.forEach {
            val current = it
            val pathCurrent = try {
@@ -350,7 +364,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
-    (dirFilesNames ?: curr_dir.list())?.forEach {
+    list?.forEach {
         val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
             it.isHiddenFile() ||
