@@ -1,7 +1,7 @@
 # html4tree product and technical gap baseline
 
-**Snapshot:** 2026-09-02  
-**Default-branch base inspected by the README lane:** `master@de82f99f66fc9e190398f9bb1c8c6bd69bd88a30`  
+**Snapshot:** 2026-09-07  
+**Default-branch base inspected by the README lane:** `master@728f0f33323e43573d6664209891099502827d5d`  
 **Audience:** operators, maintainers, security reviewers, and integrators
 
 This ledger records the current product boundary, architecture, inherited licensing, and buyer-visible gaps for `html4tree`. It is dated evidence; mutable pull-request/check state must be re-read before integration.
@@ -75,6 +75,8 @@ The documentation preserves the existing MIT license and its original `Copyright
 
 The ContextualWisdomLab fork currently has no GitHub Release. Source state and passing checks must not be presented as an immutable release artifact.
 
+Performance-sensitive representation changes are not accepted on asymptotic intuition or a one-sided microbenchmark alone. Where an alternative implementation is proposed for a hot path such as HTML escaping, semantic equivalence is a prerequisite, not proof of speed. Any performance rationale must compare the protected implementation and candidate on the actual generation path with representative/right-cleared names and content under the same JVM, Kotlin/toolchain, hardware and build settings; disclose warm-up and workload cardinality; report repeated central and tail distributions; inspect allocation/GC/profile evidence; and connect the measured difference to buyer-visible generation behavior. If a more complex representation has no material demonstrated benefit, the simpler protected implementation remains preferred.
+
 ## Gap register
 
 | Priority | Gap | Evidence / risk | Required action | Status |
@@ -84,12 +86,13 @@ The ContextualWisdomLab fork currently has no GitHub Release. Source state and p
 | P1 | Generated files lack explicit provenance for safe cleanup | Operator cleanup can remove pre-existing `index.html` files because generated output is not distinguishable by durable provenance | Design a backwards-compatible provenance/manifest or safe cleanup command before advertising automated cleanup | **Open** |
 | P1 | Publication/access control is intentionally external but easy to misunderstand | `.html4ignore` can hide navigation while direct static-host access remains possible | Keep fail-closed README/security language and add integration tests/examples for representative static-host deployment boundaries if a supported deployment profile is introduced | **Documented boundary** |
 | P1 | No immutable ContextualWisdomLab release | GitHub release inventory is empty | Establish reproducible release/package checks, checksum/SBOM/provenance as appropriate, then publish only from one protected exact source revision | **Not release-ready** |
+| P2 | Performance refactors can outrun buyer-path evidence | Semantic unit tests and one-sided loops can preserve output while still failing to establish a material generation-path benefit; extra tables/branches also carry complexity and coverage cost | Require protected-vs-candidate representative actual-path measurement with fixed environment, warm-up, repeated median/tail distribution, allocation/GC/profile evidence and buyer-path attribution; prefer the simpler representation when benefit is not material | **Open evidence duty** |
 | P2 | Product documentation requires durable synchronization with CLI semantics | Build commands, ignore semantics, supported JDK range, inherited-license provenance, and publication boundaries can drift independently from code | Keep README, Pages source, this ledger, tests, and actual CLI/build behavior synchronized through ordinary protected review | **Open maintenance duty** |
 
 ## Documentation / architecture gaps
 
-The repository currently does not expose a canonical PRD/TRD/ADR/ARCHITECTURE set. For a small CLI this does not justify manufacturing a large document tree, but any future change that alters product responsibility, generated-file authority, security boundary, supported toolchain, or publication integration should record the decision in an appropriately scoped ADR/architecture document and update this ledger.
+The repository currently does not expose a canonical PRD/TRD/ADR/ARCHITECTURE set. For a small CLI this does not justify manufacturing a large document tree, but any future change that alters product responsibility, generated-file authority, security boundary, supported toolchain, publication integration, or a performance-sensitive representation with buyer-visible consequences should record the decision in an appropriately scoped ADR/architecture document and update this ledger.
 
 ## Update rule
 
-Update this file when protected product behavior, CLI/build support, security authority, inherited licensing/provenance, release state, or a gap status changes. Mutable PR/check identifiers may be used as dated evidence but never as permanent product truth.
+Update this file when protected product behavior, CLI/build support, security authority, inherited licensing/provenance, release state, performance evidence requirements, or a gap status changes. Mutable PR/check identifiers may be used as dated evidence but never as permanent product truth.
