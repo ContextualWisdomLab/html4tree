@@ -308,9 +308,14 @@ internal fun read_ignore_lines_no_follow(
     file: File,
     consume: (Sequence<String>) -> Unit
 ) {
-    Files.newInputStream(file.toPath(), StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
-        .bufferedReader(Charsets.UTF_8)
-        .useLines { lines -> consume(lines) }
+    val inputStream = Files.newInputStream(file.toPath(), StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
+    try {
+        val reader = java.io.InputStreamReader(inputStream, Charsets.UTF_8)
+        val bufferedReader = java.io.BufferedReader(reader)
+        bufferedReader.useLines { consume(it) }
+    } finally {
+        inputStream.close()
+    }
 }
 
 fun process_ignore_file(

@@ -140,5 +140,30 @@ class IgnoreFileReadFailureTest {
 
         assertTrue("private-report.txt" in excluded)
         assertFalse("public.txt" in excluded)
+}
+    @Test
+    fun readIgnoreLinesNoFollowConsumesLinesCorrectly() {
+        val file = File(tempDir, ".html4ignore")
+        file.writeText("line1\nline2")
+        var lineCount = 0
+        read_ignore_lines_no_follow(file) { lines -> lineCount = lines.count() }
+        kotlin.test.assertEquals(2, lineCount)
+    }
+
+    @Test
+    fun readIgnoreLinesNoFollowConsumesLinesCorrectlyAndCloses() {
+        val file = File(tempDir, ".html4ignore2")
+        file.writeText("line1\nline2\nline3")
+        var lineCount = 0
+        // Using let/toList to consume the sequence inside the lambda
+        read_ignore_lines_no_follow(file) { lines -> lineCount = lines.toList().count() }
+        kotlin.test.assertEquals(3, lineCount)
+    }
+
+    @Test
+    fun readIgnoreLinesNoFollowConsumesLinesCorrectlyAndFails() {
+        val file = File(tempDir, ".html4ignore3")
+        file.writeText("line1")
+        assertFailsWith<Exception> { read_ignore_lines_no_follow(file) { lines -> throw Exception("mock") } }
     }
 }
