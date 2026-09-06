@@ -342,7 +342,8 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"file1.txt 파일\""))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">디렉토리</span>"))
         assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
-        assertTrue(htmlContent.contains("file1.txt"))
+        assertTrue(htmlContent.contains("<span dir=\"auto\">file1.txt</span>"))
+        assertTrue(htmlContent.contains("<span dir=\"auto\">subdir</span>"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
@@ -942,8 +943,8 @@ class MainTest {
         val indexHtml = File(fakeRoot, "index.html")
         assertTrue(indexHtml.exists())
         val content = indexHtml.readText()
-        assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
-        assertTrue(content.contains("<h1>Root</h1>"))
+        assertTrue(content.contains("<title dir=\"auto\">Root - 디렉토리 목록</title>"))
+        assertTrue(content.contains("<h1 dir=\"auto\">Root</h1>"))
     }
 
 }
