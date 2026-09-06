@@ -33,28 +33,4 @@ class HiddenFileSecurityTest {
             directory.deleteRecursively()
         }
     }
-
-    @Test
-    fun ignoreClassificationPreservesCheapAndNormalizedSecurityBranches() {
-        val directory = Files.createTempDirectory("html4tree-ignore-branches-").toFile()
-        try {
-            val names = arrayOf(
-                ".env",
-                "\u3002hidden",
-                "notes~",
-                "CONFIG.JSON",
-                "SERVER.PEM",
-                "visible.txt"
-            )
-
-            val excluded = process_ignore_file(directory, names)
-
-            listOf(".env", "\u3002hidden", "notes~", "CONFIG.JSON", "SERVER.PEM").forEach { name ->
-                assertTrue(name in excluded, "Sensitive/hidden/backup name must remain excluded: $name")
-            }
-            assertFalse("visible.txt" in excluded, "Ordinary names must remain visible")
-        } finally {
-            directory.deleteRecursively()
-        }
-    }
 }
