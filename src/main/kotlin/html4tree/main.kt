@@ -449,7 +449,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
     val displayDirectoryName = neutralize_bidi_controls(directoryName)
-    val directoryTitle = "${isolate_bidi_plain_text(displayDirectoryName)} - 디렉토리 목록".escapeHtml()
+    val directoryHasBidiControls = displayDirectoryName != directoryName
+    val directoryTitleName = if (directoryHasBidiControls) isolate_bidi_plain_text(displayDirectoryName) else displayDirectoryName
+    val directoryTitle = "$directoryTitleName - 디렉토리 목록".escapeHtml()
+    val directoryHeadingDirection = if (directoryHasBidiControls) " dir=\"auto\"" else ""
 
     val index_top = """<!doctype html>
 <html lang="ko">
@@ -469,7 +472,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
      </head>
      <body>
        <main>
-         <h1 dir="auto">${displayDirectoryName.escapeHtml()}</h1>
+         <h1${directoryHeadingDirection}>${displayDirectoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
@@ -477,7 +480,6 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 
     val index_middle = fun():String{ 
         val l = StringBuilder()
-
         val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
@@ -500,16 +502,19 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                }
                if (!isSymbolicLink) {
                   val displayName = neutralize_bidi_controls(fileName)
+                  val hasBidiControls = displayName != fileName
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val titleText = "${isolate_bidi_plain_text(displayName)} $typeLabel".escapeHtml()
+                  val titleName = if (hasBidiControls) isolate_bidi_plain_text(displayName) else displayName
+                  val titleText = "$titleName $typeLabel".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  val bidiWarning = if (displayName != fileName) {
-                      """ <span class="visually-hidden">이름에 방향 제어 문자가 있습니다</span>"""
+                  val displayDirection = if (hasBidiControls) " dir=\"auto\"" else ""
+                  val bidiWarning = if (hasBidiControls) {
+                      """ <span class="visually-hidden">이름에 방향 제어 문자가 있습니다. 열기 전에 링크 대상 파일 이름을 확인하세요.</span>"""
                   } else {
                       ""
                   }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleText}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${displayName.escapeHtml()}</span>${bidiWarning} <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${titleText}"><span class="icon" aria-hidden="true">${icon}</span> <span${displayDirection}>${displayName.escapeHtml()}</span>${bidiWarning} <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
