@@ -236,15 +236,8 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        // 성능 최적화: 핫 패스에서 when 조건문 대신 O(1) 배열 조회를 사용하여 조건 평가 오버헤드 감소
+        val replacement = if (c.toInt() < 128) Constants.htmlEscapeArray[c.toInt()] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -502,6 +495,16 @@ private object Constants {
     @JvmField
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
+
+    @JvmField
+    val htmlEscapeArray = Array<String?>(128) { null }.apply {
+        this['&'.toInt()] = "&amp;"
+        this['<'.toInt()] = "&lt;"
+        this['>'.toInt()] = "&gt;"
+        this['"'.toInt()] = "&quot;"
+        this['\''.toInt()] = "&#x27;"
+        this['`'.toInt()] = "&#x60;"
+    }
 
     @JvmField
     val defaultSensitiveExtensions = listOf(
