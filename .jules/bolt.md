@@ -62,6 +62,3 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
-## 2026-08-11 - ArrayDeque 도입으로 성능 개선
-**Learning:** `html4tree`의 커스텀 `LinkedList` 구현체는 BFS 순회 시 `push`/`pull` 연산마다 래퍼 객체(`Entry`, `LinkedListEntry`)를 불필요하게 할당하여 O(N) 객체 생성 및 GC 부하를 유발했습니다.
-**Action:** 커스텀 `LinkedList` 내부 구현을 LIFO/FIFO 연산이 모두 가능한 `java.util.ArrayDeque`로 교체하고, 기존 `LinkedListEntry`를 추가/제거 시 중간 래퍼 클래스 생성 없이 큐를 활용하도록 리팩토링했습니다. 기존 `LinkedList` 및 `LinkedListEntry` API 호환성을 유지하여 캡슐화를 통해 안전하게 최적화합니다.
