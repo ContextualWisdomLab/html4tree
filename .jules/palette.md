@@ -41,6 +41,7 @@
 ## 2024-07-10 - 다크 모드 지원 및 지역화 일관성 확보
 **Learning:** `html4tree` CLI로 생성되는 정적 HTML에서 사용자는 네이티브 다크 모드를 기대하며(접근성, 가독성 문제), `<nav>` 레이블("Directory listing")이 다른 UI와 다르게 영문으로 되어 있어 스크린 리더 환경 등에서 지역화(Localization) 일관성을 해칩니다.
 **Action:** `prefers-color-scheme: dark` 미디어 쿼리를 CSS에 추가하여 네이티브 다크 모드를 지원하고, `<nav aria-label="Directory listing">`을 `<nav aria-label="디렉토리 목록">`으로 수정하여 UI를 한국어로 통일했습니다.
+
 ## 2026-07-13 - Add title attributes for parity with aria-labels
 **Learning:** Relying solely on icons or technical symbols (like `..`) without native tooltips can confuse sighted users who don't use screen readers. `title` attributes matching `aria-label` provide parity.
 **Action:** Add `title` attributes to icon-only links to ensure visual tooltips match screen reader text.
@@ -73,3 +74,7 @@
 ## 2026-08-17 - 브라우저 번역과 화면 판독기의 호환성을 위한 텍스트 처리
 **Learning:** `aria-label` 속성으로 지정된 화면 판독기용 대체 텍스트는 Chrome Translate 등 브라우저 번역 도구에 의해 번역되지 않는 경우가 많습니다. 이로 인해 문서 언어가 변환되어도 스크린 리더에서는 원본 언어(예: 영어)로 읽혀 다국어 접근성이 저하됩니다.
 **Action:** 화면 판독기를 위한 숨겨진 설명 텍스트를 제공할 때 `aria-label` 대신 CSS `.visually-hidden` 클래스를 적용한 `<span>` 요소를 사용하여, 브라우저가 일반 텍스트로 인식하고 번역할 수 있도록 하여 다국어 접근성 호환성을 확보하십시오.
+
+## 2024-08-22 - 시각적으로 숨겨진 요소로 인한 CSS 선택자 문제 해결
+**학습:** 스크린 리더용 텍스트를 제공하기 위해 요소 끝에 `<span class="visually-hidden">`을 추가하면, 기존 컨텐츠의 마우스 오버 효과나 상태 표시 등에 사용되던 `:last-child` 같은 CSS 가상 선택자가 예상치 않게 숨겨진 요소에 적용되어 화면에 표시되지 않을 수 있습니다.
+**조치:** 스크린 리더용 숨겨진 요소를 추가할 때는 레이아웃이나 시각적 스타일링에서 가상 선택자(예: `:last-child`)에 의존하기보다 요소의 역할에 맞는 명시적인 클래스 이름(예: `.name`)을 사용하여 대상을 정확하게 지정하고, CSS가 깨지지 않는 견고한 구조를 작성하십시오.
