@@ -109,6 +109,7 @@ li + li {
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
+private val EMPTY_FILE_ARRAY = emptyArray<File>()
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -438,7 +439,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
-        val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
+        val dir_files: Array<File> = filesList?.clone() ?: EMPTY_FILE_ARRAY
         dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
            val fileName = it.getName()
