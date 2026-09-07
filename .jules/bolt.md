@@ -62,3 +62,15 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+
+## 2026-08-14 - 중복된 OS I/O 호출 (curr_dir.list()) 캐싱
+**Learning:** `process_ignore_file`에서 `dirFilesNames ?: curr_dir.list()` 구문이 조건부로 여러 번 평가될 수 있어 `.html4ignore` 파일이 존재하는 경우 불필요하게 동일한 디렉토리에 대한 I/O `list()` 호출이 두 번 발생합니다.
+**Action:** `dirFilesNames ?: curr_dir.list()`의 평가 결과를 지역 변수(`cachedDirFilesNames`)에 캐싱하여 OS 수준의 파일 시스템 접근 횟수를 줄이고 중복 오버헤드를 제거합니다.
+
+## 2026-08-16 - process_dir fallback이 ignore와 render를 다른 스냅샷으로 봄
+**Learning:** `process_ignore_file` 내부 캐시만으로는 `process_dir(dir)`가 `list()` 한 번과 `listFiles()` 한 번을 따로 호출합니다. 두 호출 사이에 생긴 `.env`나 `*.tmp`는 한쪽 필터에만 보일 수 있습니다 (Bishop & Dilger, 1996).
+**Action:** `process_dir`은 `listFiles()`를 먼저 호출하고 그 이름을 `process_ignore_file`에 넘긴 뒤 같은 `File` 배열로 HTML을 씁니다. `listFiles()`가 null이면 빈 이름 배열을 넘겨 `list()`를 다시 호출하지 않고 빈 페이지를 남깁니다.
+
+## 2026-08-16 - crawl null listFiles가 ignore/render를 다시 열음
+**Learning:** `crawl_directories`가 `listFiles()` null을 `dirFilesNames = null`과 `process_dir(..., null)`로 넘기면 `process_ignore_file`이 `File.list()`를 호출하고 `process_dir`이 `listFiles()`를 다시 호출합니다. 첫 스냅샷이 실패한 뒤 디렉터리가 읽히면 ignore 없이 파일이 페이지에 나타날 수 있습니다 (Bishop & Dilger, 1996).
+**Action:** null 스냅샷은 빈 이름 배열과 빈 `File` 배열로 넘깁니다. ignore와 render는 다시 열지 않고 빈 페이지를 남깁니다.

@@ -44,7 +44,7 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span class=\"entry-name\" aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
@@ -62,7 +62,7 @@ class GeneratedIndexReadabilityTest {
 
         val generatedHtml = generatedHtml()
         val expectedEmptyRow =
-            """<li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>"""
+            """<li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span dir="auto">이 디렉토리는 비어 있습니다.</span></div></li>"""
 
         assertTrue(generatedHtml.contains(expectedEmptyRow))
         assertTrue(generatedHtml.indexOf(expectedEmptyRow) == generatedHtml.lastIndexOf(expectedEmptyRow))
@@ -73,11 +73,12 @@ class GeneratedIndexReadabilityTest {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
         val style = emittedStyle()
+        assertTrue(style.contains("--listing-row-rule: #d0d7de;"))
         assertTrue(
             style.contains(
                 """
                 li + li {
-                  border-top: 1px solid #d0d7de;
+                  border-top: 1px solid var(--listing-row-rule);
                 }
                 """.trimIndent()
             )
@@ -115,18 +116,25 @@ class GeneratedIndexReadabilityTest {
               align-items: flex-start;
               gap: 0.5rem;
               padding: 0.75rem 0.5rem;
-              color: #656d76;
+              color: var(--listing-empty-text);
               font-style: italic;
             }
             """.trimIndent()
         val darkModeMarker = "@media (prefers-color-scheme: dark)"
-        val darkRule = "  .empty-dir {\n    color: #8b949e;\n  }"
+        val darkRule = "  .empty-dir {\n    color: var(--listing-dark-empty-text);\n  }"
 
         val baseRuleIndex = style.indexOf(baseRule)
         val darkModeIndex = style.indexOf(darkModeMarker)
         val darkRuleIndex = style.indexOf(darkRule, startIndex = darkModeIndex.coerceAtLeast(0))
 
         assertTrue(baseRuleIndex >= 0)
+        assertTrue(style.contains("--listing-empty-text: #656d76;"))
+        assertTrue(style.contains("--listing-dark-empty-text: #8b949e;"))
+        assertTrue(style.contains("--listing-meta: #656d76;"))
+        assertTrue(style.contains("--listing-dark-meta: #8b949e;"))
+        assertTrue(style.contains(".entry-meta {"))
+        assertTrue(style.contains("color: var(--listing-meta);"))
+        assertTrue(style.contains("color: var(--listing-dark-meta);"))
         assertFalse(style.contains("opacity:"))
         assertTrue(darkModeIndex > baseRuleIndex)
         assertTrue(darkRuleIndex > darkModeIndex)
@@ -143,16 +151,18 @@ class GeneratedIndexReadabilityTest {
             ?.get(1)
         assertNotNull(completeTargetRule)
         assertFalse(completeTargetRule.contains("text-decoration"))
-        assertTrue(completeTargetRule.contains("outline: 2px solid #0969da;"))
+        assertTrue(completeTargetRule.contains("outline: 2px solid var(--listing-link);"))
+        assertTrue(style.contains("--listing-link: #0969da;"))
         assertTrue(
             style.contains(
                 """
-                a:hover span:last-child, a:focus-visible span:last-child {
+                a:hover .entry-name, a:focus-visible .entry-name {
                   text-decoration: underline;
                 }
                 """.trimIndent()
             )
         )
+        assertTrue(style.contains("unicode-bidi: isolate;"))
         assertTrue(style.contains("@media (prefers-reduced-motion: reduce)"))
     }
 
