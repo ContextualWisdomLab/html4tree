@@ -19,6 +19,7 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- 접근성을 위해 추가된 `.visually-hidden` 요소로 인해 링크의 `:last-child` 선택자가 의도치 않게 작동하지 않던 문제를 수정했습니다. (hover/focus 시 텍스트에만 밑줄이 제대로 표시되도록 `:nth-child(2)`로 변경)
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
