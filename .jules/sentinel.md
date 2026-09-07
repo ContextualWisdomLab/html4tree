@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-09-06 - [MEDIUM] Trojan Source (BiDi Spoofing) 방어
+**Vulnerability:** 파일 및 디렉토리 이름 출력 시 양방향 텍스트(BiDi) 제어 문자가 포함된 이름(예: Right-to-Left 오버라이드 문자)을 그대로 렌더링하면, 브라우저가 화면에 표시되는 파일 확장자나 경로를 위조하여 렌더링할 수 있는 Trojan Source 형태의 시각적 스푸핑 공격이 가능합니다.
+**Learning:** 사용자가 제어하는 임의의 문자열(파일 이름, 디렉토리 이름)을 HTML에 렌더링할 때, 고정된 텍스트 방향(LTR) 컨텍스트에서 악의적인 BiDi 문자가 인접 요소나 전체 구조의 표시 순서를 왜곡할 수 있습니다.
+**Prevention:** `<h1>`이나 파일 이름을 렌더링하는 `<span>` 등 사용자가 제어하는 텍스트가 삽입되는 엘리먼트에는 반드시 `dir="auto"` 속성을 명시하여 텍스트의 실제 방향성을 격리하고 시각적 스푸핑을 방지해야 합니다. 반면 고정된 UI 요소(`..` 등)에는 `dir="auto"`를 적용하지 않아 원래 의도된 방향성을 유지해야 합니다.
