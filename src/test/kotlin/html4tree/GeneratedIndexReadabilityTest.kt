@@ -157,6 +157,16 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
+    fun activeStateProvidesImmediateTactileFeedback() {
+        process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
+
+        val style = emittedStyle()
+        assertTrue(style.contains("a:active {"))
+        assertTrue(style.contains("background-color: #ebf0f4;"))
+        assertTrue(style.contains("background-color: #21262d;"))
+    }
+
+    @Test
     fun authoredColorsMeetDocumentedContrastThresholds() {
         assertTrue(contrastRatio("#656d76", "#ffffff") >= 4.5)
         assertTrue(contrastRatio("#8b949e", "#0d1117") >= 4.5)
