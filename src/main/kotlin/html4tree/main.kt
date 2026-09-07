@@ -56,7 +56,10 @@ a:hover, a:focus-visible {
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
-a:hover span:last-child, a:focus-visible span:last-child {
+a:active {
+  background-color: #ebf0f4;
+}
+a:hover span:nth-last-child(2), a:focus-visible span:nth-last-child(2) {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -97,6 +100,9 @@ li + li {
   a:hover, a:focus-visible {
     background-color: #161b22;
     outline-color: #58a6ff;
+  }
+  a:active {
+    background-color: #21262d;
   }
   li + li {
     border-top-color: #21262d;
