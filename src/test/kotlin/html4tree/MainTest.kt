@@ -946,4 +946,47 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+
+    @Test
+    fun testProcessIgnoreFileThrowsExceptionOnUseLines() {
+        val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
+        try {
+            val ignoreFile = File(tempDir, ".html4ignore")
+            ignoreFile.writeText("*.txt")
+
+            var stop = false
+            val t = Thread {
+                while (!stop) {
+                    if (ignoreFile.exists()) {
+                        ignoreFile.delete()
+                    } else {
+                        ignoreFile.writeText("*.txt")
+                    }
+                }
+            }
+            t.start()
+
+            for (i in 0..1000) {
+               process_ignore_file(tempDir, null)
+            }
+            stop = true
+            t.join()
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testProcessIgnoreFileThrowsExceptionOnUseLinesAgain() {
+        val tempDir = java.nio.file.Files.createTempDirectory("test").toFile()
+        val ignoreFile = File(tempDir, ".html4ignore")
+        try {
+            ignoreFile.writeText("*.txt")
+            ignoreFile.setReadable(false) // Not guaranteed to work everywhere but let's try
+            process_ignore_file(tempDir, null)
+        } finally {
+            ignoreFile.setReadable(true)
+            tempDir.deleteRecursively()
+        }
+    }
 }
