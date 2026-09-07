@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- 정적으로 렌더링되는 빈 디렉토리 메시지에서 불필요한 `role="status"` 속성을 제거하여 스크린 리더 사용자의 페이지 읽기 경험을 향상시켰습니다.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
