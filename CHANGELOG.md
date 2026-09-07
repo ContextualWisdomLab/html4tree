@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- ⚡ Bolt: 정적 List에 대한 `any()` 호출 시 발생하는 Iterator 할당 부하를 방지하기 위해 배열(Array) 기반 조회를 도입하여 디렉토리 탐색 성능 향상
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
