@@ -728,33 +728,6 @@ class MainTest {
     }
 
     @Test
-    fun testIgnoreFileIsDirectoryInCrawlDirectories() {
-        val subdir = File(tempDir, "ignore_dir_test")
-        subdir.mkdir()
-        val ignoreDir = File(subdir, ".html4ignore")
-        ignoreDir.mkdir()
-        val testFile = File(subdir, "test.txt")
-        testFile.createNewFile()
-
-        val ll = LinkedList()
-        val entry = LinkedListEntry(subdir, 0, read_file_identity(subdir).key)
-        ll.push(entry)
-
-        var processDirectoryCalled = false
-
-        crawl_directories(
-            ll,
-            -1,
-            processDirectory = { _, _, _ -> processDirectoryCalled = true },
-            processIgnoreFile = { file, names -> process_ignore_file(file, names) }
-        )
-
-        // Because process_ignore_file throws IgnoreFileReadException for the directory,
-        // processDirectory should NOT be called.
-        assertFalse(processDirectoryCalled)
-    }
-
-    @Test
     fun testProcessIgnoreFileDosProtection() {
         val ignoreFile = File(tempDir, ".html4ignore")
         val longPattern = "a".repeat(101)
