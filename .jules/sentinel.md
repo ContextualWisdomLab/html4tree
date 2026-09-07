@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-20 - [html4tree] .html4ignore 파싱 중 IOException 처리가 누락되어 발생하는 로컬 DoS 수정
+**Vulnerability:** `.html4ignore` 파일을 `useLines`로 파싱하는 동안 디스크 오류나 동시성 권한 변경으로 `IOException`이 발생하면 예외가 잡히지 않아 애플리케이션 전체가 크래시되는 로컬 DoS 취약점.
+**Learning:** `canRead()`를 통한 Time-of-Check 방어만으로는 충분하지 않으며, Time-of-Use 시점에서 발생하는 I/O 예외를 반드시 포착(Fail Securely)해야 합니다.
+**Prevention:** `useLines`와 같은 I/O 읽기/쓰기 블록을 항상 `try-catch (IOException)`로 감싸서 예외를 안전하게 처리하십시오.
