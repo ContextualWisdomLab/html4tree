@@ -236,11 +236,15 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        // ⚡ Bolt Performance Optimization: Replace `when` conditional jump table with a direct array lookup
-        // This avoids branch prediction penalties and speeds up character mapping in hot paths.
-        val cInt = c.toInt()
-        // Ensure the character is within ASCII bounds before array access to avoid IndexOutOfBoundsException
-        val replacement = if (cInt < 128) Constants.htmlEscapeTable[cInt] else null
+        val replacement = when (c) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -292,7 +296,7 @@ fun String.urlEncodePath(): String {
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
- 
+
     val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
 
     val ignore_file = File(ignore_file_path)
@@ -398,9 +402,9 @@ fun write_index_file(
         Files.deleteIfExists(tempPath)
     }
 }
- 
+
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
+
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
 
@@ -426,9 +430,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
-""" 
+"""
 
-    val index_middle = fun():String{ 
+    val index_middle = fun():String{
         val l = StringBuilder()
 
         val filesList = dirFiles ?: curr_dir.listFiles()
@@ -468,7 +472,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         }
 
         return l.toString();
-     } 
+     }
 
    val index_bottom="""
          </ul>
@@ -492,16 +496,6 @@ fun help() {
 }
 
 private object Constants {
-    @JvmField
-    val htmlEscapeTable = Array<String?>(128) { null }.apply {
-        this['&'.toInt()] = "&amp;"
-        this['<'.toInt()] = "&lt;"
-        this['>'.toInt()] = "&gt;"
-        this['"'.toInt()] = "&quot;"
-        this['\''.toInt()] = "&#x27;"
-        this['`'.toInt()] = "&#x60;"
-    }
-
     @JvmField
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
 
