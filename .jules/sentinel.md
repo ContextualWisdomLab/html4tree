@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-08-19 - [잘못된 인코딩의 .html4ignore 파일로 인한 DoS 취약점 수정]
+**Vulnerability:** .html4ignore 파일의 내용을 파싱할 때 잘못된 UTF-8 인코딩 등의 문제가 있으면 MalformedInputException이 발생하여 처리 프로세스 전체가 크래시되는 DoS 취약점이 있었습니다.
+**Learning:** 파일 기반의 환경 설정이나 룰 파싱(e.g., .html4ignore)을 수행할 때 악의적인 데이터에 의해 발생할 수 있는 잠재적인 예외를 적절히 제어해야 합니다.
+**Prevention:** 런타임에 외부 입력(파일)을 파싱하는 경우, 발생할 수 있는 파싱 예외(e.g., MalformedInputException)를 try-catch 블록으로 감싸서 전체 애플리케이션의 중단을 방지(Fail Securely)하십시오.
