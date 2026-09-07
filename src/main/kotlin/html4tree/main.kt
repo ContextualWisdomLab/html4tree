@@ -432,47 +432,48 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
 """ 
 
-    val index_middle = fun():String{ 
-        val l = StringBuilder()
+    // ⚡ Bolt Performance Optimization: 단일 StringBuilder 인스턴스를 사용하여 불필요한 중간 문자열 할당을 방지합니다.
+    val contentBuilder = StringBuilder(index_top.length + 1024)
+    contentBuilder.append(index_top)
 
-        val filesList = dirFiles ?: curr_dir.listFiles()
-        // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
-        // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
-        val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
-        dir_files.sortWith(FILE_NAME_COMPARATOR)
-        dir_files.forEach {
-           val fileName = it.getName()
-           // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
-           // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
-           if (!fileName.isHiddenFile() && fileName !in exclude) {
-               var isLinkedDirectory = false
-               var isSymbolicLink = false
-               try {
-                   // ⚡ Bolt Performance Optimization: Replace 3 separate OS stat calls (isDirectory, it.isDirectory(), isSymbolicLink)
-                   // with a single readAttributes call to reduce I/O overhead.
-                   val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-                   isLinkedDirectory = attrs.isDirectory
-                   isSymbolicLink = attrs.isSymbolicLink
-               } catch (e: Exception) {
-               }
-               if (!isSymbolicLink) {
-                  val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
-                  l.append('\n')
-               }
+    val filesList = dirFiles ?: curr_dir.listFiles()
+    // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
+    // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
+    val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
+    dir_files.sortWith(FILE_NAME_COMPARATOR)
+    var hasItems = false
+
+    dir_files.forEach {
+       val fileName = it.getName()
+       // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
+       // 🛡️ Sentinel: Ignore hidden files/directories to prevent sensitive data exposure
+       if (!fileName.isHiddenFile() && fileName !in exclude) {
+           var isLinkedDirectory = false
+           var isSymbolicLink = false
+           try {
+               // ⚡ Bolt Performance Optimization: Replace 3 separate OS stat calls (isDirectory, it.isDirectory(), isSymbolicLink)
+               // with a single readAttributes call to reduce I/O overhead.
+               val attrs = Files.readAttributes(it.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+               isLinkedDirectory = attrs.isDirectory
+               isSymbolicLink = attrs.isSymbolicLink
+           } catch (e: Exception) {
            }
-        }
+           if (!isSymbolicLink) {
+              val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
+              val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
+              val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
+              val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
+              contentBuilder.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+              contentBuilder.append('\n')
+              hasItems = true
+           }
+       }
+    }
 
-        if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
-            l.append('\n')
-        }
-
-        return l.toString();
-     } 
+    if(!hasItems){
+        contentBuilder.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
+        contentBuilder.append('\n')
+    }
 
    val index_bottom="""
          </ul>
@@ -481,9 +482,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     </body>
 </html>
 """
+   contentBuilder.append(index_bottom)
 
    try {
-       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+       write_index_file(curr_dir, contentBuilder.toString())
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
