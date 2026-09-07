@@ -18,7 +18,6 @@
 **학습:** Kotlin/Java에서 `java.nio.file.Files`를 통해 파일 속성 (예: `isDirectory` 또는 `isSymbolicLink`)을 확인하려면 `Path` 객체를 할당해야 하며 비싼 네이티브 OS stat 호출을 수행합니다. 파일 목록을 처리할 때 파일 시스템을 건드리는 메서드를 호출하기 전에 제외 목록 (저렴한 메모리 내 문자열 연산 사용)과 비교하여 파일 시스템 검사를 단축합니다.
 **조치:** `Files.isDirectory` 및 `Files.isSymbolicLink`를 호출하기 전에 `exclude` 세트를 확인하도록 조건문을 재배열했습니다.
 
-
 ## 2026-07-12 - 이중 루프 내 패턴 매칭 조기 종료 (Short-Circuit)
 **학습:** 무시할 파일(ignore patterns)을 확인할 때, 각 파일에 대해 모든 패턴을 순회(`forEach`)하는 것은 비효율적입니다. 파일이 하나의 패턴에 매칭되어 제외 목록에 추가되면 나머지 패턴을 확인할 필요가 없습니다. 이를 조기 종료(Short-circuit)하지 않으면 불필요한 O(N * M) 정규식/패턴 매칭 평가가 발생합니다.
 **조치:** 무시 목록 평가 등 조건을 만족할 때 더 이상 확인이 필요 없는 경우에는 `forEach` 대신 일반 `for` 루프와 `break`를 사용하거나 `any`를 활용하여 연산을 단축합니다.
@@ -28,28 +27,28 @@
 **조치:** `Set`과 같은 순서에 무관한 자료구조에 요소를 추가하기 위한 필터링 작업에서는 디렉토리 목록에서 `.sorted()` 호출을 제거하여 성능을 최적화합니다.
 
 ## 2024-05-18 - [디렉토리 목록 캐싱을 통한 I/O 오버헤드 최적화]
-**Learning:** `process_dir` 및 `process_ignore_file`과 같은 함수에서 동일한 디렉토리에 대해 `listFiles()` 또는 `list()`를 반복적으로 호출하면, 파일 시스템 I/O로 인한 불필요한 성능 저하가 발생합니다.
-**Action:** 디렉토리를 순회할 때 상위 루프에서 `listFiles()`를 한 번만 호출하여 캐싱한 후, 결과를 인자로 전달(예: `dirFiles` 배열)하여 중복된 파일 시스템 호출을 제거해야 합니다.
+**학습:** `process_dir` 및 `process_ignore_file`과 같은 함수에서 동일한 디렉토리에 대해 `listFiles()` 또는 `list()`를 반복적으로 호출하면, 파일 시스템 I/O로 인한 불필요한 성능 저하가 발생합니다.
+**조치:** 디렉토리를 순회할 때 상위 루프에서 `listFiles()`를 한 번만 호출하여 캐싱한 후, 결과를 인자로 전달(예: `dirFiles` 배열)하여 중복된 파일 시스템 호출을 제거해야 합니다.
 
 ## 2024-08-01 - URL 인코딩 빌더 지연 생성
 **학습:** URL 인코딩이 필요 없는 안전한 경로 문자열에서도 항상 `StringBuilder`를 생성하면 hot path에서 불필요한 할당이 발생합니다.
 **조치:** 예약 바이트를 처음 만났을 때만 `StringBuilder`를 만들고, 그 전까지는 원본 문자열을 그대로 반환하는 지연 생성 패턴을 사용합니다.
+
 ## 2026-08-11 - Optimize OS stat calls in file listing
-**Learning:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
-**Action:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
+**학습:** Replaced three separate OS stat calls (`Files.isDirectory(it.toPath(), LinkOption.NOFOLLOW_LINKS)`, `!it.isDirectory()`, and `!Files.isSymbolicLink(it.toPath())`) with a single `Files.readAttributes` call. The original code caused significant I/O overhead. This reduces file metadata fetching time significantly.
+**조치:** Always consider using `Files.readAttributes` to fetch multiple file attributes at once rather than calling separate boolean checks like `isDirectory` or `isSymbolicLink` on individual files when iterating directories.
+
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
 **학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
 **조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
-## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화
-**학습:** `isDirectory`, `!it.isDirectory()`, `isSymbolicLink` 3개의 개별적인 파일 시스템 I/O 호출을 수행하면 성능 저하가 큽니다. 이를 단일 `Files.readAttributes` 호출로 변경하여 메타데이터를 한 번에 조회함으로써 I/O 오버헤드를 대폭 줄일 수 있음을 확인했습니다.
-**조치:** 디렉토리 순회 시 파일의 여러 속성을 확인할 때는 개별적인 stat 호출보다 `Files.readAttributes`를 사용하여 필요한 모든 속성을 한 번에 가져오는 방식을 우선적으로 고려해야 합니다.
+
 ## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화 (순회 루프)
 **학습:** 디렉토리 순회 루프 내에서 isDirectory 및 isSymbolicLink 두 번의 stat을 각각 호출하면 파일 시스템 I/O 오버헤드가 배가됩니다. 메모리 내 제외 규칙 확인 후 한 번의 readAttributes로 속성을 한 번에 가져오는 것이 훨씬 빠릅니다.
 **조치:** Files.isDirectory 및 Files.isSymbolicLink를 단일 Files.readAttributes 호출로 교체하여 O(N) I/O 통신을 최적화했습니다.
 
 ## 2026-08-09 - 반복 호출되는 함수 내 정적 리스트 최적화
-**Learning:** 디렉토리를 탐색할 때마다 호출되는 함수(process_ignore_file) 내부에서 listOf()로 고정된 리스트를 할당하면 불필요한 메모리 할당과 GC 부하가 발생합니다.
-**Action:** 정적인 컬렉션은 private object로 추출하고 @JvmField 등을 활용하여 단 한 번만 초기화되도록 최적화해야 합니다.
+**학습:** 디렉토리를 탐색할 때마다 호출되는 함수(process_ignore_file) 내부에서 listOf()로 고정된 리스트를 할당하면 불필요한 메모리 할당과 GC 부하가 발생합니다.
+**조치:** 정적인 컬렉션은 private object로 추출하고 @JvmField 등을 활용하여 단 한 번만 초기화되도록 최적화해야 합니다.
 
 ## 2026-08-11 - Comparator 객체 재사용
 **학습:** 반복 호출되는 디렉터리 정렬 경계에서 `compareBy<File> { it.name }`를 매번 만들 필요는 없습니다. 정렬 의미가 상태와 무관하면 하나의 불변 비교자를 재사용할 수 있습니다.
@@ -57,8 +56,12 @@
 
 ## 2026-08-11 - 파일명 배열 직접 생성
 **학습:** 파일 배열에서 이름 배열을 만들 때 `map(...).toTypedArray()`는 결과 배열 외에 중간 컬렉션도 생성합니다. 호출 경계가 이미 배열을 제공한다면 크기를 알고 있는 결과 배열을 직접 채울 수 있습니다.
-**조치:** `crawl_directories`에서 `Array(files.size)`로 파일명 배열을 직접 생성합니다. 순서, null 처리, ignore 입력과 파일 시스템 호출 횟수는 변경하지 않습니다.
+**조치:** `crawl_directories`에서 `Array(files.size)`로 파일명 배열을 직접 생성합니다. 순서, null 처리, ignore 입력과 파일 시스템 호출 경과는 변경하지 않습니다.
 
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+
+## 2025-03-03 - 디렉토리 목록(curr_dir.list()) 중복 호출 방지
+**학습:** 함수 내부의 여러 조건 분기에서 동일한 디렉토리의 파일 목록을 조회하기 위해 `curr_dir.list()`를 여러 번 호출하면, 각각 독립적인 OS 파일 시스템 stat I/O 호출이 발생하여 오버헤드가 배가됩니다.
+**조치:** 함수의 최상단에서 `dirFilesNames ?: curr_dir.list()`를 한 번만 평가하여 로컬 변수에 캐시(`val list = ...`)하고, 이를 모든 후속 로직에서 재사용하여 중복 OS I/O 호출을 완전히 제거합니다.
