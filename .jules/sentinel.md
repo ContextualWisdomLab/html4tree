@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-28 - [html4tree] 구성 파일 읽기 시 TOCTOU 심볼릭 링크 스왑 방어
+**Vulnerability:** 악의적인 사용자가 구성 파일(`.html4ignore`)의 파일 여부 및 권한 검사(Time-of-Check)를 통과한 직후, 실제로 파일을 읽는 시점(Time-of-Use) 전에 해당 파일을 심볼릭 링크(`/dev/zero`나 민감한 파일 등)로 바꿔치기하여 리소스 고갈(DoS)이나 의도치 않은 행위를 유발할 수 있는 취약점 발견.
+**Learning:** 파일 상태 검사(`Files.isSymbolicLink`) 직후 `File.useLines`와 같이 내부적으로 심볼릭 링크를 허용하는 방식으로 파일을 열면 TOCTOU 취약점에 노출됩니다.
+**Prevention:** 검사 이후 파일을 열 때 `java.nio.file.Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS)`를 사용하여 여는 시점에도 심볼릭 링크를 명시적으로 거부하고, 발생할 수 있는 예외를 `try-catch`로 안전하게 처리(Fail Securely)해야 합니다.
