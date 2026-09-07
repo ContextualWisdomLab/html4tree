@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-22 - [HIGH] Prevent Terraform State Information Exposure
+**Vulnerability:** Terraform state files (`.tfstate` and `.tfstate.backup`) contain plaintext secrets such as cloud provider credentials and database passwords. If a directory indexer exposes these, it leads to critical information disclosure.
+**Learning:** Default deny-lists for static file servers and indexers must cover modern infrastructure-as-code state files, not just traditional server secrets.
+**Prevention:** Added `.tfstate` and `.tfstate.backup` to the globally excluded sensitive extensions list to ensure they are never exposed in generated HTML indexes.
