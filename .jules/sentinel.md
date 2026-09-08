@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-20 - [CRITICAL] Fix TOCTOU vulnerability in .html4ignore processing
+**Vulnerability:** A TOCTOU (Time-of-Check to Time-of-Use) race condition existed where an attacker could swap or modify the `.html4ignore` file between directory listing and parsing, causing the application to fail open and inadvertently expose sensitive files.
+**Learning:** Checking for file validity (e.g., readability, symlink, size) and silently ignoring the file if it's invalid fails open. This allows attackers to bypass intended ignore rules by making the ignore file unreadable or invalid after it is listed but before it is parsed.
+**Prevention:** Implement a fail-closed behavior. If a policy file (e.g., `.html4ignore`) is listed in a directory snapshot but becomes inaccessible or disappears before it can be read, explicitly throw an exception (e.g., `IgnoreFileReadException`) to suppress publication and child traversal for that directory.
