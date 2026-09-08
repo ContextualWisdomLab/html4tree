@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-09-08 - Secure File Reading with TOCTOU mitigation
+**Vulnerability:** A Time-of-Check to Time-of-Use (TOCTOU) race condition in reading `.html4ignore` policy files allowed symlink attacks or modifications between existence checks and reads.
+**Learning:** Checking file attributes (e.g., `isFile`, `length()`) before reading introduces a race window. Partial snapshot behavior requires unconditionally attempting safe reads and falling back to snapshot state on absence.
+**Prevention:** Always open files atomically into a single descriptor (e.g., using `SeekableByteChannel` or `InputStream` with `NOFOLLOW_LINKS`) and perform bounds checking/parsing entirely against that locked descriptor. Use domain exceptions to trigger a strict fail-closed state instead of silently ignoring policy errors.

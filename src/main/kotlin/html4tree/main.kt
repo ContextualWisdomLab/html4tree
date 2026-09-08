@@ -139,12 +139,21 @@ internal fun read_file_identity(file: File): FileIdentity {
     }
 }
 
+/**
+ * Opens the .html4ignore file securely using a [SeekableByteChannel].
+ * Binds the read to a single descriptor and enforces [LinkOption.NOFOLLOW_LINKS]
+ * to prevent TOCTOU symlink race conditions.
+ */
 internal fun open_ignore_policy_channel(path: Path): SeekableByteChannel =
     Files.newByteChannel(path, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
 
+/**
+ * Securely reads and parses ignore patterns from the given [ignorePath].
+ * Ensures the file is bounded (<=1MB) and does not change size during the read operation.
+ * Throws [IgnoreFileReadException] on any unexpected I/O failure.
+ */
 internal fun read_ignore_patterns(
     ignorePath: Path,
-    expectedPresent: Boolean = false,
     openChannel: (Path) -> SeekableByteChannel = ::open_ignore_policy_channel
 ): List<java.nio.file.PathMatcher> {
     return try {
@@ -178,10 +187,7 @@ internal fun read_ignore_patterns(
             }
             ignoredMatchers
         }
-    } catch (e: java.nio.file.NoSuchFileException) {
-        if (expectedPresent) {
-            throw IgnoreFileReadException("Observed .html4ignore disappeared before secure open", e)
-        }
+    } catch (_: java.nio.file.NoSuchFileException) {
         emptyList()
     } catch (e: IgnoreFileReadException) {
         throw e
@@ -361,14 +367,20 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val ignore_file = File(ignore_file_path)
     val files_to_exclude = mutableSetOf<String>()
     val snapshotNames = dirFilesNames ?: curr_dir.list()
-    val policyObservedInSnapshot = dirFilesNames?.any { it == ignore_filename } == true
 
-    // A partial snapshot does not decide policy existence: the secure open remains authoritative.
-    // If that same snapshot observed a policy which vanished before the no-follow open, fail closed.
-    val ignored_matchers = read_ignore_patterns(
-        ignore_file.toPath(),
-        expectedPresent = policyObservedInSnapshot
-    )
+    // Absence is a normal no-policy state and is handled by the single no-follow open.
+    // Every other open/read failure remains fail-closed; no validation-then-reopen window is introduced.
+    val ignored_matchers = try {
+        read_ignore_patterns(ignore_file.toPath())
+    } catch (e: IgnoreFileReadException) {
+        throw e
+    }
+
+    if (ignored_matchers.isEmpty() && snapshotNames?.contains(ignore_filename) == true) {
+        if (!ignore_file.exists()) {
+             throw IgnoreFileReadException("Policy file is listed but inaccessible or invalid (fail-closed)")
+        }
+    }
 
     snapshotNames?.forEach {
         val current = it
