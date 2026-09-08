@@ -440,7 +440,10 @@ fun write_index_file(
 }
  
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
+    if (!Files.isDirectory(curr_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+        return
+    }
+
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
 
