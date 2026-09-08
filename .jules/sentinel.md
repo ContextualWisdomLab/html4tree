@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-14 - [MEDIUM] BiDi Text (Bidirectional Text) 인젝션 취약점 수정
+**Vulnerability:** 사용자 제어 텍스트(예: 파일 및 디렉토리 이름)를 HTML로 렌더링할 때 양방향 텍스트(Right-to-Left, RTL) 오버라이드 문자를 사용한 악의적인 입력이 UI 방향 및 텍스트 구조를 왜곡하여 스푸핑 공격을 유발할 수 있습니다.
+**Learning:** `dir="auto"` 속성은 사용자가 제어하는 문자열 입력의 렌더링 방향을 격리하여 주변의 고정된 UI 구조 방향에 영향을 주지 않도록 보호하는 데 필수적입니다.
+**Prevention:** 렌더링 방향 격리를 위해 `dir="auto"` 속성을 사용자 입력을 포함하는 특정 요소(`<h1>`, `<span>`)에만 명시적으로 추가하고, 상위 디렉토리(`..`) 등 고정 UI 컴포넌트에 전역 적용되지 않도록 하십시오.
