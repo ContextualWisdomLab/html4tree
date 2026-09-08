@@ -133,9 +133,11 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
-    fun hoverAndKeyboardFocusUnderlineOnlyLinkText() {
-        process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
+    fun hoverAndKeyboardFocusUnderlineSemanticLinkLabel() {
+        val linkedFile = File(temporaryDirectory, "focus-target.txt").apply { writeText("target") }
+        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(linkedFile))
 
+        val generatedHtml = generatedHtml()
         val style = emittedStyle()
         val completeTargetRule = Regex("""a:hover, a:focus-visible \{([\s\S]*?)\}""")
             .find(style)
@@ -147,12 +149,15 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover span:nth-child(2), a:focus-visible span:nth-child(2) {
+                a:hover .entry-label, a:focus-visible .entry-label {
                   text-decoration: underline;
                 }
                 """.trimIndent()
             )
         )
+        assertFalse(style.contains("span:nth-child"))
+        assertTrue(generatedHtml.contains("<span class=\"entry-label\" aria-hidden=\"true\">..</span>"))
+        assertTrue(generatedHtml.contains("<span class=\"entry-label\">focus-target.txt</span>"))
         assertTrue(style.contains("@media (prefers-reduced-motion: reduce)"))
     }
 
