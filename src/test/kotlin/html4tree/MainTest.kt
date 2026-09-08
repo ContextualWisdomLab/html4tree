@@ -659,6 +659,16 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileFailsClosedOnToctouUnreadable() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.createNewFile()
+        ignoreFile.setReadable(false, false)
+        assertFailsWith<IgnoreFileReadException> {
+            process_ignore_file(tempDir, null)
+        }
+    }
+
+    @Test
     fun testProcessIgnoreFileFailsClosedForMalformedDirectoryName() {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("*.txt")
@@ -718,9 +728,10 @@ class MainTest {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        // This should fail-closed and throw IgnoreFileReadException
+        assertFailsWith<IgnoreFileReadException> {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
@@ -762,10 +773,10 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // Should fail-closed and throw IgnoreFileReadException
+        assertFailsWith<IgnoreFileReadException> {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
@@ -777,10 +788,10 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // Should fail-closed and throw IgnoreFileReadException
+        assertFailsWith<IgnoreFileReadException> {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
