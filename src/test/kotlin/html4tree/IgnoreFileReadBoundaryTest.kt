@@ -63,6 +63,18 @@ class IgnoreFileReadBoundaryTest {
     }
 
     @Test
+    fun shrinkAfterOpenFailsClosedInsteadOfParsingAPartialSnapshot() {
+        val policy = File(tempDir, ".html4ignore")
+        policy.writeText("ab")
+
+        assertFailsWith<IgnoreFileReadException> {
+            read_ignore_patterns(policy.toPath()) {
+                ShrinkingChannel()
+            }
+        }
+    }
+
+    @Test
     fun symlinkReplacementAtOpenIsRejectedByNoFollowChannel() {
         val policy = File(tempDir, ".html4ignore")
         val replacement = File(tempDir, "replacement.ignore")
@@ -139,6 +151,40 @@ class IgnoreFileReadBoundaryTest {
         }
 
         override fun size(): Long = 1L
+
+        override fun truncate(size: Long): SeekableByteChannel = this
+
+        override fun isOpen(): Boolean = open
+
+        override fun close() {
+            open = false
+        }
+    }
+
+    private class ShrinkingChannel : SeekableByteChannel {
+        private val bytes = "a".toByteArray(Charsets.UTF_8)
+        private var offset = 0
+        private var open = true
+
+        override fun read(dst: ByteBuffer): Int {
+            if (offset >= bytes.size) return -1
+            dst.put(bytes[offset])
+            offset += 1
+            return 1
+        }
+
+        override fun write(src: ByteBuffer): Int {
+            throw UnsupportedOperationException()
+        }
+
+        override fun position(): Long = offset.toLong()
+
+        override fun position(newPosition: Long): SeekableByteChannel {
+            offset = newPosition.toInt()
+            return this
+        }
+
+        override fun size(): Long = if (offset == 0) 2L else 1L
 
         override fun truncate(size: Long): SeekableByteChannel = this
 
