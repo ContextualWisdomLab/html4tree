@@ -1,9 +1,0 @@
---- src/main/kotlin/html4tree/main.kt
-+++ src/main/kotlin/html4tree/main.kt
-@@ -204,8 +204,7 @@
-         val exclude = try {
-             processIgnoreFile(lle.file, dirFilesNames)
-         } catch (e: IgnoreFileReadException) {
--            lle = ll.pull()
-             continue
-         }
