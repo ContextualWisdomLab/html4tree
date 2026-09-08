@@ -128,9 +128,7 @@ class Html4tree : CliktCommand() {
 
 fun main(args: Array<String>)  = Html4tree().main(args)
 
-
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
-
 
 internal fun read_file_identity(file: File): FileIdentity {
     return try {
@@ -160,7 +158,8 @@ internal fun read_ignore_patterns(
                 val read = channel.read(buffer)
                 if (read < 0) break
             }
-            if (buffer.position().toLong() > declaredSize) {
+            val finalSize = channel.size()
+            if (finalSize != declaredSize || buffer.position().toLong() != declaredSize) {
                 throw IgnoreFileReadException("Policy file changed while being read (fail-closed)")
             }
 
@@ -352,29 +351,18 @@ fun String.urlEncodePath(): String {
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
- 
     val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
-
     val ignore_file = File(ignore_file_path)
-
     val files_to_exclude = mutableSetOf<String>()
-
     val snapshotNames = dirFilesNames ?: curr_dir.list()
 
     if (snapshotNames?.contains(ignore_filename) == true) {
-        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead()) {
-            throw IgnoreFileReadException("Policy file is listed but inaccessible or invalid (fail-closed)")
-        }
-    }
-
-    // 정책 파일을 실제로 읽을 때는 NOFOLLOW_LINKS로 연 단일 채널만 사용합니다.
-    // 경로가 검사 뒤 심볼릭 링크로 교체되면 open 단계에서 실패하고, read-stage I/O 오류도
-    // IgnoreFileReadException으로 변환되어 crawl_directories의 directory-local fail-closed 경계를 탑니다.
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= MAX_IGNORE_FILE_BYTES){
+       // Snapshot membership only decides whether a policy read is required. All validity,
+       // no-follow and bounded-read decisions happen on the single opened channel below.
        val ignored_matchers = read_ignore_patterns(ignore_file.toPath())
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       snapshotNames?.forEach {
+       snapshotNames.forEach {
            val current = it
            val pathCurrent = try {
                java.nio.file.Paths.get(current)
