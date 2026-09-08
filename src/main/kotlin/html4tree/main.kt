@@ -2,13 +2,9 @@ package html4tree
 
 import java.io.File
 import java.security.MessageDigest
-import java.nio.ByteBuffer
-import java.nio.channels.SeekableByteChannel
 import java.nio.file.Files
 import java.nio.file.LinkOption
-import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
@@ -113,9 +109,6 @@ li + li {
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
-private const val MAX_IGNORE_FILE_BYTES = 1048576L
-
-class IgnoreFileReadException(message: String, cause: Throwable? = null) : java.io.IOException(message, cause)
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -128,7 +121,9 @@ class Html4tree : CliktCommand() {
 
 fun main(args: Array<String>)  = Html4tree().main(args)
 
+
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
+
 
 internal fun read_file_identity(file: File): FileIdentity {
     return try {
@@ -136,63 +131,6 @@ internal fun read_file_identity(file: File): FileIdentity {
         FileIdentity(attrs.fileKey(), true)
     } catch (e: Exception) {
         FileIdentity(null, false)
-    }
-}
-
-/**
- * Opens the .html4ignore file securely using a [SeekableByteChannel].
- * Binds the read to a single descriptor and enforces [LinkOption.NOFOLLOW_LINKS]
- * to prevent TOCTOU symlink race conditions.
- */
-internal fun open_ignore_policy_channel(path: Path): SeekableByteChannel =
-    Files.newByteChannel(path, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
-
-/**
- * Securely reads and parses ignore patterns from the given [ignorePath].
- * Ensures the file is bounded (<=1MB) and does not change size during the read operation.
- * Throws [IgnoreFileReadException] on any unexpected I/O failure.
- */
-internal fun read_ignore_patterns(
-    ignorePath: Path,
-    openChannel: (Path) -> SeekableByteChannel = ::open_ignore_policy_channel
-): List<java.nio.file.PathMatcher> {
-    return try {
-        openChannel(ignorePath).use { channel ->
-            val declaredSize = channel.size()
-            if (declaredSize > MAX_IGNORE_FILE_BYTES) {
-                throw IgnoreFileReadException("Policy file exceeds the 1 MiB read limit (fail-closed)")
-            }
-
-            val buffer = ByteBuffer.allocate((declaredSize + 1L).toInt())
-            while (buffer.hasRemaining()) {
-                val read = channel.read(buffer)
-                if (read < 0) break
-            }
-            val finalSize = channel.size()
-            if (finalSize != declaredSize || buffer.position().toLong() != declaredSize) {
-                throw IgnoreFileReadException("Policy file changed while being read (fail-closed)")
-            }
-
-            val ignoredMatchers = mutableListOf<java.nio.file.PathMatcher>()
-            val content = String(buffer.array(), 0, buffer.position(), Charsets.UTF_8)
-            for ((lineIndex, line) in content.lineSequence().withIndex()) {
-                if (lineIndex >= 1000) break
-                val pattern = line.trim()
-                if (pattern.isNotEmpty() && pattern.length <= 100) {
-                    try {
-                        ignoredMatchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                    } catch (_: IllegalArgumentException) {
-                    }
-                }
-            }
-            ignoredMatchers
-        }
-    } catch (_: java.nio.file.NoSuchFileException) {
-        emptyList()
-    } catch (e: IgnoreFileReadException) {
-        throw e
-    } catch (e: java.io.IOException) {
-        throw IgnoreFileReadException("Unable to read .html4ignore safely", e)
     }
 }
 
@@ -262,12 +200,7 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = try {
-            processIgnoreFile(lle.file, dirFilesNames)
-        } catch (e: IgnoreFileReadException) {
-            lle = ll.pull()
-            continue
-        }
+        val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
            processDirectory(lle.file, exclude, dirFiles)
@@ -363,39 +296,50 @@ fun String.urlEncodePath(): String {
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
+
     val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
+
     val ignore_file = File(ignore_file_path)
+
     val files_to_exclude = mutableSetOf<String>()
-    val snapshotNames = dirFilesNames ?: curr_dir.list()
 
-    // Absence is a normal no-policy state and is handled by the single no-follow open.
-    // Every other open/read failure remains fail-closed; no validation-then-reopen window is introduced.
-    val ignored_matchers = try {
-        read_ignore_patterns(ignore_file.toPath())
-    } catch (e: IgnoreFileReadException) {
-        throw e
-    }
+    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
+    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
+    // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
+    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
+       val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-    if (ignored_matchers.isEmpty() && snapshotNames?.contains(ignore_filename) == true) {
-        if (!ignore_file.exists()) {
-             throw IgnoreFileReadException("Policy file is listed but inaccessible or invalid (fail-closed)")
-        }
-    }
+       ignore_file.useLines { lines ->
+           for ((lineIndex, it) in lines.withIndex()) {
+               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+               if (lineIndex >= 1000) break
+               val pattern = it.trim()
+               if (pattern.isNotEmpty() && pattern.length <= 100) {
+                   try {
+                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                   } catch (_: IllegalArgumentException) {
+                   }
+               }
+           }
+       }
 
-    snapshotNames?.forEach {
-        val current = it
-        val pathCurrent = try {
-            java.nio.file.Paths.get(current)
-        } catch (_: java.nio.file.InvalidPathException) {
-            files_to_exclude.add(current)
-            return@forEach
-        }
-        for (matcher in ignored_matchers) {
-            if (matcher.matches(pathCurrent)) {
-                files_to_exclude.add(current)
-                break
-            }
-        }
+       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
+       val list = dirFilesNames ?: curr_dir.list()
+       list?.forEach {
+           val current = it
+           val pathCurrent = try {
+               java.nio.file.Paths.get(current)
+           } catch (_: java.nio.file.InvalidPathException) {
+               files_to_exclude.add(current)
+               return@forEach
+           }
+           for (matcher in ignored_matchers) {
+              if (matcher.matches(pathCurrent)) {
+                 files_to_exclude.add(current)
+                 break
+              }
+           }
+       }
     }
 
     if ("index.html" !in files_to_exclude)
@@ -406,7 +350,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
-    snapshotNames?.forEach {
+    (dirFilesNames ?: curr_dir.list())?.forEach {
         val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
             it.isHiddenFile() ||
@@ -460,9 +404,6 @@ fun write_index_file(
 }
  
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    if (!Files.isDirectory(curr_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) {
-        return
-    }
 
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
