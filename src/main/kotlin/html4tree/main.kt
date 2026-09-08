@@ -177,6 +177,8 @@ internal fun read_ignore_patterns(
             }
             ignoredMatchers
         }
+    } catch (_: java.nio.file.NoSuchFileException) {
+        emptyList()
     } catch (e: IgnoreFileReadException) {
         throw e
     } catch (e: java.io.IOException) {
@@ -356,27 +358,24 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val files_to_exclude = mutableSetOf<String>()
     val snapshotNames = dirFilesNames ?: curr_dir.list()
 
-    if (snapshotNames?.contains(ignore_filename) == true) {
-       // Snapshot membership only decides whether a policy read is required. All validity,
-       // no-follow and bounded-read decisions happen on the single opened channel below.
-       val ignored_matchers = read_ignore_patterns(ignore_file.toPath())
+    // Absence is a normal no-policy state and is handled by the single no-follow open.
+    // Every other open/read failure remains fail-closed; no validation-then-reopen window is introduced.
+    val ignored_matchers = read_ignore_patterns(ignore_file.toPath())
 
-       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
-       snapshotNames.forEach {
-           val current = it
-           val pathCurrent = try {
-               java.nio.file.Paths.get(current)
-           } catch (_: java.nio.file.InvalidPathException) {
-               files_to_exclude.add(current)
-               return@forEach
-           }
-           for (matcher in ignored_matchers) {
-              if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
-                 break
-              }
-           }
-       }
+    snapshotNames?.forEach {
+        val current = it
+        val pathCurrent = try {
+            java.nio.file.Paths.get(current)
+        } catch (_: java.nio.file.InvalidPathException) {
+            files_to_exclude.add(current)
+            return@forEach
+        }
+        for (matcher in ignored_matchers) {
+            if (matcher.matches(pathCurrent)) {
+                files_to_exclude.add(current)
+                break
+            }
+        }
     }
 
     if ("index.html" !in files_to_exclude)
