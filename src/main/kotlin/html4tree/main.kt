@@ -144,6 +144,7 @@ internal fun open_ignore_policy_channel(path: Path): SeekableByteChannel =
 
 internal fun read_ignore_patterns(
     ignorePath: Path,
+    expectedPresent: Boolean = false,
     openChannel: (Path) -> SeekableByteChannel = ::open_ignore_policy_channel
 ): List<java.nio.file.PathMatcher> {
     return try {
@@ -177,7 +178,10 @@ internal fun read_ignore_patterns(
             }
             ignoredMatchers
         }
-    } catch (_: java.nio.file.NoSuchFileException) {
+    } catch (e: java.nio.file.NoSuchFileException) {
+        if (expectedPresent) {
+            throw IgnoreFileReadException("Observed .html4ignore disappeared before secure open", e)
+        }
         emptyList()
     } catch (e: IgnoreFileReadException) {
         throw e
@@ -357,10 +361,14 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val ignore_file = File(ignore_file_path)
     val files_to_exclude = mutableSetOf<String>()
     val snapshotNames = dirFilesNames ?: curr_dir.list()
+    val policyObservedInSnapshot = dirFilesNames?.any { it == ignore_filename } == true
 
-    // Absence is a normal no-policy state and is handled by the single no-follow open.
-    // Every other open/read failure remains fail-closed; no validation-then-reopen window is introduced.
-    val ignored_matchers = read_ignore_patterns(ignore_file.toPath())
+    // A partial snapshot does not decide policy existence: the secure open remains authoritative.
+    // If that same snapshot observed a policy which vanished before the no-follow open, fail closed.
+    val ignored_matchers = read_ignore_patterns(
+        ignore_file.toPath(),
+        expectedPresent = policyObservedInSnapshot
+    )
 
     snapshotNames?.forEach {
         val current = it
