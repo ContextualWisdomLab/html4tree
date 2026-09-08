@@ -236,8 +236,15 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val cInt = c.toInt()
-        val replacement = if (cInt < 128) Constants.htmlEscapes[cInt] else null
+        val replacement = when (c) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -519,14 +526,4 @@ private object Constants {
         ".swo",
         ".swpx"
     )
-
-    @JvmField
-    val htmlEscapes = Array<String?>(128) { null }.apply {
-        this['&'.toInt()] = "&amp;"
-        this['<'.toInt()] = "&lt;"
-        this['>'.toInt()] = "&gt;"
-        this['"'.toInt()] = "&quot;"
-        this['\''.toInt()] = "&#x27;"
-        this['`'.toInt()] = "&#x60;"
-    }
 }
