@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-11-09 - [BiDi Text Manipulation Vulnerability in Generated HTML]
+**Vulnerability:** 악의적인 파일 및 디렉토리 이름을 통한 Bidirectional (BiDi) 텍스트 조작 공격.
+**Learning:** LTR(Left-to-Right) 컨텍스트에서 사용자 제어 입력(파일명 등)을 렌더링할 때 양방향 텍스트(BiDi)가 포함되면, 공격자가 RTL(Right-to-Left) 문자를 삽입하여 텍스트의 읽기 순서를 반전시키거나 파일 확장자를 속여 시각적인 혼란 및 잠재적 스푸핑을 유발할 수 있습니다.
+**Prevention:** HTML 내 요소(예: `<h1>`, `<span>`)에 렌더링될 때는 `dir="auto"` 속성을 사용하여 방향성을 고립시키고, HTML 속성(예: `title`, `<title>` 텍스트 등)에 삽입할 때는 입력값을 항상 FSI(`&#x2068;`)와 PDI(`&#x2069;`)로 감싸야 합니다.
