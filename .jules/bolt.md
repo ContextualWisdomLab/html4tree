@@ -62,3 +62,7 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+
+## 2024-05-15 - [StringBuilder Capacity Pre-allocation]
+**Learning:** Kotlin에서 반복문을 통해 HTML 목록을 생성할 때, StringBuilder의 초기 용량을 설정하지 않으면 O(N) 내부 배열 재할당이 발생하여 성능 저하가 발생합니다.
+**Action:** 디렉토리 목록의 항목 수 기반(expectedItems * estimatedCharsPerItem)으로 StringBuilder 용량을 미리 할당하여 성능을 향상시켰습니다.
