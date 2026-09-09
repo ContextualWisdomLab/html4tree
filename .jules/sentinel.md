@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-20 - [MEDIUM] 경로 길이 제한 누락으로 인한 DoS
+**Vulnerability:** 파일 시스템 작업(예: `File.absoluteFile`)에 전달되는 사용자 입력 경로 문자열의 길이를 제한하지 않아 지나치게 긴 문자열 처리 시 서비스 거부(DoS) 및 Out-Of-Memory(OOM)가 발생할 수 있습니다.
+**Learning:** 입력 검증 시 `isNotBlank()`와 경로 탐색 차단(`..`)뿐만 아니라, 시스템 콜이나 자바 파일 시스템 API로 넘어가기 전 입력 데이터 크기에 대한 최대 길이 제한이 필수적입니다.
+**Prevention:** 사용자 제공 또는 제어 가능한 문자열을 파일 시스템 경로로 사용할 때는 항상 `require(path.length <= 4096)`과 같은 길이 경계를 강제하여 비용이 높은 작업 이전에 차단(Fail Fast)하십시오.
