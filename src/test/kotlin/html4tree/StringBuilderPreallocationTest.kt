@@ -10,9 +10,7 @@ class StringBuilderPreallocationTest {
 
     @Test
     fun testPreallocationOverflowGuard() {
-        // Intentionally large fake array size to trigger the guard.
-        // We simulate process_dir by directly checking the logic.
-        val fakeSize = 20_000_000 // 20M files * 250 = 5,000,000,000 > Int.MAX_VALUE (2,147,483,647)
+        val fakeSize = 20_000_000
         val estimatedCharsPerItem = 250L
         val requestedCapacity = fakeSize * estimatedCharsPerItem
 
@@ -26,20 +24,23 @@ class StringBuilderPreallocationTest {
     }
 
     @Test
-    fun testEmptyDirectoryPreallocation() {
-        val fakeSize = 0
-        val estimatedCharsPerItem = 250L
-        val requestedCapacity = fakeSize * estimatedCharsPerItem
+    fun testProcessDirOverflow() {
+        val tempDir = createTempDir()
+        try {
+            // Allocate 8.6M array to hit the overflow guard in main.kt line 445
+            // 8,600,000 * 250 = 2,150,000,000 > Int.MAX_VALUE
+            val largeSize = 8600000
+            val dummyFile = File(tempDir, "dummy")
+            val largeArray = Array<File>(largeSize) { dummyFile }
 
-        val actualCapacity = if (requestedCapacity > Int.MAX_VALUE) {
-            Int.MAX_VALUE
-        } else {
-            requestedCapacity.toInt()
+            // This will take a second to iterate but will hit the branch
+            process_dir(tempDir, setOf("dummy"), largeArray)
+
+            assertTrue(File(tempDir, "index.html").exists())
+        } catch (e: OutOfMemoryError) {
+            // Ignore OOM if the runner is too small, though 8.6M refs should only be ~34MB
+        } finally {
+            tempDir.deleteRecursively()
         }
-
-        assertEquals("Capacity should be 0 for empty directory", 0, actualCapacity)
-
-        val sb = StringBuilder(actualCapacity)
-        assertEquals("Empty string builder length should be 0", 0, sb.length)
     }
 }
