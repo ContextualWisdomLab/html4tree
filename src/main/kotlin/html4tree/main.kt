@@ -433,18 +433,12 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 """ 
 
     val index_middle = fun():String{ 
+        val l = StringBuilder()
+
         val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
         val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
-
-        // ⚡ Bolt Performance Optimization: Pre-allocate StringBuilder capacity
-        // based on expected output size to avoid costly O(N) internal array reallocations.
-        val estimatedCharsPerItem = 250L
-        val requestedCapacity = dir_files.size * estimatedCharsPerItem
-        val actualCapacity = if (requestedCapacity > Int.MAX_VALUE) Int.MAX_VALUE else requestedCapacity.toInt()
-        val l = StringBuilder(actualCapacity)
-
         dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
            val fileName = it.getName()
