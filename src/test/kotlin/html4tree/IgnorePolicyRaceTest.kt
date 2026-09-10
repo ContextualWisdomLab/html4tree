@@ -57,6 +57,19 @@ class IgnorePolicyRaceTest {
     }
 
     @Test
+    fun securePolicyReaderClosesReaderWhenConsumerFails() {
+        val policy = File(tempDir, "consumer-failure.ignore").apply {
+            writeText("private.txt\n")
+        }
+
+        assertFailsWith<IllegalStateException> {
+            policy.useLines {
+                throw IllegalStateException("consumer failed")
+            }
+        }
+    }
+
+    @Test
     fun securePolicyReaderRejectsOversizedOpenedFile() {
         val policy = File(tempDir, "oversized.ignore")
         policy.writeBytes(ByteArray(1_048_577) { 'a'.toInt().toByte() })
