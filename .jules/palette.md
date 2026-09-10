@@ -73,6 +73,3 @@
 ## 2026-08-17 - 브라우저 번역과 화면 판독기의 호환성을 위한 텍스트 처리
 **Learning:** `aria-label` 속성으로 지정된 화면 판독기용 대체 텍스트는 Chrome Translate 등 브라우저 번역 도구에 의해 번역되지 않는 경우가 많습니다. 이로 인해 문서 언어가 변환되어도 스크린 리더에서는 원본 언어(예: 영어)로 읽혀 다국어 접근성이 저하됩니다.
 **Action:** 화면 판독기를 위한 숨겨진 설명 텍스트를 제공할 때 `aria-label` 대신 CSS `.visually-hidden` 클래스를 적용한 `<span>` 요소를 사용하여, 브라우저가 일반 텍스트로 인식하고 번역할 수 있도록 하여 다국어 접근성 호환성을 확보하십시오.
-## 2024-09-09 - [Restore Visual Hover Feedback Broken by .visually-hidden]
-**Learning:** Introducing structurally hidden accessibility elements (like `<span class="visually-hidden">`) to a DOM container breaks existing CSS structural pseudo-classes (such as `:last-child`) that expect the visible text to be the last element. This results in missing visual feedback (e.g., hover underlines) for sighted users.
-**Action:** When adding `.visually-hidden` elements at the end of a container, always verify and update related CSS structural selectors (e.g., changing `:last-child` to `:nth-last-child(2)`) to ensure visual styles continue targeting the correct visible element.
