@@ -65,3 +65,6 @@
 ## 2023-10-17 - [Pre-allocate StringBuilder and Array mapping]
 **Learning:** In Kotlin, character mapping in hot paths is significantly faster when replacing `when` conditional jump tables with direct array-based lookups. Also, repeatedly appending strings in a loop causes costly O(N) internal array reallocations unless the `StringBuilder` capacity is pre-allocated.
 **Action:** Use an `Array<String?>` for character mappings (with bounds checking) and pre-allocate `StringBuilder` capacity based on the expected output size.
+## 2026-09-10 - [StringBuilder 및 Array 매핑 최적화]
+**Learning:** Kotlin에서 hot path의 문자 변환 시 `when` 분기문을 배열 기반 조회로 교체하면 성능이 크게 향상됩니다. 또한 루프 내에서 반복적으로 문자열을 추가할 때 `StringBuilder`의 용량을 예상 크기에 맞춰 미리 할당하지 않으면 O(N)의 내부 배열 재할당 비용이 발생합니다.
+**Action:** 문자 매핑에 `Array<String?>`를 사용하고(경계 검사 포함), 예상되는 출력 크기를 기반으로 `StringBuilder` 용량을 사전 할당합니다.
