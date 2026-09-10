@@ -12,7 +12,6 @@ import java.nio.file.LinkOption
 import java.nio.file.StandardOpenOption
 
 private const val MAX_IGNORE_FILE_BYTES = 1_048_576L
-private const val MAX_IGNORE_FILE_LINES = 1000
 
 /**
  * Input stream that rejects policy content as soon as consumption exceeds the byte limit.
@@ -56,9 +55,8 @@ private class BoundedPolicyInputStream(
  * This package-local extension intentionally takes precedence over Kotlin's
  * default [File.useLines] extension for html4tree call sites. The policy file
  * is opened once with [LinkOption.NOFOLLOW_LINKS]. The descriptor size is
- * checked immediately and bounded consumption enforces both the 1 MiB byte
- * limit and the 1000-line policy limit, so growth or silent truncation cannot
- * turn an over-limit policy into a partially applied allowlist.
+ * checked immediately and a bounded stream enforces the same 1 MiB limit while
+ * content is consumed, so a file that grows after open also fails closed.
  */
 internal fun <T> File.useLines(block: (Sequence<String>) -> T): T =
     Files.newByteChannel(
@@ -78,12 +76,6 @@ internal fun <T> File.useLines(block: (Sequence<String>) -> T): T =
             boundedInput,
             StandardCharsets.UTF_8.newDecoder()
         ).buffered().use { reader ->
-            val boundedLines = reader.lineSequence().mapIndexed { index, line ->
-                if (index >= MAX_IGNORE_FILE_LINES) {
-                    throw IOException("Ignore file exceeds 1000 lines")
-                }
-                line
-            }
-            block(boundedLines)
+            block(reader.lineSequence())
         }
     }
