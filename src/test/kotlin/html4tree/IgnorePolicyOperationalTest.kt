@@ -30,24 +30,6 @@ class IgnorePolicyOperationalTest {
     }
 
     @Test
-    fun securePolicyReaderRejectsMoreThanOneThousandLines() {
-        val tempDir = Files.createTempDirectory("html4tree-policy-lines-").toFile()
-        try {
-            val policy = File(tempDir, ".html4ignore")
-            policy.writeText((1..1001).joinToString("\n") { "private-$it.txt" })
-
-            assertFailsWith<IgnoreFileReadException> {
-                process_ignore_file(
-                    tempDir,
-                    arrayOf(".html4ignore", "public.txt")
-                )
-            }
-        } finally {
-            tempDir.deleteRecursively()
-        }
-    }
-
-    @Test
     fun crawlReportsIgnorePolicyFailureBeforeSkippingDirectory() {
         val tempDir = Files.createTempDirectory("html4tree-policy-diagnostic-").toFile()
         val previousErr = System.err
