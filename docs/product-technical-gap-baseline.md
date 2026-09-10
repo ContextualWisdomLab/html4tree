@@ -8,8 +8,8 @@ html4tree의 핵심 구매 가치 중 하나는 디렉터리의 실제 공개 �
 
 - **Subdomain / Bounded Context:** Directory Publication
 - **Policy boundary:** `.html4ignore`를 읽어 현재 디렉터리에서 공개하지 않을 entry 집합을 계산합니다.
-- **Invariant:** directory snapshot에 `.html4ignore`가 존재한다고 관찰한 경우, 그 정책을 안전하고 완전하게 읽지 못하면 해당 directory의 index를 생성하지 않습니다.
-- **Failure semantics:** unreadable file, directory, symbolic link, 1 MiB 초과, 1000줄 초과 또는 read I/O failure는 빈 정책이나 부분 정책으로 대체하지 않고 `IgnoreFileReadException`으로 fail closed 합니다.
+- **Invariant:** directory snapshot에 `.html4ignore`가 존재한다고 관찰한 경우, 그 정책을 안전하게 읽지 못하면 해당 directory의 index를 생성하지 않습니다.
+- **Failure semantics:** unreadable file, directory, symbolic link, oversized policy 또는 read I/O failure는 빈 정책으로 대체하지 않고 `IgnoreFileReadException`으로 fail closed 합니다.
 - **Publication boundary:** `crawl_directories`와 `process_dir`는 정책 읽기 실패가 발생한 directory를 게시하지 않습니다. `crawl_directories`는 건너뛴 directory path와 실패 원인을 stderr에 남겨 fail-closed가 운영상 무음 실패가 되지 않게 합니다.
 
 ## 2026-09-10 verified gap — check/use 사이의 symlink 교체
@@ -20,13 +20,11 @@ TDD regression은 metadata 검증이 끝난 직후 `.html4ignore`를 symbolic li
 
 후속 review에서 열린 channel의 최초 `size()` 확인 뒤 파일이 커질 수 있다는 잔여 경계를 확인했습니다. test-first `9b5f0274f0ce231f909e5d15f642ceb80736220e`는 channel이 열린 뒤 policy를 1 MiB 초과로 증가시키는 경우와 `crawl_directories`가 policy failure 진단을 남겨야 하는 경우를 RED로 고정합니다. source-fix `730945a605687a2689135debf0278becd81b6dd0`은 descriptor 초기 size check를 유지하면서 실제 stream consumption에도 1 MiB byte limit를 적용하고, `35c4d84ab9b0101988d368ce6cbf4f38372e0e2e`는 directory skip 전에 path와 실패 메시지를 stderr에 기록합니다.
 
-추가 review에서 기존 parser가 1001번째 정책 줄을 읽은 뒤 `break`하여 파일의 뒤쪽 정책을 조용히 버리는 것을 확인했습니다. 1000줄 제한이 자원 보호 목적이라도 초과 정책을 부분 적용하면 후반 exclusion rule을 사용자가 작성했음에도 공개될 수 있으므로 fail-closed 계약과 맞지 않습니다. test-first `e34cb2133aacaf30dd947e435d5637905680d455`는 1001줄의 유효한 `.html4ignore`가 `IgnoreFileReadException` 없이 통과하는 source-level RED를 고정했고, source fix `2a9cc56cd45535d56e0a100f230f1037383dfb4d`는 secure reader의 실제 line consumption에서 1000줄 cap을 집행해 초과 시 `IOException`을 발생시킵니다. `process_ignore_file`은 이를 기존 fail-closed 예외로 변환합니다.
-
-이 조치는 **최종 `.html4ignore` component의 symlink-follow race, open 이후 policy growth에 의한 byte-limit 우회, 1000줄 초과 정책의 silent partial application, fail-closed 무음 운영 실패**를 좁혀 고친 것입니다. 상위 디렉터리 자체가 교체되는 모든 형태의 pathname race, 공격자가 제한 이내의 같은 regular policy file 내용을 합법적으로 다시 쓰는 경우, 모든 filesystem/provider에서의 동일한 atomicity를 해결했다고 주장하지 않습니다. 그런 위협까지 요구되는 배포에서는 open directory handle에 상대적인 `SecureDirectoryStream.newByteChannel(..., NOFOLLOW_LINKS)` 또는 OS별 openat/openat2 계열 primitive를 사용하는 별도 owner decision이 필요합니다.
+이 조치는 **최종 `.html4ignore` component의 symlink-follow race, open 이후 policy growth에 의한 byte-limit 우회, fail-closed 무음 운영 실패**를 좁혀 고친 것입니다. 상위 디렉터리 자체가 교체되는 모든 형태의 pathname race, 공격자가 1 MiB 이하 범위에서 같은 regular policy file의 내용을 합법적으로 다시 쓰는 경우, 모든 filesystem/provider에서의 동일한 atomicity를 해결했다고 주장하지 않습니다. 그런 위협까지 요구되는 배포에서는 open directory handle에 상대적인 `SecureDirectoryStream.newByteChannel(..., NOFOLLOW_LINKS)` 또는 OS별 openat/openat2 계열 primitive를 사용하는 별도 owner decision이 필요합니다.
 
 ## 선택과 기각
 
-선택한 최소 수리는 기존 `process_ignore_file`의 glob·default-sensitive-file 계약을 바꾸지 않고 실제 read open을 `NOFOLLOW_LINKS`로 강화하며, 열린 stream에서 byte cap과 line cap을 계속 집행하는 것입니다. 최초 `channel.size()`만 신뢰하는 안은 open 뒤 growth를 놓치므로 기각했습니다. `lineIndex >= 1000`에서 조용히 중단하는 안은 정책 일부만 적용하므로 기각했습니다. 기존 `isSymbolicLink` 확인만 유지하는 안도 check와 open 사이 교체를 막지 못합니다. 반대로 이번 PR에서 crawler 전체를 platform-specific native `openat2` 구현으로 교체하는 안은 현재 Kotlin CLI의 범위를 크게 넓히고 portability 결정을 동반하므로 별도 architecture/security decision 없이 섞지 않습니다.
+선택한 최소 수리는 기존 `process_ignore_file`의 parsing·glob·default-sensitive-file 계약을 바꾸지 않고 실제 read open을 `NOFOLLOW_LINKS`로 강화하고, 열린 stream에서도 동일 byte cap을 계속 집행하는 것입니다. 최초 `channel.size()`만 신뢰하는 안은 open 뒤 growth를 놓치므로 기각했습니다. 기존 `isSymbolicLink` 확인만 유지하는 안도 check와 open 사이 교체를 막지 못해 기각했습니다. 반대로 이번 PR에서 crawler 전체를 platform-specific native `openat2` 구현으로 교체하는 안은 현재 Kotlin CLI의 범위를 크게 넓히고 portability 결정을 동반하므로 별도 architecture/security decision 없이 섞지 않습니다.
 
 ## Acceptance
 
@@ -34,12 +32,11 @@ PR #667이 Ready 또는 mergeable로 승격되려면 동일 exact head에서 다
 
 1. metadata 검증 뒤 `.html4ignore`를 symbolic link로 교체하는 regression이 `IgnoreFileReadException`으로 GREEN이어야 합니다.
 2. channel open 뒤 policy가 1 MiB를 넘도록 증가하면 consumption 중 `IOException`으로 fail closed해야 합니다.
-3. 1001줄 이상의 정책은 첫 1000줄만 부분 적용하지 않고 fail closed해야 합니다.
-4. policy read failure로 directory publication을 건너뛸 때 stderr에 해당 directory와 실패 원인이 기록되어야 합니다.
-5. 기존 unreadable/directory/symlink/oversized/malformed-pattern/default-sensitive-file regression을 보존해야 합니다.
-6. Gradle test와 JaCoCo 100% instruction gate, repository Security Scan, SAST, CodeQL이 terminal GREEN이어야 합니다.
-7. PR 설명은 "모든 TOCTOU 취약점 제거"가 아니라 실제로 검증한 fail-closed 및 final-component symlink-open 경계를 기술해야 합니다.
-8. 상위 디렉터리 identity까지 공격자 변경 가능 경계로 둘 것인지 결정할 경우, `SecureDirectoryStream` 지원/미지원 provider의 fail-closed 정책과 portability를 ADR로 분리합니다.
+3. policy read failure로 directory publication을 건너뛸 때 stderr에 해당 directory와 실패 원인이 기록되어야 합니다.
+4. 기존 unreadable/directory/symlink/oversized/malformed-pattern/default-sensitive-file regression을 보존해야 합니다.
+5. Gradle test와 JaCoCo 100% instruction gate, repository Security Scan, SAST, CodeQL이 terminal GREEN이어야 합니다.
+6. PR 설명은 "모든 TOCTOU 취약점 제거"가 아니라 실제로 검증한 fail-closed 및 final-component symlink-open 경계를 기술해야 합니다.
+7. 상위 디렉터리 identity까지 공격자 변경 가능 경계로 둘 것인지 결정할 경우, `SecureDirectoryStream` 지원/미지원 provider의 fail-closed 정책과 portability를 ADR로 분리합니다.
 
 ## Traceability
 
