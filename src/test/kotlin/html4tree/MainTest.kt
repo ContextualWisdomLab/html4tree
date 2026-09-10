@@ -714,18 +714,6 @@ class MainTest {
     }
 
 
-
-    @Test
-    fun testProcessIgnoreFileThrowsOnReadErrorWhenException() {
-        val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.writeText("*.txt")
-        assertFailsWith<IgnoreFileReadException> {
-            process_ignore_file(tempDir, arrayOf(".html4ignore")) { _, _ ->
-                throw RuntimeException("Simulated Read Error")
-            }
-        }
-    }
-
     @Test
     fun testProcessIgnoreFileThrowsOnReadError() {
         // Create an actual file so that it passes the initial isFile and exists checks
