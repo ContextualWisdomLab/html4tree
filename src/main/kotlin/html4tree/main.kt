@@ -229,22 +229,26 @@ fun String.isHiddenFile(): Boolean {
     }
 }
 
-// ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
+private val ESCAPE_MAP = Array<String?>(128) { null }.apply {
+    this['&'.toInt()] = "&amp;"
+    this['<'.toInt()] = "&lt;"
+    this['>'.toInt()] = "&gt;"
+    this['"'.toInt()] = "&quot;"
+    this['\''.toInt()] = "&#x27;"
+    this['`'.toInt()] = "&#x60;"
+}
+
+// ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder and Array mapping
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
+// Using Array mapping instead of `when` avoids conditional jumps and improves speed.
 fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        val cInt = c.toInt()
+        val replacement = if (cInt < 128) ESCAPE_MAP[cInt] else null
+
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -433,12 +437,14 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 """ 
 
     val index_middle = fun():String{ 
-        val l = StringBuilder()
-
         val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
         val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
+
+        // ⚡ Bolt Performance Optimization: Pre-allocate StringBuilder capacity
+        // Avoids multiple O(N) internal array reallocations when appending many items.
+        val l = StringBuilder(if (dir_files.isNotEmpty()) dir_files.size * 256 else 16)
         dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
            val fileName = it.getName()
