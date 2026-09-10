@@ -78,15 +78,11 @@ internal fun <T> File.useLines(block: (Sequence<String>) -> T): T =
             boundedInput,
             StandardCharsets.UTF_8.newDecoder()
         ).buffered().use { reader ->
-            val boundedLines = sequence {
-                var lineCount = 0
-                for (line in reader.lineSequence()) {
-                    lineCount += 1
-                    if (lineCount > MAX_IGNORE_FILE_LINES) {
-                        throw IOException("Ignore file exceeds 1000 lines")
-                    }
-                    yield(line)
+            val boundedLines = reader.lineSequence().mapIndexed { index, line ->
+                if (index >= MAX_IGNORE_FILE_LINES) {
+                    throw IOException("Ignore file exceeds 1000 lines")
                 }
+                line
             }
             block(boundedLines)
         }
