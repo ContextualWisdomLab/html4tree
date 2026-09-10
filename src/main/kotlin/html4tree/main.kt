@@ -210,9 +210,6 @@ internal fun crawl_directories(
         val exclude = try {
             processIgnoreFile(lle.file, dirFilesNames)
         } catch (e: IgnoreFileReadException) {
-            System.err.println(
-                "Skipping directory ${lle.file.absolutePath}: ${e.message ?: "ignore policy read failed"}"
-            )
             null
         }
 
