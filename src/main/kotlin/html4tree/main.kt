@@ -440,7 +440,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 
         // ⚡ Bolt Performance Optimization: Pre-allocate StringBuilder capacity
         // based on expected output size to avoid costly O(N) internal array reallocations.
-        val l = StringBuilder(dir_files.size * 250)
+        val estimatedCharsPerItem = 250L
+        val requestedCapacity = dir_files.size * estimatedCharsPerItem
+        val actualCapacity = if (requestedCapacity > Int.MAX_VALUE) Int.MAX_VALUE else requestedCapacity.toInt()
+        val l = StringBuilder(actualCapacity)
 
         dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
