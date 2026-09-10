@@ -19,7 +19,7 @@ private const val MAX_IGNORE_FILE_BYTES = 1_048_576L
  * checked on that opened channel. A path swapped to a symlink after metadata
  * validation therefore fails closed instead of being followed.
  */
-internal fun <T> File.useLines(block: (Sequence<String>) -> T): T {
+internal fun <T> File.useLines(block: (Sequence<String>) -> T): T =
     Files.newByteChannel(
         toPath(),
         StandardOpenOption.READ,
@@ -34,7 +34,6 @@ internal fun <T> File.useLines(block: (Sequence<String>) -> T): T {
             StandardCharsets.UTF_8.newDecoder(),
             -1
         ).buffered().use { reader ->
-            return block(reader.lineSequence())
+            block(reader.lineSequence())
         }
     }
-}
