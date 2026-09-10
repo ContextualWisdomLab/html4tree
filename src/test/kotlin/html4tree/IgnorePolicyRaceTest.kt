@@ -4,7 +4,9 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class IgnorePolicyRaceTest {
@@ -24,9 +26,7 @@ class IgnorePolicyRaceTest {
 
     @Test
     fun failClosedWhenIgnoreFileIsReplacedBySymlinkAfterValidation() {
-        val ignoreFile = File(tempDir, ".html4ignore").apply {
-            writeText("private.txt\n")
-        }
+        File(tempDir, ".html4ignore").writeText("private.txt\n")
         val replacementPolicy = File(tempDir, "replacement.ignore").apply {
             writeText("public.txt\n")
         }
@@ -42,6 +42,27 @@ class IgnorePolicyRaceTest {
                 Files.createSymbolicLink(file.toPath(), replacementPolicy.toPath())
                 file.useLines { lines -> block(lines) }
             }
+        }
+    }
+
+    @Test
+    fun securePolicyReaderReturnsLinesFromOpenedRegularFile() {
+        val policy = File(tempDir, "policy.ignore").apply {
+            writeText("private.txt\n*.key\n")
+        }
+
+        val lines = policy.useLines { it.toList() }
+
+        assertEquals(listOf("private.txt", "*.key"), lines)
+    }
+
+    @Test
+    fun securePolicyReaderRejectsOversizedOpenedFile() {
+        val policy = File(tempDir, "oversized.ignore")
+        policy.writeBytes(ByteArray(1_048_577) { 'a'.toInt().toByte() })
+
+        assertFailsWith<IOException> {
+            policy.useLines { it.toList() }
         }
     }
 }
