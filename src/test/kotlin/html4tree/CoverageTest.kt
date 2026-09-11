@@ -53,5 +53,13 @@ class CoverageTest {
         val unescaped = "normal text"
         val escaped = unescaped.escapeHtml()
         assertEquals("normal text", escaped)
+
+        // Additional coverage for BiDi controls
+        val alm = "\u061C"
+        assertEquals("\\u061C", alm.escapeHtml())
+        val fsi = "\u2068"
+        assertEquals("\\u2068", fsi.escapeHtml())
+        val unknownControl = "\u206A" // ISS, not mapped, should fallback to null and append char
+        assertEquals("\u206A", unknownControl.escapeHtml())
     }
 }
