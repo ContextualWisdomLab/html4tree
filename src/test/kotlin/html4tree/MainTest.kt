@@ -19,6 +19,22 @@ import org.junit.Assert.fail
 
 class MainTest {
     @Test
+    fun testProcessIgnoreFileThrowsIOExceptionDuringRead() {
+        val rootDir = Files.createTempDirectory("crawl_test_io").toFile()
+        val ignoreFile = File(rootDir, ".html4ignore")
+        ignoreFile.writeText("test")
+
+        try {
+            process_ignore_file(rootDir, null) { _, _ ->
+                throw java.io.IOException("Mocked IO Exception")
+            }
+            fail("Should throw IgnoreFileReadException because of IOException")
+        } catch (e: IgnoreFileReadException) {
+            // Expected
+        }
+    }
+
+    @Test
     fun testCrawlDirectoriesIgnoresFailClosedDirectory() {
         val rootDir = Files.createTempDirectory("crawl_test_root").toFile()
         val ignoreFile = File(rootDir, ".html4ignore")

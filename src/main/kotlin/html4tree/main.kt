@@ -217,18 +217,18 @@ internal fun crawl_directories(
                processDirectory(lle.file, exclude, dirFiles)
 
             if(maxLevel == -1 || currentLevel < maxLevel) {
-                dirFiles?.forEach {
-                    // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
-                    // by checking cheap in-memory string exclusion rules first
-                    if(!it.name.isHiddenFile() && it.name !in exclude) {
-                        val childAttrs = readAttributes(it)
-                        if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
-                            val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                            ll.push(childEntry)
-                        }
+            dirFiles?.forEach {
+                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                // by checking cheap in-memory string exclusion rules first
+                if(!it.name.isHiddenFile() && it.name !in exclude) {
+                    val childAttrs = readAttributes(it)
+                    if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
+                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                        ll.push(childEntry)
                     }
                 }
             }
+        }
         }
         lle = ll.pull()
     }
@@ -305,7 +305,11 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
-fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
+fun process_ignore_file(
+    curr_dir: File,
+    dirFilesNames: Array<String>? = null,
+    processLines: (File, (Sequence<String>) -> Unit) -> Unit = { file, block -> file.useLines { block(it) } }
+): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -318,29 +322,38 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
     // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
-    // We must check if the file exists on the filesystem to avoid case-sensitivity bypasses
-    // using dirFilesNames?.any { it.equals(ignore_filename, ignoreCase = true) } might be slow,
-    // so we just rely on the OS's ignore_file.exists()
-    val ignoreFileExists = ignore_file.exists()
+    var ignoreFileExists = false
+    try {
+        val attrs = Files.readAttributes(ignore_file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        if (attrs != null) {
+            ignoreFileExists = true
+        }
+    } catch (e: Exception) {
+        // Does not exist
+    }
 
-    if(ignoreFileExists){
+    if (ignoreFileExists) {
         if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead() || ignore_file.length() > 1048576) {
             throw IgnoreFileReadException("Fail-closed: .html4ignore is present but cannot be read securely.")
         }
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
-           for ((lineIndex, it) in lines.withIndex()) {
-               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-               if (lineIndex >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: IllegalArgumentException) {
+       try {
+           processLines(ignore_file) { lines ->
+               for ((lineIndex, it) in lines.withIndex()) {
+                   // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+                   if (lineIndex >= 1000) break
+                   val pattern = it.trim()
+                   if (pattern.isNotEmpty() && pattern.length <= 100) {
+                       try {
+                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                       } catch (_: IllegalArgumentException) {
+                       }
                    }
                }
            }
+       } catch (e: java.io.IOException) {
+           throw IgnoreFileReadException("Fail-closed: .html4ignore is present but cannot be read securely.")
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
