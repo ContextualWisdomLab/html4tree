@@ -596,6 +596,11 @@ class MainTest {
         go("   ", -1)
     }
 
+    @Test(expected = IllegalArgumentException::class)
+    fun testGoRejectsExcessivelyLongPath() {
+        go("a".repeat(4097), -1)
+    }
+
     @Test
     fun testUrlEncodePathUnreserved() {
         assertEquals("-._~", "-._~".urlEncodePath())
