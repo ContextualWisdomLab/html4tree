@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-24 - [Fail-Closed Security Posture for Policy Files]
+**Vulnerability:** The application was failing open (ignoring errors) or crashing completely (DoS) when `.html4ignore` policy files were inaccessible, unreadable, symlinks, or excessively large.
+**Learning:** Security policy files like `.html4ignore` require a fail-closed behavior. If a policy dictates exclusions but the policy itself cannot be reliably read, the system must assume it is unsafe to proceed and block access/traversal rather than ignoring the policy.
+**Prevention:** Introduce dedicated exceptions (like `IgnoreFileReadException`) to catch unreadable security policies and explicitly handle them by failing closed (e.g., returning null exclusions and skipping directory processing). Verify file types (preventing symlinks), permissions (canRead), and sizes to prevent bypasses and resource exhaustion.
