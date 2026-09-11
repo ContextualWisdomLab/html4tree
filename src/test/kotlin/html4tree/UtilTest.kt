@@ -176,6 +176,8 @@ class UtilTest {
         val list4 = LinkedList()
         list4.first = Entry(File("f5"), 0, null)
         list4.push(LinkedListEntry(File("f6"), 0))
-        assertEquals(File("f6"), list4.first?.data) // The original behavior sets `first` to whatever was most recently pushed!
+        // list4.first is not updated if list4.last was null.
+        // Oh right, if explicitLast == null, then explicitFirst = nextEntry.
+        assertEquals(File("f6"), list4.first?.data)
     }
 }
