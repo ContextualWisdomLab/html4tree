@@ -3,6 +3,7 @@ package html4tree
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -24,5 +25,27 @@ class BidiIsolationSecurityTest {
         } finally {
             directory.deleteRecursively()
         }
+    }
+
+    @Test
+    fun allSupportedDirectionalControlsAreRenderedAsVisibleEscapes() {
+        val controls = listOf(
+            '\u061C' to "\\u061C",
+            '\u200E' to "\\u200E",
+            '\u200F' to "\\u200F",
+            '\u202A' to "\\u202A",
+            '\u202B' to "\\u202B",
+            '\u202C' to "\\u202C",
+            '\u202D' to "\\u202D",
+            '\u202E' to "\\u202E",
+            '\u2066' to "\\u2066",
+            '\u2067' to "\\u2067",
+            '\u2068' to "\\u2068",
+            '\u2069' to "\\u2069"
+        )
+        val input = controls.joinToString(separator = "") { it.first.toString() }
+        val expected = controls.joinToString(separator = "") { it.second }
+
+        assertEquals(expected, input.escapeHtml())
     }
 }
