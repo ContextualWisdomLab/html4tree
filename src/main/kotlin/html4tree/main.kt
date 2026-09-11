@@ -236,13 +236,25 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
+        val replacement = when (c.toInt()) {
+            38 -> "&amp;" // '&'
+            60 -> "&lt;" // '<'
+            62 -> "&gt;" // '>'
+            34 -> "&quot;" // '"'
+            39 -> "&#x27;" // '\''
+            96 -> "&#x60;" // '`'
+            0x061C -> "\\u061C" // ALM
+            0x200E -> "\\u200E" // LRM
+            0x200F -> "\\u200F" // RLM
+            0x202A -> "\\u202A" // LRE
+            0x202B -> "\\u202B" // RLE
+            0x202C -> "\\u202C" // PDF
+            0x202D -> "\\u202D" // LRO
+            0x202E -> "\\u202E" // RLO
+            0x2066 -> "\\u2066" // LRI
+            0x2067 -> "\\u2067" // RLI
+            0x2068 -> "\\u2068" // FSI
+            0x2069 -> "\\u2069" // PDI
             else -> null
         }
         if (replacement != null) {
