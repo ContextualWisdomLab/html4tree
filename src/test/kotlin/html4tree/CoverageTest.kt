@@ -2,6 +2,7 @@ package html4tree
 
 import org.junit.Test
 import java.io.File
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CoverageTest {
@@ -45,5 +46,20 @@ class CoverageTest {
         ll.push(LinkedListEntry(missingDir, 0, null)) // missingDir doesn't exist, readAttributes throws NoSuchFileException
         crawl_directories(ll, -1)
         assertTrue(true)
+    }
+
+    @Test
+    fun testEscapeHtmlFallback() {
+        val unescaped = "normal text"
+        val escaped = unescaped.escapeHtml()
+        assertEquals("normal text", escaped)
+
+        // Additional coverage for BiDi controls
+        val alm = "\u061C"
+        assertEquals("\\u061C", alm.escapeHtml())
+        val fsi = "\u2068"
+        assertEquals("\\u2068", fsi.escapeHtml())
+        val unknownControl = "\u206A" // ISS, not mapped, should fallback to null and append char
+        assertEquals("\u206A", unknownControl.escapeHtml())
     }
 }
