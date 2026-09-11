@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2024-06-25 - [html4tree] HTML Attributes BiDi Isolation
-**Vulnerability:** User-controlled inputs like directory names within HTML attributes or page titles can lead to BiDi (Bidirectional text) spoofing vulnerabilities.
-**Learning:** Inserting unsanitized Right-to-Left (RTL) or Left-to-Right (LTR) characters into elements lacking explicit directionality (`dir="auto"`) or wrapping isolates (`&#x2068;...&#x2069;`) can visually corrupt the UI or deceive users regarding file names.
-**Prevention:** Always isolate user-controlled text within attributes or `title` tags using First Strong Isolate (`&#x2068;`) and Pop Directional Isolate (`&#x2069;`), and apply `dir="auto"` explicitly to visible text containers like `<h1>` or `<span>`.
