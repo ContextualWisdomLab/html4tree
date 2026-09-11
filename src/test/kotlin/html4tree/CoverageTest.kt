@@ -2,6 +2,7 @@ package html4tree
 
 import org.junit.Test
 import java.io.File
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CoverageTest {
@@ -45,5 +46,12 @@ class CoverageTest {
         ll.push(LinkedListEntry(missingDir, 0, null)) // missingDir doesn't exist, readAttributes throws NoSuchFileException
         crawl_directories(ll, -1)
         assertTrue(true)
+    }
+
+    @Test
+    fun testEscapeHtmlFallback() {
+        val unescaped = "normal text"
+        val escaped = unescaped.escapeHtml()
+        assertEquals("normal text", escaped)
     }
 }
