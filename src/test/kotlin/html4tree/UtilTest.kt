@@ -117,6 +117,14 @@ class UtilTest {
         list.last = Entry(File("test"), 0, null)
         assertEquals(File("test"), list.first?.data)
         assertEquals(File("test"), list.last?.data)
+
+        // Increase coverage on default branch of getters when explicitMode == false
+        val defaultList = LinkedList()
+        assertNull(defaultList.first)
+        assertNull(defaultList.last)
+        defaultList.push(LinkedListEntry(File("f1"), 0))
+        assertEquals(File("f1"), defaultList.first?.data)
+        assertEquals(File("f1"), defaultList.last?.data)
     }
 
     @Test
@@ -152,5 +160,22 @@ class UtilTest {
         assertEquals(File("f2"), list.pull()?.file)
         assertEquals(File("f3"), list.pull()?.file)
         assertNull(list.pull())
+
+        // Coverage for explicitMode when last is null
+        val list2 = LinkedList()
+        list2.first = null
+        list2.push(LinkedListEntry(File("f4"), 0))
+        assertEquals(File("f4"), list2.pull()?.file)
+
+        // Coverage for explicitMode pull when explicitly empty
+        val list3 = LinkedList()
+        list3.first = null
+        list3.last = null
+        assertNull(list3.pull())
+
+        val list4 = LinkedList()
+        list4.first = Entry(File("f5"), 0, null)
+        list4.push(LinkedListEntry(File("f6"), 0))
+        assertEquals(File("f6"), list4.first?.data) // The original behavior sets `first` to whatever was most recently pushed!
     }
 }
