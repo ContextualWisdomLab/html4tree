@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-25 - [html4tree] HTML BiDi 텍스트 조작 우회 방지
+**Vulnerability:** HTML에서 사용자 제어 텍스트(예: 디렉토리 또는 파일 이름)가 아랍어, 히브리어와 같은 양방향(BiDi) 텍스트를 포함할 때, 텍스트의 방향성(Directionality)을 명시적으로 제한하지 않으면, 브라우저가 주변 텍스트 렌더링에까지 영향을 미쳐 가독성을 훼손하거나 UI를 악의적으로 왜곡(스푸핑)할 수 있습니다.
+**Learning:** `dir="auto"`를 설정하면 브라우저가 요소의 콘텐츠를 기반으로 방향을 결정하지만, `<title>` 태그나 HTML 속성(`title="..."`) 내부에서는 작동하지 않거나 부족할 수 있습니다. 이러한 곳에서는 First Strong Isolate(FSI, `&#x2068;`)와 Pop Directional Isolate(PDI, `&#x2069;`) 유니코드 제어 문자를 사용하여 사용자 제어 텍스트를 감싸 주변 텍스트와 격리시켜야 합니다.
+**Prevention:** HTML 내 사용자 제어 텍스트는 일반 텍스트 요소에는 `dir="auto"`를 설정하고, 설정이 불가능한 컨텍스트(예: `<title>` 또는 `title=""` 속성)에서는 `&#x2068;`와 `&#x2069;` 문자로 감싸 텍스트 방향을 격리(Isolation)하십시오.
