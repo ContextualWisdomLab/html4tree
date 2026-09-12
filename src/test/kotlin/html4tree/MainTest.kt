@@ -339,9 +339,9 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"상위 디렉토리로 이동\""))
         assertTrue(htmlContent.contains("aria-hidden=\"true\""))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">파일</span>"))
-        assertTrue(htmlContent.contains("title=\"file1.txt 파일\""))
+        assertTrue(htmlContent.contains("title=\"&#x2068;file1.txt&#x2069; 파일\""))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">디렉토리</span>"))
-        assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
+        assertTrue(htmlContent.contains("title=\"&#x2068;subdir&#x2069; 디렉토리\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
@@ -942,8 +942,8 @@ class MainTest {
         val indexHtml = File(fakeRoot, "index.html")
         assertTrue(indexHtml.exists())
         val content = indexHtml.readText()
-        assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
-        assertTrue(content.contains("<h1>Root</h1>"))
+        assertTrue(content.contains("<title>&#x2068;Root&#x2069; - 디렉토리 목록</title>"))
+        assertTrue(content.contains("<h1 dir=\"auto\">Root</h1>"))
     }
 
 }
