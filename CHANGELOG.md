@@ -3,6 +3,10 @@
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+### Fixed
+
+- 숨겨진 스크린 리더 텍스트(.visually-hidden)에 시각적 스타일(밑줄)이 잘못 적용되는 문제를 방지하기 위해 일반적인 `span:last-child` 대신 특정 클래스(.entry-name)를 대상으로 호버/포커스 스타일을 적용하도록 수정했습니다.
+
 
 ### Added
 
