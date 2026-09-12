@@ -135,8 +135,8 @@ internal fun read_file_identity(file: File): FileIdentity {
 }
 
 /**
- * Exception thrown when a policy file (e.g., .html4ignore) is present but cannot be read securely.
- * This ensures fail-closed behavior to prevent TOCTOU vulnerabilities and information exposure.
+ * Raised when an existing .html4ignore policy cannot be inspected or read safely.
+ * The crawler treats this boundary exception as a signal to skip that directory.
  */
 class IgnoreFileReadException(message: String) : RuntimeException(message)
 
@@ -319,23 +319,25 @@ fun process_ignore_file(
 
     val files_to_exclude = mutableSetOf<String>()
 
-    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
-    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
-    // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
-    var ignoreFileExists = false
-    try {
-        val attrs = Files.readAttributes(ignore_file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        if (attrs != null) {
-            ignoreFileExists = true
+    val ignoreFileExists = try {
+        val attrs = Files.readAttributes(
+            ignore_file.toPath(),
+            BasicFileAttributes::class.java,
+            LinkOption.NOFOLLOW_LINKS
+        )
+        if (!attrs.isRegularFile || attrs.isSymbolicLink || !ignore_file.canRead() || attrs.size() > 1048576) {
+            throw IgnoreFileReadException("Fail-closed: .html4ignore is present but cannot be read securely.")
         }
-    } catch (e: Exception) {
-        // Does not exist
+        true
+    } catch (_: java.nio.file.NoSuchFileException) {
+        false
+    } catch (_: java.io.IOException) {
+        throw IgnoreFileReadException("Fail-closed: .html4ignore metadata cannot be read securely.")
+    } catch (_: SecurityException) {
+        throw IgnoreFileReadException("Fail-closed: .html4ignore metadata access was denied.")
     }
 
     if (ignoreFileExists) {
-        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead() || ignore_file.length() > 1048576) {
-            throw IgnoreFileReadException("Fail-closed: .html4ignore is present but cannot be read securely.")
-        }
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        try {
@@ -352,8 +354,10 @@ fun process_ignore_file(
                    }
                }
            }
-       } catch (e: java.io.IOException) {
-           throw IgnoreFileReadException("Fail-closed: .html4ignore is present but cannot be read securely.")
+       } catch (_: java.io.IOException) {
+           throw IgnoreFileReadException("Fail-closed: .html4ignore content cannot be read securely.")
+       } catch (_: SecurityException) {
+           throw IgnoreFileReadException("Fail-closed: .html4ignore content access was denied.")
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
