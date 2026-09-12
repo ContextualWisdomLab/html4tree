@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2024-05-20 - [MEDIUM] 양방향 텍스트(BiDi) 스푸핑 취약점 수정
-**Vulnerability:** 파일 이름 및 디렉토리 이름과 같은 사용자 제어 입력값에 대한 양방향 텍스트 렌더링 검사 부재로 인해 HTML 문서 내에서 파일 확장자 및 레이블 방향성이 위조될 수 있는 스푸핑(Spoofing) 공격에 노출되었습니다.
-**Learning:** HTML에 사용자 제어 텍스트를 주입할 때는 입력값의 기본 방향성이 인접한 UI 텍스트 요소나 속성값을 덮어쓰지 않도록 강제 격리해야 합니다. `dir="auto"`를 사용할 수 없는 경우(예: `<title>`이나 `title=""` 속성 내부), 유니코드 방향성 격리 제어 문자(FSI `&#x2068;`, PDI `&#x2069;`)를 반드시 사용해야 함을 확인했습니다.
-**Prevention:** 모든 동적 HTML 생성 시, 사용자 제공 문자열을 포함하는 요소는 `dir="auto"`를 설정하여 텍스트 흐름을 격리하고, 속성 텍스트 또는 텍스트 전용 요소 내부는 FSI 및 PDI 유니코드 제어 문자로 래핑하십시오.
