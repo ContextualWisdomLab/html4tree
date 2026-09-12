@@ -15,8 +15,47 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.Assert.fail
 
 class MainTest {
+    @Test
+    fun testProcessIgnoreFileThrowsIOExceptionDuringRead() {
+        val rootDir = Files.createTempDirectory("crawl_test_io").toFile()
+        val ignoreFile = File(rootDir, ".html4ignore")
+        ignoreFile.writeText("test")
+
+        try {
+            process_ignore_file(rootDir, null, processLines = { _, _ ->
+                throw java.io.IOException("Mocked IO Exception")
+            })
+            fail("Should throw IgnoreFileReadException because of IOException")
+        } catch (e: IgnoreFileReadException) {
+            // Expected
+        }
+    }
+
+    @Test
+    fun testCrawlDirectoriesIgnoresFailClosedDirectory() {
+        val rootDir = Files.createTempDirectory("crawl_test_root").toFile()
+        val ignoreFile = File(rootDir, ".html4ignore")
+        // Create an unreadable file or too large file to trigger IgnoreFileReadException
+        val data = ByteArray(1024 * 1024 + 1)
+        ignoreFile.writeBytes(data)
+
+        val ll = LinkedList()
+        ll.push(LinkedListEntry(rootDir, 0, read_file_identity(rootDir).key))
+
+        var processedDirCount = 0
+        crawl_directories(
+            ll = ll,
+            maxLevel = -1,
+            processDirectory = { _, _, _ -> processedDirCount++ }
+        )
+
+        // Root directory should be skipped because processIgnoreFile throws IgnoreFileReadException
+        assertEquals(0, processedDirCount)
+    }
+
     private lateinit var tempDir: File
 
     private fun createMockAttributes(isDir: Boolean, isSymlink: Boolean): BasicFileAttributes {
@@ -294,9 +333,12 @@ class MainTest {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("test1.txt\ntest2.txt")
 
-        val excluded = process_ignore_file(tempDir, arrayOf("test1.txt", "test3.txt"))
+        val excluded = process_ignore_file(tempDir, arrayOf("test1.txt", "test3.txt", ".html4ignore"))
+
+        assertTrue(excluded.contains("test1.txt"))
+        assertFalse(excluded.contains("test2.txt"))
         assertTrue(excluded.contains("index.html"))
-        assertEquals(18, excluded.size) // index.html + 16 default sensitive + test1.txt
+        assertEquals(18, excluded.size) // .html4ignore is already part of default sensitive files
     }
 
     @Test
@@ -660,20 +702,17 @@ class MainTest {
 
     @Test
     fun testProcessIgnoreFileFailsClosedForMalformedDirectoryName() {
-        val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.writeText("*.txt")
+        val tempDir = Files.createTempDirectory("html4tree-malformed-dir-").toFile()
+        val ignoreFile = tempDir.resolve(".html4ignore")
+        ignoreFile.writeText("secret.txt")
         val malformedName = "bad\u0000name.txt"
 
-        val excluded = process_ignore_file(
-            tempDir,
-            arrayOf("valid.txt", malformedName)
-        )
-
-        assertTrue(excluded.contains("valid.txt"))
-        assertTrue(
-            excluded.contains(malformedName),
-            "an entry that cannot be parsed as a path must be excluded"
-        )
+        try {
+            val excluded = process_ignore_file(tempDir, arrayOf("secret.txt", malformedName, ".html4ignore"))
+            assertTrue(malformedName in excluded, "Should gracefully exclude malformed paths to prevent bypasses")
+        } catch (e: IgnoreFileReadException) {
+            fail("Should not have failed closed if the ignore file is completely valid and readable.")
+        }
     }
 
     @Test
@@ -718,9 +757,12 @@ class MainTest {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        try {
+            process_ignore_file(tempDir, null)
+            fail("Should throw IgnoreFileReadException because .html4ignore is a directory")
+        } catch (e: IgnoreFileReadException) {
+            // Expected
+        }
     }
 
     @Test
@@ -762,10 +804,12 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        try {
+            process_ignore_file(tempDir, null)
+            fail("Should throw IgnoreFileReadException because .html4ignore is a symlink")
+        } catch (e: IgnoreFileReadException) {
+            // Expected
+        }
     }
 
     @Test
@@ -777,10 +821,12 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        try {
+            process_ignore_file(tempDir, null)
+            fail("Should throw IgnoreFileReadException because .html4ignore is too large")
+        } catch (e: IgnoreFileReadException) {
+            // Expected
+        }
     }
 
     @Test
