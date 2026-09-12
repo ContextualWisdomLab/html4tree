@@ -36,7 +36,7 @@ class IgnoreFileSecurityTest {
             val excluded = process_ignore_file(
                 rootDir,
                 arrayOf("plain.txt"),
-                readPolicyAttributes = { throw NoSuchFileException(it.path) },
+                readPolicyAttributes = { throw NoSuchFileException(it.path) }
             )
 
             assertTrue("index.html" in excluded)
@@ -53,7 +53,7 @@ class IgnoreFileSecurityTest {
             val excluded = process_ignore_file(
                 rootDir,
                 arrayOf("plain.txt"),
-                readPolicyAttributes = { throw NotDirectoryException(it.path) },
+                readPolicyAttributes = { throw NotDirectoryException(it.path) }
             )
 
             assertTrue("index.html" in excluded)
@@ -71,7 +71,7 @@ class IgnoreFileSecurityTest {
                 process_ignore_file(
                     rootDir,
                     arrayOf("plain.txt"),
-                    readPolicyAttributes = { throw IOException("metadata read denied") },
+                    readPolicyAttributes = { throw IOException("metadata read denied") }
                 )
             }
 
@@ -89,7 +89,7 @@ class IgnoreFileSecurityTest {
                 process_ignore_file(
                     rootDir,
                     arrayOf("plain.txt"),
-                    readPolicyAttributes = { throw SecurityException("metadata access denied") },
+                    readPolicyAttributes = { throw SecurityException("metadata access denied") }
                 )
             }
 
