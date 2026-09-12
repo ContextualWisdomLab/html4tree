@@ -308,10 +308,8 @@ fun String.urlEncodePath(): String {
 fun process_ignore_file(
     curr_dir: File,
     dirFilesNames: Array<String>? = null,
-    readPolicyAttributes: (File) -> BasicFileAttributes = { file ->
-        Files.readAttributes(file.toPath(), BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-    },
-    processLines: (File, (Sequence<String>) -> Unit) -> Unit = { file, block -> file.useLines { block(it) } }
+    processLines: (File, (Sequence<String>) -> Unit) -> Unit = { file, block -> file.useLines { block(it) } },
+    readAttributes: (java.nio.file.Path) -> java.nio.file.attribute.BasicFileAttributes = { path -> Files.readAttributes(path, java.nio.file.attribute.BasicFileAttributes::class.java, java.nio.file.LinkOption.NOFOLLOW_LINKS) }
 ): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -323,14 +321,12 @@ fun process_ignore_file(
     val files_to_exclude = mutableSetOf<String>()
 
     val ignoreFileExists = try {
-        val attrs = readPolicyAttributes(ignore_file)
+        val attrs = readAttributes(ignore_file.toPath())
         if (!attrs.isRegularFile || attrs.isSymbolicLink || !ignore_file.canRead() || attrs.size() > 1048576) {
             throw IgnoreFileReadException("Fail-closed: .html4ignore is present but cannot be read securely.")
         }
         true
     } catch (_: java.nio.file.NoSuchFileException) {
-        false
-    } catch (_: java.nio.file.NotDirectoryException) {
         false
     } catch (_: java.io.IOException) {
         throw IgnoreFileReadException("Fail-closed: .html4ignore metadata cannot be read securely.")

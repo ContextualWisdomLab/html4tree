@@ -25,9 +25,9 @@ class MainTest {
         ignoreFile.writeText("test")
 
         try {
-            process_ignore_file(rootDir, null) { _, _ ->
+            process_ignore_file(rootDir, null, processLines = { _, _ ->
                 throw java.io.IOException("Mocked IO Exception")
-            }
+            })
             fail("Should throw IgnoreFileReadException because of IOException")
         } catch (e: IgnoreFileReadException) {
             // Expected
