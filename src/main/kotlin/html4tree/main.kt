@@ -331,6 +331,8 @@ fun process_ignore_file(
         true
     } catch (_: java.nio.file.NoSuchFileException) {
         false
+    } catch (_: java.nio.file.NotDirectoryException) {
+        false
     } catch (_: java.io.IOException) {
         throw IgnoreFileReadException("Fail-closed: .html4ignore metadata cannot be read securely.")
     } catch (_: SecurityException) {
