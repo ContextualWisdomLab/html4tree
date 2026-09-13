@@ -232,30 +232,42 @@ fun String.isHiddenFile(): Boolean {
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
+private val ESCAPE_MAP = Array<String?>(128) { null }.apply {
+    this['&'.toInt()] = "&amp;"
+    this['<'.toInt()] = "&lt;"
+    this['>'.toInt()] = "&gt;"
+    this['"'.toInt()] = "&quot;"
+    this['\''.toInt()] = "&#x27;"
+    this['`'.toInt()] = "&#x60;"
+}
+
 fun String.escapeHtml(): String {
-    var sb: StringBuilder? = null
+    // ⚡ Bolt Performance Optimization: Fast-path check and O(1) array lookup
+    // Avoids branch prediction misses and StringBuilder allocations for strings without escaped chars.
+    var firstIndex = -1
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
-        if (replacement != null) {
-            if (sb == null) {
-                sb = StringBuilder(this.length + 16)
-                sb.append(this as CharSequence, 0, i)
-            }
-            sb.append(replacement)
-        } else {
-            sb?.append(c)
+        val cInt = c.toInt()
+        if (cInt < 128 && ESCAPE_MAP[cInt] != null) {
+            firstIndex = i
+            break
         }
     }
-    return sb?.toString() ?: this
+    if (firstIndex == -1) return this
+
+    val sb = java.lang.StringBuilder(this.length + 16)
+    sb.append(this as CharSequence, 0, firstIndex)
+    for (i in firstIndex until this.length) {
+        val c = this[i]
+        val cInt = c.toInt()
+        val replacement = if (cInt < 128) ESCAPE_MAP[cInt] else null
+        if (replacement != null) {
+            sb.append(replacement)
+        } else {
+            sb.append(c)
+        }
+    }
+    return sb.toString()
 }
 
 fun String.urlEncodePath(): String {
