@@ -137,7 +137,7 @@ class GeneratedIndexReadabilityTest {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
         val style = emittedStyle()
-        val completeTargetRule = Regex("""a:hover, a:focus-visible \{([\s\S]*?)\}""")
+        val completeTargetRule = Regex("""a:hover, a:focus-visible, a:active \{([\s\S]*?)\}""")
             .find(style)
             ?.groupValues
             ?.get(1)
@@ -147,7 +147,7 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover span:last-child, a:focus-visible span:last-child {
+                a:hover span:last-child, a:focus-visible span:last-child, a:active span:last-child {
                   text-decoration: underline;
                 }
                 """.trimIndent()

@@ -51,12 +51,12 @@ a {
   border-radius: 4px;
   transition: background-color 0.2s ease, outline-color 0.2s ease;
 }
-a:hover, a:focus-visible {
+a:hover, a:focus-visible, a:active {
   background-color: #f6f8fa;
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
-a:hover span:last-child, a:focus-visible span:last-child {
+a:hover span:last-child, a:focus-visible span:last-child, a:active span:last-child {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -94,7 +94,7 @@ li + li {
   a {
     color: #58a6ff;
   }
-  a:hover, a:focus-visible {
+  a:hover, a:focus-visible, a:active {
     background-color: #161b22;
     outline-color: #58a6ff;
   }
