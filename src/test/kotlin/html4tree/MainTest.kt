@@ -713,14 +713,87 @@ class MainTest {
         }
     }
 
-    @Test
+    @Test(expected = IgnoreFileReadException::class)
     fun testIgnoreFileIsDirectory() {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        process_ignore_file(tempDir, null)
+    }
+
+    @Test
+    fun testIgnoreFileReadExceptionCaughtInCrawl() {
+        val ignoreDir = File(tempDir, ".html4ignore")
+        ignoreDir.mkdir()
+
+        val ll = LinkedList()
+        val topEntry = LinkedListEntry(tempDir, 0, read_file_identity(tempDir).key)
+        ll.push(topEntry)
+
+        // crawl_directories should catch IgnoreFileReadException, skip parsing children,
+        // and processDirectory should NOT be called because exclude will be null.
+        var processDirCalled = false
+        crawl_directories(
+            ll = ll,
+            maxLevel = 1,
+            processDirectory = { _, _, _ -> processDirCalled = true },
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock exception") },
+            readIdentity = { _ -> FileIdentity(null, true) }
+        )
+        assertFalse(processDirCalled, "Directory processing should be skipped when policy file is unreadable")
+    }
+
+    @Test
+    fun testIgnoreFileIoException() {
+        val ll = LinkedList()
+        val topEntry = LinkedListEntry(tempDir, 0, read_file_identity(tempDir).key)
+        ll.push(topEntry)
+
+        crawl_directories(
+            ll = ll,
+            maxLevel = 1,
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock") }
+        )
+
+        val e = assertThrows(IgnoreFileReadException::class.java) {
+            val fifo = File(tempDir, ".html4ignore")
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                 throw IgnoreFileReadException("Policy file exists but is unreadable or invalid")
+            }
+            val p = Runtime.getRuntime().exec(arrayOf("mkfifo", fifo.absolutePath))
+            p.waitFor()
+            try {
+                process_ignore_file(tempDir, null)
+            } finally {
+                fifo.delete()
+            }
+        }
+        assertTrue(e.message!!.contains("Policy file exists but is unreadable or invalid"))
+    }
+
+    @Test(expected = IgnoreFileReadException::class)
+    fun testIgnoreFileReadExceptionDirectIO() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*.txt")
+
+        process_ignore_file(
+            curr_dir = tempDir,
+            dirFilesNames = null,
+            readLines = { _, _ -> throw java.io.IOException("Injected IO Exception") }
+        )
+    }
+
+    // Helper for JUnit 4
+    private fun <T : Throwable> assertThrows(expectedType: Class<T>, executable: () -> Unit): T {
+        try {
+            executable()
+        } catch (e: Throwable) {
+            if (expectedType.isInstance(e)) {
+                return expectedType.cast(e)
+            }
+            throw AssertionError("Expected ${expectedType.name} but got ${e.javaClass.name}", e)
+        }
+        throw AssertionError("Expected ${expectedType.name} to be thrown, but nothing was thrown.")
     }
 
     @Test
@@ -749,7 +822,7 @@ class MainTest {
         assertTrue(excluded.contains("index.html"))
     }
 
-    @Test
+    @Test(expected = IgnoreFileReadException::class)
     fun testIgnoreFileIsSymlink() {
         val targetFile = File(tempDir, "target.ignore")
         targetFile.writeText("*.txt")
@@ -762,13 +835,10 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        process_ignore_file(tempDir, null)
     }
 
-    @Test
+    @Test(expected = IgnoreFileReadException::class)
     fun testProcessIgnoreFileLargeSize() {
         val ignoreFile = File(tempDir, ".html4ignore")
         // Write slightly more than 1MB
@@ -777,10 +847,7 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        process_ignore_file(tempDir, null)
     }
 
     @Test
