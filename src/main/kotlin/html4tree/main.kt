@@ -56,7 +56,7 @@ a:hover, a:focus-visible {
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
-a:hover span:last-child, a:focus-visible span:last-child {
+a:hover span:nth-child(2), a:focus-visible span:nth-child(2) {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
