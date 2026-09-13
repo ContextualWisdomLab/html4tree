@@ -570,6 +570,14 @@ class MainTest {
     }
 
     @Test
+    fun testGoTooLongDir() {
+        assertFailsWith<IllegalArgumentException> {
+            val longPath = "a".repeat(4097)
+            go(longPath, -1)
+        }
+    }
+
+    @Test
     fun testGoRejectsRootDirectory() {
         assertFailsWith<IllegalArgumentException> {
             go(File("/").absolutePath, -1)
