@@ -1,5 +1,9 @@
 # Changelog
 
+### Security Fixes
+- 양방향(BiDi) 텍스트 스푸핑 취약점 수정: 사용자 입력 텍스트에 HTML 방향성 고립을 적용하여 악의적인 RTL(Right-To-Left) 파일 이름으로 인한 경로 노출 및 조작을 방지
+
+
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
