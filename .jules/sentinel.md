@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-27 - [topDir 경로 길이에 대한 제한 누락]
+**Vulnerability:** go() 함수에 전달되는 topDir 인자에 대한 길이 제한이 없어 OOM이나 DoS 공격에 취약할 수 있음.
+**Learning:** 외부에서 전달되는 경로나 문자열 입력의 경우 시스템 자원을 고갈시키지 않도록 항상 길이를 제한해야 함.
+**Prevention:** 파일 경로나 중요 인자를 다룰 때는 require(path.length <= MAX_LENGTH) 와 같은 방식으로 입력 길이를 검증할 것.
