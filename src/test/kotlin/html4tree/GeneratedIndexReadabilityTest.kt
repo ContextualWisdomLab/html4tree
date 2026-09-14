@@ -44,7 +44,7 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span class=\"entry-label\" aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
@@ -147,13 +147,28 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover span:nth-last-child(2), a:focus-visible span:nth-last-child(2) {
+                a:hover span.entry-label, a:focus-visible span.entry-label {
                   text-decoration: underline;
                 }
                 """.trimIndent()
             )
         )
         assertTrue(style.contains("@media (prefers-reduced-motion: reduce)"))
+    }
+
+    @Test
+    fun hoverUnderlineTargetsVisibleTextAndIgnoresHiddenLabel() {
+        val linkedFile = File(temporaryDirectory, "file.txt").apply { writeText("content") }
+        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(linkedFile))
+
+        val generatedHtml = generatedHtml()
+        val parentLink = Regex("""<a[^>]*href="\./\.\."[^>]*>([\s\S]*?)</a>""").find(generatedHtml)?.groupValues?.get(1)
+        assertNotNull(parentLink)
+        assertTrue(parentLink.endsWith("""<span class="visually-hidden">상위 디렉토리로 이동</span>"""))
+
+        val fileLink = Regex("""<a[^>]*href="\./file\.txt"[^>]*>([\s\S]*?)</a>""").find(generatedHtml)?.groupValues?.get(1)
+        assertNotNull(fileLink)
+        assertTrue(fileLink.endsWith("""<span class="visually-hidden">파일</span>"""))
     }
 
     @Test
