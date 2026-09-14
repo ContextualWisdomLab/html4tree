@@ -159,7 +159,8 @@ class GeneratedIndexReadabilityTest {
     @Test
     fun hoverUnderlineTargetsVisibleTextAndIgnoresHiddenLabel() {
         val linkedFile = File(temporaryDirectory, "file.txt").apply { writeText("content") }
-        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(linkedFile))
+        val linkedDir = File(temporaryDirectory, "dir").apply { mkdir() }
+        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(linkedFile, linkedDir))
 
         val generatedHtml = generatedHtml()
         val parentLink = Regex("""<a[^>]*href="\./\.\."[^>]*>([\s\S]*?)</a>""").find(generatedHtml)?.groupValues?.get(1)
@@ -169,6 +170,10 @@ class GeneratedIndexReadabilityTest {
         val fileLink = Regex("""<a[^>]*href="\./file\.txt"[^>]*>([\s\S]*?)</a>""").find(generatedHtml)?.groupValues?.get(1)
         assertNotNull(fileLink)
         assertTrue(fileLink.endsWith("""<span class="visually-hidden">파일</span>"""))
+
+        val dirLink = Regex("""<a[^>]*href="\./dir/"[^>]*>([\s\S]*?)</a>""").find(generatedHtml)?.groupValues?.get(1)
+        assertNotNull(dirLink)
+        assertTrue(dirLink.endsWith("""<span class="visually-hidden">디렉토리</span>"""))
     }
 
     @Test
