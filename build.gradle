@@ -3,7 +3,6 @@ buildscript {
 
     repositories {
        mavenCentral()
-        google()
     }
     dependencies {
        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -20,7 +19,6 @@ defaultTasks 'build'
 
 repositories {
     mavenCentral()
-        google()
 }
 
 dependencies {
