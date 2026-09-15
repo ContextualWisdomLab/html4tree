@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Performance**: 문자열의 `escapeHtml` 핫 루프 최적화 (O(1) 배열 조회) 및 `isHiddenFile` 함수 내 객체 할당(sequence materialization) 제거
+
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]

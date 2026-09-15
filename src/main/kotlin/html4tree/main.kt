@@ -223,28 +223,29 @@ internal fun crawl_directories(
 }
 
 fun String.isHiddenFile(): Boolean {
-    return when (firstOrNull()) {
-        '.', '\u3002', '\uFF0E', '\uFF61' -> true
-        else -> false
-    }
+    if (this.isEmpty()) return false
+    val c = this[0]
+    return c == '.' || c == '\u3002' || c == '\uFF0E' || c == '\uFF61'
 }
 
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
+private val ESCAPE_HTML_MAP = Array<String?>(128) { null }.apply {
+    this['&'.toInt()] = "&amp;"
+    this['<'.toInt()] = "&lt;"
+    this['>'.toInt()] = "&gt;"
+    this['"'.toInt()] = "&quot;"
+    this['\''.toInt()] = "&#x27;"
+    this['`'.toInt()] = "&#x60;"
+}
+
 fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        val cInt = c.toInt()
+        val replacement = if (cInt < 128) ESCAPE_HTML_MAP[cInt] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
