@@ -950,7 +950,7 @@ class MainTest {
         for (c in bidiChars) {
             val escaped = c.toString().escapeHtml()
             val expected = "\\\\" + String.format("u%04X", c.toInt())
-            assertTrue(escaped.contains(expected) || escaped.contains("\\\\u" + String.format("%04X", c.toInt())))
+            assertTrue(escaped.contains(expected))
         }
     }
 
