@@ -53,4 +53,38 @@ class IgnoreFileReadExceptionTest {
         }
         assertTrue("Expected IgnoreFileReadException to be thrown on I/O error", thrown)
     }
+
+    @Test
+    fun testCrawlDirectoriesCatchesIgnoreFileReadException() {
+        val ll = LinkedList()
+        val entry = LinkedListEntry(tempDir, 0)
+        ll.push(entry)
+
+        var processed = false
+
+        crawl_directories(
+            ll,
+            maxLevel = -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("Simulated") },
+            listFiles = { emptyArray() },
+            readAttributes = { file ->
+                // Return mock attributes that look like a directory
+                object : java.nio.file.attribute.BasicFileAttributes {
+                    override fun lastModifiedTime() = java.nio.file.attribute.FileTime.fromMillis(0)
+                    override fun lastAccessTime() = java.nio.file.attribute.FileTime.fromMillis(0)
+                    override fun creationTime() = java.nio.file.attribute.FileTime.fromMillis(0)
+                    override fun isRegularFile() = false
+                    override fun isDirectory() = true
+                    override fun isSymbolicLink() = false
+                    override fun isOther() = false
+                    override fun size() = 0L
+                    override fun fileKey() = "mock-key"
+                }
+            },
+            readIdentity = { FileIdentity("mock-key", true) }
+        )
+
+        assertFalse("Directory should not be processed if IgnoreFileReadException is thrown", processed)
+    }
 }

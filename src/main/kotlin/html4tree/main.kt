@@ -207,10 +207,11 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = try {
-            processIgnoreFile(lle.file, dirFilesNames)
-        } catch (e: IgnoreFileReadException) {
-            null
+
+        var exclude: Set<String>? = null
+        try {
+            exclude = processIgnoreFile(lle.file, dirFilesNames)
+        } catch (_: IgnoreFileReadException) {
         }
 
         if (exclude != null) {
