@@ -44,13 +44,13 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span class=\"entry-label\" aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
 
         assertTrue(parentIndex >= 0)
-        assertTrue(parentIndex < firstIndex, "parentIndex >= firstIndex. parentIndex=$parentIndex, firstIndex=$firstIndex")
+        assertTrue(parentIndex < firstIndex)
         assertTrue(firstIndex < middleIndex)
         assertTrue(middleIndex < lastIndex)
         assertFalse(generatedHtml.contains("이 디렉토리는 비어 있습니다."))
@@ -147,7 +147,7 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover .entry-label, a:focus-visible .entry-label {
+                a:hover span:last-child, a:focus-visible span:last-child {
                   text-decoration: underline;
                 }
                 """.trimIndent()
