@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-08-25 - [MEDIUM] 경로 길이 제한 누락으로 인한 DoS 취약점 완화
+**Vulnerability:** 파일 시스템 API로 전달되는 사용자 입력(`topDir`)에 대한 길이 제한이 없어, 매우 긴 경로를 입력할 경우 파일 시스템 작업 중 리소스 고갈(OOM/DoS)이 발생할 수 있습니다.
+**Learning:** 크롤링의 시작점이 되는 경로와 같이 통제되지 않은 문자열이 I/O 작업에 사용될 때는 반드시 사전에 길이를 제한해야 애플리케이션의 리소스를 보호할 수 있습니다.
+**Prevention:** 파일 시스템 탐색 또는 처리 함수 시작 시 `require(topDir.length <= 4096)`와 같이 입력 문자열의 최대 길이 경계를 명시적으로 강제하십시오.
