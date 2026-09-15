@@ -73,7 +73,3 @@
 ## 2026-08-17 - 브라우저 번역과 화면 판독기의 호환성을 위한 텍스트 처리
 **Learning:** `aria-label` 속성으로 지정된 화면 판독기용 대체 텍스트는 Chrome Translate 등 브라우저 번역 도구에 의해 번역되지 않는 경우가 많습니다. 이로 인해 문서 언어가 변환되어도 스크린 리더에서는 원본 언어(예: 영어)로 읽혀 다국어 접근성이 저하됩니다.
 **Action:** 화면 판독기를 위한 숨겨진 설명 텍스트를 제공할 때 `aria-label` 대신 CSS `.visually-hidden` 클래스를 적용한 `<span>` 요소를 사용하여, 브라우저가 일반 텍스트로 인식하고 번역할 수 있도록 하여 다국어 접근성 호환성을 확보하십시오.
-
-## 2024-09-13 - Add active state for links
-**Learning:** Links only had `:hover` and `:focus-visible` states. Without an `:active` state, users don't receive immediate visual feedback when they physically click or tap on a link, which makes the UI feel less responsive and degrades the overall UX.
-**Action:** Add `:active` pseudo-class to links, matching the styles of `:hover` and `:focus-visible` to ensure users get immediate visual confirmation upon interaction.

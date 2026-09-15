@@ -44,7 +44,7 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span class=\"entry-name\" aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
@@ -137,7 +137,7 @@ class GeneratedIndexReadabilityTest {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
         val style = emittedStyle()
-        val completeTargetRule = Regex("""a:hover, a:focus-visible, a:active \{([\s\S]*?)\}""")
+        val completeTargetRule = Regex("""a:hover, a:focus-visible \{([\s\S]*?)\}""")
             .find(style)
             ?.groupValues
             ?.get(1)
@@ -147,7 +147,7 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover .entry-name, a:focus-visible .entry-name, a:active .entry-name {
+                a:hover span:last-child, a:focus-visible span:last-child {
                   text-decoration: underline;
                 }
                 """.trimIndent()
