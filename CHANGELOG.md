@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### 변경 사항 (Changed)
+- (UX/접근성) 스크린 리더용 숨김 텍스트가 추가된 후 발생한 호버 및 포커스 시 링크 밑줄 스타일링이 깨지는 문제를 해결하기 위해, CSS 선택자를 `span:last-child`에서 `.entry-name` 클래스로 변경하고 텍스트 내용에 클래스를 적용했습니다.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
