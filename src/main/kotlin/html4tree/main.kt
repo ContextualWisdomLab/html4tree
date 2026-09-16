@@ -200,20 +200,27 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = processIgnoreFile(lle.file, dirFilesNames)
+        var exclude: Set<String>? = null
+        try {
+            exclude = processIgnoreFile(lle.file, dirFilesNames)
+        } catch (e: IgnoreFileReadException) {
+            // Fail-closed: skip processing and traversing this directory
+        }
 
-        if(maxLevel == -1 || currentLevel <= maxLevel)
-           processDirectory(lle.file, exclude, dirFiles)
+        if (exclude != null) {
+            if(maxLevel == -1 || currentLevel <= maxLevel)
+               processDirectory(lle.file, exclude, dirFiles)
 
-        if(maxLevel == -1 || currentLevel < maxLevel) {
-            dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
-                // by checking cheap in-memory string exclusion rules first
-                if(!it.name.isHiddenFile() && it.name !in exclude) {
-                    val childAttrs = readAttributes(it)
-                    if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
-                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
+            if(maxLevel == -1 || currentLevel < maxLevel) {
+                dirFiles?.forEach {
+                    // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                    // by checking cheap in-memory string exclusion rules first
+                    if(!it.name.isHiddenFile() && it.name !in exclude) {
+                        val childAttrs = readAttributes(it)
+                        if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
+                            val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                            ll.push(childEntry)
+                        }
                     }
                 }
             }
@@ -293,6 +300,17 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
+/**
+ * Thrown when a security policy file (e.g., .html4ignore) exists but cannot be safely read.
+ * Enforces fail-closed behavior to mitigate TOCTOU vulnerabilities and prevent policy bypasses.
+ */
+class IgnoreFileReadException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+/**
+ * Processes the ignore file in the current directory to determine excluded files.
+ * Enforces fail-closed behavior: if a policy file exists but cannot be safely read,
+ * an IgnoreFileReadException is thrown to prevent TOCTOU vulnerabilities.
+ */
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -303,13 +321,16 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
-    // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
-    // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지
-    // 보안 향상: 권한이 없는 파일 접근 시 발생하는 예외(DoS)를 방지하기 위해 canRead() 추가 확인
-    if(ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && ignore_file.canRead() && ignore_file.length() <= 1048576){
+    if (ignore_file.exists()) {
+        // 보안 향상: Fail-closed 처리. 파일이 존재하지만 안전하게 읽을 수 없으면 예외를 발생시켜 정책 우회를 방지합니다.
+        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead() || ignore_file.length() > 1048576) {
+            throw IgnoreFileReadException("Policy file exists but cannot be safely read")
+        }
+
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
+       try {
+           ignore_file.useLines { lines ->
            for ((lineIndex, it) in lines.withIndex()) {
                // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                if (lineIndex >= 1000) break
@@ -321,6 +342,9 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                    }
                }
            }
+           }
+       } catch (e: java.io.IOException) {
+           throw IgnoreFileReadException("Failed to read policy file due to IOException", e)
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
