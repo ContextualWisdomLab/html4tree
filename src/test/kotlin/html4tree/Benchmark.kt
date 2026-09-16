@@ -3,7 +3,8 @@ package html4tree
 import kotlin.system.measureTimeMillis
 
 object Benchmark {
-    @JvmStatic fun main(args: Array<String>) {
+    @JvmStatic
+    fun main(args: Array<String>) {
         val testStr = "<script>alert(\"XSS & 'code' \\`here\\`\")</script>".repeat(100)
 
         // Warmup
