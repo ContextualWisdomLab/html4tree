@@ -231,21 +231,19 @@ fun String.isHiddenFile(): Boolean {
 // ⚡ Bolt Performance Optimization: Single-pass loop with lazy StringBuilder
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
-private val ESCAPE_HTML_MAP = Array<String?>(128) { null }.apply {
-    this['&'.toInt()] = "&amp;"
-    this['<'.toInt()] = "&lt;"
-    this['>'.toInt()] = "&gt;"
-    this['"'.toInt()] = "&quot;"
-    this['\''.toInt()] = "&#x27;"
-    this['`'.toInt()] = "&#x60;"
-}
-
 fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val cInt = c.toInt()
-        val replacement = if (cInt < 128) ESCAPE_HTML_MAP[cInt] else null
+        val replacement = when (c) {
+            '&' -> "&amp;"
+            '<' -> "&lt;"
+            '>' -> "&gt;"
+            '"' -> "&quot;"
+            '\'' -> "&#x27;"
+            '`' -> "&#x60;"
+            else -> null
+        }
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
