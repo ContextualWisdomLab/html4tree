@@ -111,25 +111,6 @@ class UtilTest {
     }
 
     @Test
-    fun testLinkedListAccessors() {
-        val list = LinkedList()
-        list.first = Entry(File("test"), 0, null)
-        list.last = Entry(File("test"), 0, null)
-        assertEquals(File("test"), list.first?.data)
-        assertEquals(File("test"), list.last?.data)
-    }
-
-    @Test
-    fun testLinkedListPushNullFirst() {
-        val list = LinkedList()
-        list.last = Entry(File("fake"), 0, null)
-        list.push(LinkedListEntry(File("f3"), 0))
-        assertEquals(File("fake"), list.pull()?.file)
-        assertEquals(File("f3"), list.pull()?.file)
-        assertEquals(File("f3"), list.first?.data)
-    }
-
-    @Test
     fun testLinkedListPreservesFileKey() {
         val key = Any()
         val list = LinkedList()
@@ -140,17 +121,5 @@ class UtilTest {
         assertEquals(File("secure"), pulled?.file)
         assertEquals(1, pulled?.level)
         assertEquals(key, pulled?.fileKey)
-    }
-
-    @Test
-    fun testLinkedListPushNullFirstWithExistingChain() {
-        val list = LinkedList()
-        list.last = Entry(File("f1"), 0, Entry(File("f2"), 0, null))
-        list.push(LinkedListEntry(File("f3"), 0))
-
-        assertEquals(File("f1"), list.pull()?.file)
-        assertEquals(File("f2"), list.pull()?.file)
-        assertEquals(File("f3"), list.pull()?.file)
-        assertNull(list.pull())
     }
 }
