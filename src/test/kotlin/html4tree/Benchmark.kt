@@ -1,6 +1,8 @@
 package html4tree
 
 import kotlin.system.measureTimeMillis
+import org.junit.Test
+import kotlin.test.assertEquals
 
 object Benchmark {
     @JvmStatic
@@ -18,5 +20,14 @@ object Benchmark {
             }
         }
         println("escapeHtml time: $time ms")
+    }
+}
+
+class EscapeHtmlTest {
+    @Test
+    fun testEscapeHtml() {
+        val input = "<script>alert(\"XSS & 'code' \\`here\\`\")</script>"
+        val expected = "&lt;script&gt;alert(&quot;XSS &amp; &#x27;code&#x27; \\&#x60;here\\&#x60;&quot;)&lt;/script&gt;"
+        assertEquals(expected, input.escapeHtml())
     }
 }
