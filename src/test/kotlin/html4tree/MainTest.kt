@@ -813,42 +813,6 @@ class MainTest {
     }
 
     @Test
-    fun testProcessIgnoreFileThrowsIOException() {
-        val ignoreFile = File(tempDir, ".html4ignore")
-        ignoreFile.createNewFile()
-
-        var thrown = false
-        val t = kotlin.concurrent.thread {
-            while (!Thread.currentThread().isInterrupted) {
-                // Keep changing permissions to induce a race condition (TOCTOU) during useLines
-                ignoreFile.setReadable(false)
-                ignoreFile.setReadable(true)
-            }
-        }
-        try {
-            // Attempt to process. Might occasionally fail with IgnoreFileReadException wrapping IOException
-            for (i in 0..100) {
-                try {
-                    process_ignore_file(tempDir, null)
-                } catch (e: IgnoreFileReadException) {
-                    if (e.cause is java.io.IOException) {
-                        thrown = true
-                        break
-                    }
-                }
-            }
-        } finally {
-            t.interrupt()
-            t.join()
-        }
-
-        // It's hard to guarantee a TOCTOU race condition in a test reliably.
-        // A better approach for 100% coverage is to mock the I/O, but we can't easily mock `File`'s extension function.
-        // Actually, if we just want coverage of the catch block, we could create a named pipe (FIFO) which canRead() returns true
-        // but blocks or throws when reading. However, on some OSes isFile returns true for pipes, on some false.
-    }
-
-    @Test
     fun testProcessIgnoreFileLongRegex() {
         val ignoreFile = File(tempDir, ".html4ignore")
         val longRegex = "*".repeat(110) // Length 110
