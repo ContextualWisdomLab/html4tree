@@ -43,6 +43,11 @@ class UtilTest {
 
         assertEquals(entry1, entry2)
         assertEquals("Entry(data=file1, level=0, next=null, fileKey=null)", entry1.toString())
+
+        // Coverage for uncovered setter and getter
+        entry1.next = entry2
+        assertEquals(entry2, entry1.next)
+        assertEquals(null, entry1.fileKey)
     }
 
     @Test
