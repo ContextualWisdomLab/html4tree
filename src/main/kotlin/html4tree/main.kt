@@ -200,20 +200,27 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = processIgnoreFile(lle.file, dirFilesNames)
+        var exclude: Set<String>? = null
+        try {
+            exclude = processIgnoreFile(lle.file, dirFilesNames)
+        } catch (e: IgnoreFileReadException) {
+            // Fail closed: skip publication and traversal for this directory
+        }
 
-        if(maxLevel == -1 || currentLevel <= maxLevel)
-           processDirectory(lle.file, exclude, dirFiles)
+        if (exclude != null) {
+            if(maxLevel == -1 || currentLevel <= maxLevel)
+               processDirectory(lle.file, exclude, dirFiles)
 
-        if(maxLevel == -1 || currentLevel < maxLevel) {
-            dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
-                // by checking cheap in-memory string exclusion rules first
-                if(!it.name.isHiddenFile() && it.name !in exclude) {
-                    val childAttrs = readAttributes(it)
-                    if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
-                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
+            if(maxLevel == -1 || currentLevel < maxLevel) {
+                dirFiles?.forEach {
+                    // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                    // by checking cheap in-memory string exclusion rules first
+                    if(!it.name.isHiddenFile() && it.name !in exclude) {
+                        val childAttrs = readAttributes(it)
+                        if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
+                            val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                            ll.push(childEntry)
+                        }
                     }
                 }
             }
@@ -293,6 +300,17 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
+/**
+ * Exception thrown when a security policy file (like .html4ignore) cannot be read securely.
+ * This enforces fail-closed behavior, preventing sensitive directory publication if
+ * the policy file becomes inaccessible due to TOCTOU or permission changes.
+ */
+class IgnoreFileReadException(message: String = "Cannot read ignore file securely") : java.io.IOException(message)
+
+/**
+ * Processes the .html4ignore file and computes the set of excluded files.
+ * If the policy file exists but cannot be read securely, throws [IgnoreFileReadException].
+ */
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -300,6 +318,11 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
 
     val ignore_file = File(ignore_file_path)
+
+    // 보안 향상: OS native 파일 존재 여부(대소문자 구별 방지) 확인을 통해 보안 정책 우회(fail-open) 방지 및 TOCTOU 발생 시 예외 발생(Fail Closed)
+    if (ignore_file.exists() && (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead())) {
+        throw IgnoreFileReadException("Cannot read ignore file securely: $ignore_file_path")
+    }
 
     val files_to_exclude = mutableSetOf<String>()
 

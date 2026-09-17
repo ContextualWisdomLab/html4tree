@@ -46,4 +46,11 @@ class CoverageTest {
         crawl_directories(ll, -1)
         assertTrue(true)
     }
+
+    @Test
+    fun testIgnoreFileReadExceptionMessage() {
+        val e = IgnoreFileReadException()
+        assertTrue(e.message?.contains("Cannot read ignore file securely") == true)
+        assertTrue(e is java.io.IOException)
+    }
 }
