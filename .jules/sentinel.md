@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-09-17 - [디렉토리 경로 길이 제한 누락으로 인한 DoS]
+**Vulnerability:** `go()` 함수에서 사용자 입력 `topDir`의 길이를 제한하지 않아, 악의적으로 매우 긴 문자열이 전달될 경우 파일 시스템 API 호출 중 OOM(Out-Of-Memory) 및 DoS(서비스 거부) 취약점이 발생할 수 있습니다.
+**Learning:** 파일 경로로 사용되는 외부 입력값은 내용 검증 뿐만 아니라 비용이 많이 드는 작업 전에 명시적으로 길이를 제한해야 시스템 자원 고갈을 방지할 수 있습니다.
+**Prevention:** 파일 시스템 작업을 수행하기 전에 항상 `require(topDir.length <= 4096)`과 같이 합리적인 경로 길이 제한을 강제하십시오.
