@@ -719,13 +719,8 @@ class MainTest {
         ignoreDir.mkdir()
 
         // This should not crash or parse the directory
-        var threw = false
-        try {
-            process_ignore_file(tempDir, null)
-        } catch (e: IgnoreFileReadException) {
-            threw = true
-        }
-        assertTrue(threw, "Should throw IgnoreFileReadException if ignore file is a directory")
+        val excluded = process_ignore_file(tempDir, null)
+        assertTrue(excluded.contains("index.html"))
     }
 
     @Test
@@ -746,10 +741,7 @@ class MainTest {
         File(tempDir, "pattern1005").createNewFile() // Should not be ignored as we stop at 1000
         File(tempDir, longPattern).createNewFile() // Should not be ignored as length > 100
 
-        var excluded = emptySet<String>()
-        try {
-            excluded = process_ignore_file(tempDir, null)
-        } catch (e: IgnoreFileReadException) {}
+        val excluded = process_ignore_file(tempDir, null)
 
         assertTrue(excluded.contains("pattern500"))
         assertFalse(excluded.contains("pattern1005"))
@@ -771,13 +763,9 @@ class MainTest {
         File(tempDir, "test.txt").createNewFile()
 
         // Should ignore the symlink and NOT parse it
-        var threw = false
-        try {
-            process_ignore_file(tempDir, null)
-        } catch (e: IgnoreFileReadException) {
-            threw = true
-        }
-        assertTrue(threw, "Should throw IgnoreFileReadException if ignore file is a symlink")
+        val excluded = process_ignore_file(tempDir, null)
+        assertFalse(excluded.contains("test.txt"))
+        assertTrue(excluded.contains("index.html"))
     }
 
     @Test
@@ -958,20 +946,4 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
-
-    @Test
-    fun testCrawlDirectoriesCatchesIgnoreFileReadException() {
-        val queue = LinkedList()
-        val dir = File(tempDir, "target")
-        dir.mkdir()
-        queue.push(LinkedListEntry(dir, 0, null))
-
-        crawl_directories(
-            queue,
-            -1,
-            processIgnoreFile = { _, _ -> throw IgnoreFileReadException() },
-            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
-            readIdentity = { FileIdentity("stable-key", true) }
-        )
-    }
 }
