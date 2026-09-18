@@ -116,6 +116,15 @@ class UtilTest {
     }
 
     @Test
+    fun testLinkedListAccessors() {
+        val list = LinkedList()
+        list.first = Entry(File("test"), 0, null)
+        list.last = Entry(File("test"), 0, null)
+        assertEquals(File("test"), list.first?.data)
+        assertEquals(File("test"), list.last?.data)
+    }
+
+    @Test
     fun testLinkedListPreservesFileKey() {
         val key = Any()
         val list = LinkedList()
