@@ -26,8 +26,8 @@ object Benchmark {
 class EscapeHtmlTest {
     @Test
     fun testEscapeHtml() {
-        val input = "<script>alert(\"XSS & 'code' \\`here\\`\")</script>"
-        val expected = "&lt;script&gt;alert(&quot;XSS &amp; &#x27;code&#x27; \\&#x60;here\\&#x60;&quot;)&lt;/script&gt;"
+        val input = "<script>alert(\"XSS & 'code' \\`here\\`\")</script>한글"
+        val expected = "&lt;script&gt;alert(&quot;XSS &amp; &#x27;code&#x27; \\&#x60;here\\&#x60;&quot;)&lt;/script&gt;한글"
         assertEquals(expected, input.escapeHtml())
     }
 }
