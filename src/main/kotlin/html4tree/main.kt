@@ -311,7 +311,14 @@ class IgnoreFileReadException(message: String, cause: Throwable? = null) : Runti
  * Enforces fail-closed behavior: if a policy file exists but cannot be safely read,
  * an IgnoreFileReadException is thrown to prevent TOCTOU vulnerabilities.
  */
-fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
+fun process_ignore_file(
+    curr_dir: File,
+    dirFilesNames: Array<String>? = null,
+    readLines: (File) -> Sequence<String> = { file ->
+        // Need to evaluate immediately before useLines closes, or collect to list.
+        file.useLines { it.toList() }.asSequence()
+    }
+): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -329,7 +336,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
-       ignore_file.useLines { lines ->
+       try {
+           val lines = readLines(ignore_file)
            for ((lineIndex, it) in lines.withIndex()) {
                // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                if (lineIndex >= 1000) break
@@ -341,6 +349,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
                    }
                }
            }
+       } catch (e: java.io.IOException) {
+           throw IgnoreFileReadException("Failed to read policy file safely", e)
        }
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.

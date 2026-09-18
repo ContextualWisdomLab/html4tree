@@ -813,6 +813,26 @@ class MainTest {
     }
 
     @Test
+    fun testProcessIgnoreFileThrowsIOException() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.createNewFile()
+
+        var thrown = false
+        try {
+            process_ignore_file(
+                curr_dir = tempDir,
+                dirFilesNames = null,
+                readLines = { _ -> throw java.io.IOException("Mock IO failure") }
+            )
+        } catch (e: IgnoreFileReadException) {
+            if (e.cause is java.io.IOException) {
+                thrown = true
+            }
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException wrapping IOException")
+    }
+
+    @Test
     fun testProcessIgnoreFileLongRegex() {
         val ignoreFile = File(tempDir, ".html4ignore")
         val longRegex = "*".repeat(110) // Length 110
