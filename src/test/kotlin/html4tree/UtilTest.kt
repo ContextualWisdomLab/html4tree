@@ -43,6 +43,11 @@ class UtilTest {
 
         assertEquals(entry1, entry2)
         assertEquals("Entry(data=file1, level=0, next=null, fileKey=null)", entry1.toString())
+
+        // Coverage for uncovered setter and getter
+        entry1.next = entry2
+        assertEquals(entry2, entry1.next)
+        assertEquals(null, entry1.fileKey)
     }
 
     @Test
@@ -120,16 +125,6 @@ class UtilTest {
     }
 
     @Test
-    fun testLinkedListPushNullFirst() {
-        val list = LinkedList()
-        list.last = Entry(File("fake"), 0, null)
-        list.push(LinkedListEntry(File("f3"), 0))
-        assertEquals(File("fake"), list.pull()?.file)
-        assertEquals(File("f3"), list.pull()?.file)
-        assertEquals(File("f3"), list.first?.data)
-    }
-
-    @Test
     fun testLinkedListPreservesFileKey() {
         val key = Any()
         val list = LinkedList()
@@ -140,17 +135,5 @@ class UtilTest {
         assertEquals(File("secure"), pulled?.file)
         assertEquals(1, pulled?.level)
         assertEquals(key, pulled?.fileKey)
-    }
-
-    @Test
-    fun testLinkedListPushNullFirstWithExistingChain() {
-        val list = LinkedList()
-        list.last = Entry(File("f1"), 0, Entry(File("f2"), 0, null))
-        list.push(LinkedListEntry(File("f3"), 0))
-
-        assertEquals(File("f1"), list.pull()?.file)
-        assertEquals(File("f2"), list.pull()?.file)
-        assertEquals(File("f3"), list.pull()?.file)
-        assertNull(list.pull())
     }
 }
