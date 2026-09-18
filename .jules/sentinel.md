@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2026-09-16 - [MEDIUM] BiDi 스푸핑 및 RTL 인젝션 완화
-**Vulnerability:** 파일 및 디렉토리 이름에 숨겨진 BiDi 제어 문자(예: `\u202E`, Right-to-Left Override)를 주입하여 악의적인 파일 확장자(.exe를 .txt처럼 보이게 등)를 숨길 수 있었고, `<title>`과 같이 `dir="auto"`가 동작하지 않는 영역에서 사용자 텍스트가 UI 컨텍스트를 오염시킬 수 있었습니다.
-**Learning:** 파일 이름 같은 사용자 입력이 HTML로 렌더링될 때, XSS만 신경 쓸 것이 아니라 양방향(BiDi) 텍스트 스푸핑에 대해서도 방어해야 합니다. 특히 BiDi 엔티티 래핑(`&#x2068;`)을 적용할 때, 반드시 변수를 HTML 이스케이프(`escapeHtml()`)한 *후에* 감싸야 합니다. 그렇지 않으면 BiDi 엔티티 자체가 잘못 이스케이프(`&amp;#x2068;`)됩니다.
-**Prevention:** HTML 이스케이프 함수에서 원시 유니코드 BiDi 제어 문자를 명시적 가시성 이스케이프(`\\u202E` 등)로 변환하여 파일 이름 조작을 차단하고, UI 컨텍스트 혼입을 막기 위해 모든 사용자 제어 텍스트(예: 파일명, 디렉토리명)를 First Strong Isolate(`&#x2068;`) 및 Pop Directional Isolate(`&#x2069;`)로 감싸십시오.
