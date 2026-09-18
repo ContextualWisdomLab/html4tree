@@ -1,3 +1,7 @@
+## [Unreleased]
+### Security
+- 🛡️ Sentinel: [HIGH] Fix BiDi text spoofing vulnerability in HTML rendering by escaping bidirectional formatting characters and isolating user-controlled file/directory names.
+
 # Changelog
 
 All notable changes to this project are documented in this file.
