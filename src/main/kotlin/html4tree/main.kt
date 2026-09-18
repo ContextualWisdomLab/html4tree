@@ -350,17 +350,21 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
+    // ⚡ Bolt Performance Optimization: Defer expensive string allocations (toLowerCase)
+    // by evaluating cheap, short-circuiting properties (isHiddenFile, endsWith) first.
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
-        if (
-            it.isHiddenFile() ||
-            normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
-            normalizedName.endsWith("~") ||
-            Constants.defaultSensitiveExtensions.any { extension ->
-                normalizedName.endsWith(extension)
-            }
-        ) {
+        if (it.isHiddenFile() || it.endsWith("~")) {
             files_to_exclude.add(it)
+        } else {
+            val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
+            if (
+                normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
+                Constants.defaultSensitiveExtensions.any { extension ->
+                    normalizedName.endsWith(extension)
+                }
+            ) {
+                files_to_exclude.add(it)
+            }
         }
     }
 
