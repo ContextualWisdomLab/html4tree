@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-25 - [.html4ignore 읽기 불가 시 보안 정책 우회 및 TOCTOU 취약점 방어]
+**Vulnerability:** `.html4ignore` 파일이 존재함에도 불구하고 권한이 없거나 읽기 불가 상태(`!canRead()`)가 되면 애플리케이션은 이를 조용히 넘어가 기본 설정만으로 실행됩니다. 공격자가 TOCTOU 스왑이나 권한 변경 등을 통해 이 파일을 읽을 수 없게 만들면, 디렉토리 인덱스에 노출되어서는 안 될 숨김 파일이나 비밀정보 파일들이 인덱스에 그대로 생성되어 보안 정책이 완전히 우회(Bypass)되는 취약점이 있습니다.
+**Learning:** 보안 정책을 강제하는 파일(예: `.html4ignore`)은 그 파일을 읽을 수 없는 것이 확인되었을 때 이를 "파일이 존재하지 않는 경우"나 "무시할 파일이 없는 경우"로 암묵적으로 신뢰하면 안 됩니다. 권한 문제나 일시적인 파일 액세스 문제는 오히려 위험한 상태임을 시사하므로, Fail-Open(기본 정책만 적용)이 아닌 Fail-Closed(실행 중단 및 예외 발생) 동작을 수행해야 합니다.
+**Prevention:** 보안 정책 파일의 존재를 확인했을 때, 그 파일이 권한 문제로 읽을 수 없다면 조용히 실패를 무시(swallow)하지 말고, `IgnoreFileReadException`과 같은 명시적인 예외를 던져 보안 정책의 완전한 우회를 차단하는 Fail-Closed 메커니즘을 구현하십시오.

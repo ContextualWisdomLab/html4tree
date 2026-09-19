@@ -296,13 +296,13 @@ fun String.urlEncodePath(): String {
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
- 
+
     val ignore_file_path = curr_dir.getAbsolutePath()+"/"+ignore_filename
 
     val ignore_file = File(ignore_file_path)
 
     // 보안 향상: TOCTOU 우회 방지를 위해, .html4ignore 파일이 디렉토리 스냅샷에 존재하지만 읽을 수 없는 경우 무시하지 않고 예외를 던져 Fail-Closed 동작을 강제합니다.
-    if (ignore_file.exists() && ignore_file.isFile && !ignore_file.canRead()) {
+    if (ignore_file.exists() && ignore_file.isFile && !Files.isSymbolicLink(ignore_file.toPath()) && !ignore_file.canRead()) {
         throw IgnoreFileReadException("Security policy file $ignore_filename exists but cannot be read. Failing closed to prevent policy bypass.")
     }
 
@@ -407,9 +407,9 @@ fun write_index_file(
         Files.deleteIfExists(tempPath)
     }
 }
- 
+
 fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array<File>? = null){
-    
+
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
 
@@ -435,9 +435,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
-""" 
+"""
 
-    val index_middle = fun():String{ 
+    val index_middle = fun():String{
         val l = StringBuilder()
 
         val filesList = dirFiles ?: curr_dir.listFiles()
@@ -477,7 +477,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         }
 
         return l.toString();
-     } 
+     }
 
    val index_bottom="""
          </ul>
