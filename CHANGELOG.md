@@ -19,6 +19,9 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- Remove a non-causal `.html4ignore` `IOException` branch after proving the
+  malformed-UTF-8 fixture is replacement-decoded and already non-throwing;
+  retain an observable exclusion-result regression instead.
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.

@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-08-19 - Malformed `.html4ignore` decoding evidence correction
+**Finding:** The proposed invalid-UTF-8 regression already passed before the source change. `File.useLines` uses the platform reader's replacement behavior, so the supplied bytes become replacement characters instead of raising `MalformedInputException`.
+**Impact:** Catching `IOException` introduced an uncovered, non-causal branch and failed the repository's 100% coverage gate without repairing a demonstrated denial of service.
+**Prevention:** Verify a security regression fails for the claimed reason before changing production code. Preserve the bounded parser and assert the observable fail-safe result rather than adding an exception branch for an operation that does not throw on malformed byte sequences.
