@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-27 - [Fix BiDi spoofing]
+**Vulnerability:** HTML attributes (`title`) and elements (`<title>`, `<h1>`) contained user-controlled text without Bidirectional text (BiDi) isolation. This could allow right-to-left override characters to spoof UI text or reverse path directions.
+**Learning:** To isolate Bidirectional (BiDi) text within HTML attributes (like `title="..."`) or elements where `dir="auto"` is invalid/inadequate (like `<title>`), wrap the user-controlled text with First Strong Isolate (FSI, `&#x2068;`) and Pop Directional Isolate (PDI, `&#x2069;`). Ensure fixed UI text remains outside these isolation boundaries.
+**Prevention:** Apply BiDi isolation specifically around variables containing user input when embedded within UI structure or messages.
