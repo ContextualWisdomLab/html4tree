@@ -16,8 +16,6 @@ All notable changes to this project are documented in this file.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
-  The underline targets the semantic visible `entry-label` rather than DOM
-  position, while assistive type/context text remains visually hidden.
 
 ### Fixed
 
