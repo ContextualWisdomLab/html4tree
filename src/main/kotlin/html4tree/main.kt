@@ -314,9 +314,8 @@ class IgnoreFileReadException(message: String, cause: Throwable? = null) : Runti
 fun process_ignore_file(
     curr_dir: File,
     dirFilesNames: Array<String>? = null,
-    readLines: (File) -> Sequence<String> = { file ->
-        // Need to evaluate immediately before useLines closes, or collect to list.
-        file.useLines { it.toList() }.asSequence()
+    processLines: (File, (Sequence<String>) -> Unit) -> Unit = { file, action ->
+        file.useLines { lines -> action(lines) }
     }
 ): Set<String> {
 
@@ -329,23 +328,23 @@ fun process_ignore_file(
     val files_to_exclude = mutableSetOf<String>()
 
     if (ignore_file.exists()) {
-        // 보안 향상: Fail-closed 처리. 파일이 존재하지만 안전하게 읽을 수 없으면 예외를 발생시켜 정책 우회를 방지합니다.
-        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead() || ignore_file.length() > 1048576) {
-            throw IgnoreFileReadException("Policy file exists but cannot be safely read")
-        }
-
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        try {
-           val lines = readLines(ignore_file)
-           for ((lineIndex, it) in lines.withIndex()) {
-               // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
-               if (lineIndex >= 1000) break
-               val pattern = it.trim()
-               if (pattern.isNotEmpty() && pattern.length <= 100) {
-                   try {
-                       ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
-                   } catch (_: IllegalArgumentException) {
+           processLines(ignore_file) { lines ->
+               // 보안 향상: Fail-closed 처리. 파일을 먼저 열고 속성을 검사하여 TOCTOU 취약점을 방지합니다.
+               if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || ignore_file.length() > 1048576) {
+                   throw IgnoreFileReadException("Policy file exists but cannot be safely read")
+               }
+               for ((lineIndex, it) in lines.withIndex()) {
+                   // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
+                   if (lineIndex >= 1000) break
+                   val pattern = it.trim()
+                   if (pattern.isNotEmpty() && pattern.length <= 100) {
+                       try {
+                           ignored_matchers.add(java.nio.file.FileSystems.getDefault().getPathMatcher("glob:$pattern"))
+                       } catch (_: IllegalArgumentException) {
+                       }
                    }
                }
            }

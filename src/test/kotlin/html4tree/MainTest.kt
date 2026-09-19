@@ -822,7 +822,7 @@ class MainTest {
             process_ignore_file(
                 curr_dir = tempDir,
                 dirFilesNames = null,
-                readLines = { _ -> throw java.io.IOException("Mock IO failure") }
+                processLines = { _, _ -> throw java.io.IOException("Mock IO failure") }
             )
         } catch (e: IgnoreFileReadException) {
             if (e.cause is java.io.IOException) {
