@@ -223,7 +223,8 @@ internal fun crawl_directories(
 }
 
 fun String.isHiddenFile(): Boolean {
-    return when (firstOrNull()) {
+    if (this.isEmpty()) return false
+    return when (this[0]) {
         '.', '\u3002', '\uFF0E', '\uFF61' -> true
         else -> false
     }
