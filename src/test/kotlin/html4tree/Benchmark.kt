@@ -1,5 +1,6 @@
 package html4tree
 
+import kotlin.jvm.JvmStatic
 import kotlin.system.measureTimeMillis
 import org.junit.Test
 import kotlin.test.assertEquals
