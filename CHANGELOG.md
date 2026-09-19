@@ -4,6 +4,11 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Performance
+
+- ⚡ HTML 이스케이프 함수 룩업 테이블 기반 매핑 최적화로 성능 향상
+
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
