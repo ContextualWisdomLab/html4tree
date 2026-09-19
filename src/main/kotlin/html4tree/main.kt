@@ -200,7 +200,12 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = processIgnoreFile(lle.file, dirFilesNames)
+        val exclude = try {
+            processIgnoreFile(lle.file, dirFilesNames)
+        } catch (_: java.io.IOException) {
+            lle = ll.pull()
+            continue
+        }
 
         if(maxLevel == -1 || currentLevel <= maxLevel)
            processDirectory(lle.file, exclude, dirFiles)
