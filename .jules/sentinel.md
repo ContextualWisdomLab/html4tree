@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-10-25 - [보통] 무제한 디렉토리 경로 입력으로 인한 DoS 취약점 완화
+**Vulnerability:** 파일 시스템 작업(가령 절대 경로 해석 및 디렉토리 크롤링)에 제약 없는 문자열이 입력 경로로 들어갈 경우 이를 처리하다가 메모리 부족(OOM)이나 과도한 I/O 처리로 인한 서비스 거부(DoS)가 발생할 수 있습니다.
+**Learning:** 시스템의 파일 접근 API를 호출하기 전에 외부 입력을 기반으로 하는 디렉토리 경로는 합리적인 최대 길이를 초과하지 않도록 검증해야 합니다.
+**Prevention:** 크롤링이나 접근 대상 경로(예: `topDir`)의 길이를 제한(예: 4096자)하여 경로 정규화 등 리소스 소모적인 작업이 방지되도록 하십시오.
