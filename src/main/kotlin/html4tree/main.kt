@@ -328,14 +328,16 @@ fun process_ignore_file(
     val files_to_exclude = mutableSetOf<String>()
 
     if (ignore_file.exists()) {
+        // 보안 향상: TOCTOU 및 FIFO(named pipe)를 이용한 DoS 공격을 방지하기 위해 파일 열기 전에 먼저 속성을 검사합니다.
+        // 이어서 useLines에서 발생하는 IOException을 잡아냄으로써 Race Condition 상황에 대해서도 Fail-Closed를 보장합니다.
+        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || ignore_file.length() > 1048576) {
+            throw IgnoreFileReadException("Policy file exists but cannot be safely read")
+        }
+
        val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        try {
            processLines(ignore_file) { lines ->
-               // 보안 향상: Fail-closed 처리. 파일을 먼저 열고 속성을 검사하여 TOCTOU 취약점을 방지합니다.
-               if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || ignore_file.length() > 1048576) {
-                   throw IgnoreFileReadException("Policy file exists but cannot be safely read")
-               }
                for ((lineIndex, it) in lines.withIndex()) {
                    // 줄 수 제한이 패턴 수도 함께 상한(줄당 최대 1개 패턴)하므로 별도 패턴 카운터는 불필요
                    if (lineIndex >= 1000) break
