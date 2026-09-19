@@ -342,7 +342,7 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"file1.txt 파일\""))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">디렉토리</span>"))
         assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
-        assertTrue(htmlContent.contains("file1.txt"))
+        assertTrue(htmlContent.contains("&#x2068;file1.txt&#x2069;"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
         assertFalse(htmlContent.contains("test.ignore"))
