@@ -718,9 +718,14 @@ class MainTest {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        // This should throw an IgnoreFileReadException
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown)
     }
 
     @Test
@@ -762,10 +767,14 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // This should throw an IgnoreFileReadException
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown)
     }
 
     @Test
@@ -777,10 +786,14 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // This should throw an IgnoreFileReadException
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown)
     }
 
     @Test
