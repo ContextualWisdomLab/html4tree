@@ -107,6 +107,13 @@ class MainTest {
     }
 
     @Test
+    fun testGoRejectsExtremelyLongPath() {
+        assertFailsWith<IllegalArgumentException> {
+            go("a".repeat(4097), -1)
+        }
+    }
+
+    @Test
     fun testGoEmptyDir() {
         go(tempDir.absolutePath, -1)
         val indexFile = File(tempDir, "index.html")
