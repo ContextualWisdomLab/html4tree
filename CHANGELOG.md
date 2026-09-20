@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- ⚡ Bolt Performance Optimization: `isHiddenFile` 함수 내에서 `firstOrNull()` 대신 `isEmpty()`와 인덱스 직접 접근을 사용하여 불필요한 박싱(Boxing) 할당 오버헤드 제거.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
