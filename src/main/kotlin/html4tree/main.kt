@@ -350,15 +350,19 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
-    (dirFilesNames ?: curr_dir.list())?.forEach {
+    // ⚡ Bolt Performance Optimization: Convert List to Typed Array for any{} call
+    // Calling .any{} on a List allocates an Iterator object per invocation.
+    // By converting defaultSensitiveExtensions to a typed Array, Array.any is used,
+    // which is compiled into a primitive index-based loop, completely avoiding allocation.
+    val names = dirFilesNames ?: curr_dir.list()
+    names?.forEach {
         val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
             it.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
-            Constants.defaultSensitiveExtensions.any { extension ->
-                normalizedName.endsWith(extension)
-            }
+            // Use the pre-computed array version to avoid iterator allocation
+            Constants.defaultSensitiveExtensionsArray.any { extension -> normalizedName.endsWith(extension) }
         ) {
             files_to_exclude.add(it)
         }
@@ -526,4 +530,7 @@ private object Constants {
         ".swo",
         ".swpx"
     )
+
+    @JvmField
+    val defaultSensitiveExtensionsArray = defaultSensitiveExtensions.toTypedArray()
 }
