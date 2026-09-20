@@ -233,7 +233,17 @@ fun String.isHiddenFile(): Boolean {
 // Chained `.replace()` calls allocate multiple intermediate strings.
 // A single pass over the string lazily allocating a StringBuilder is much faster.
 fun String.escapeHtml(): String {
-    var sb: StringBuilder? = null
+    var needsEscape = false
+    for (i in 0 until this.length) {
+        val c = this[i]
+        if (c == '&' || c == '<' || c == '>' || c == '"' || c == '\'' || c == '`') {
+            needsEscape = true
+            break
+        }
+    }
+    if (!needsEscape) return this
+
+    val sb = StringBuilder(this.length + 16)
     for (i in 0 until this.length) {
         val c = this[i]
         val replacement = when (c) {
@@ -246,16 +256,12 @@ fun String.escapeHtml(): String {
             else -> null
         }
         if (replacement != null) {
-            if (sb == null) {
-                sb = StringBuilder(this.length + 16)
-                sb.append(this as CharSequence, 0, i)
-            }
             sb.append(replacement)
         } else {
-            sb?.append(c)
+            sb.append(c)
         }
     }
-    return sb?.toString() ?: this
+    return sb.toString()
 }
 
 fun String.urlEncodePath(): String {
