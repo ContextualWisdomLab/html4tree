@@ -49,6 +49,12 @@ class MainTest {
         }
     }
 
+    @Test(expected = IllegalArgumentException::class)
+    fun testGoThrowsOnTooLongPath() {
+        val longPath = "a".repeat(4097)
+        go(longPath, -1)
+    }
+
     @Test
     fun testEscapeHtml() {
         assertEquals("&amp;", "&".escapeHtml())
