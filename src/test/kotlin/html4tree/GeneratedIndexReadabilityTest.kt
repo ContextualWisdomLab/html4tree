@@ -57,12 +57,12 @@ class GeneratedIndexReadabilityTest {
     }
 
     @Test
-    fun emptyDirectoryRetainsOneSemanticStatusRow() {
+    fun emptyDirectoryRetainsOneEmptyRow() {
         process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
 
         val generatedHtml = generatedHtml()
         val expectedEmptyRow =
-            """<li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>"""
+            """<li><div class="empty-dir"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>"""
 
         assertTrue(generatedHtml.contains(expectedEmptyRow))
         assertTrue(generatedHtml.indexOf(expectedEmptyRow) == generatedHtml.lastIndexOf(expectedEmptyRow))
