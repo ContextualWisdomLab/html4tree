@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-09-20 - Fix BiDi text spoofing
+**Vulnerability:** File extensions can be spoofed using Unicode Bidi_Control characters like \u202E (Right-To-Left Override).
+**Learning:** BiDi control characters allow malicious files (e.g., `exe.bat\u202E`) to display safely (e.g., as `exe.tab`). HTML encoding must explicitly make these characters visible.
+**Prevention:** Ensure HTML encoding functions replace Unicode BiDi control characters with literal escape sequences (e.g., `\\u202E`) and wrap user-controlled text in FSI/PDI isolates (`&#x2068;` and `&#x2069;`).
