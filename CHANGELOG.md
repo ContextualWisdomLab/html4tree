@@ -12,6 +12,7 @@ All notable changes to this project are documented in this file.
   protection.
 
 ### Changed
+- 🎨 Palette: 파일 이름 호버/포커스 시 밑줄이 시각적으로 숨겨진 텍스트에 적용되는 문제를 수정하기 위해 `span:last-child` 대신 `.entry-name` 클래스를 사용하도록 개선했습니다.
 
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
