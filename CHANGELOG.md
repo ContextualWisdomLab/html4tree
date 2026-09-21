@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Security
+
+- BiDi(양방향 텍스트) 스푸핑 공격을 방지하기 위해 사용자 제어 입력값 주위에 First Strong Isolate(`&#x2068;`) 및 Pop Directional Isolate(`&#x2069;`)를 추가하여 격리하고, 제어 문자를 이스케이프 처리하여 악성 파일 확장자 위조를 방지합니다.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
