@@ -503,8 +503,9 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
+    // ⚡ Bolt: Kotlin에서 List.any {} 호출 시 매번 발생하는 Iterator 할당 오버헤드를 방지하기 위해 정적 배열로 변환
     @JvmField
-    val defaultSensitiveExtensions = listOf(
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
