@@ -1,3 +1,6 @@
+## [Unreleased]
+- 보안: 양방향 텍스트(BiDi) 공격을 방지하기 위해 사용자가 제어하는 파일 및 디렉토리 이름 주위에 FSI/PDI 분리 문자 추가
+
 # Changelog
 
 All notable changes to this project are documented in this file.
