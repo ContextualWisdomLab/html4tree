@@ -718,9 +718,13 @@ class MainTest {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch(e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException")
     }
 
     @Test
@@ -762,10 +766,77 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch(e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException")
+    }
+
+
+    @Test
+    fun testProcessIgnoreFileFailsClosedOnUnreadable() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*.txt")
+        org.junit.Assume.assumeTrue("Test requires ability to make file unreadable", ignoreFile.setReadable(false))
+
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch(e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException")
+    }
+
+    @Test
+    fun testProcessIgnoreFileFailsClosedOnLargeSize() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("a".repeat(1048576 + 10))
+
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch(e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException")
+    }
+
+    @Test
+    fun testCrawlDirectoriesCatchesIgnoreFileReadException() {
+        val subdir = File(tempDir, "subdir")
+        subdir.mkdir()
+        val ll = LinkedList()
+        ll.push(LinkedListEntry(subdir, 0, null))
+
+        var processDirCalled = false
+
+        crawl_directories(
+            ll = ll,
+            maxLevel = -1,
+            processDirectory = { _, _, _ -> processDirCalled = true },
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock") },
+            listFiles = { null },
+            readAttributes = {
+                object : java.nio.file.attribute.BasicFileAttributes {
+                    override fun lastModifiedTime(): java.nio.file.attribute.FileTime? = null
+                    override fun lastAccessTime(): java.nio.file.attribute.FileTime? = null
+                    override fun creationTime(): java.nio.file.attribute.FileTime? = null
+                    override fun isRegularFile() = false
+                    override fun isDirectory() = true
+                    override fun isSymbolicLink() = false
+                    override fun isOther() = false
+                    override fun size() = 0L
+                    override fun fileKey(): Any? = null
+                }
+            },
+            readIdentity = { FileIdentity(null, true) }
+        )
+
+        assertFalse(processDirCalled, "Directory should not be processed when policy file fails to read")
     }
 
     @Test
@@ -777,10 +848,13 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch(e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException")
     }
 
     @Test
