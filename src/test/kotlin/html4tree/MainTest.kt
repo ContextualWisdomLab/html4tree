@@ -718,9 +718,29 @@ class MainTest {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        // This should fail-closed and throw IgnoreFileReadException
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException to be thrown")
+    }
+
+    @Test
+    fun testCrawlDirectoriesIgnoreFileReadException() {
+        val ignoreDir = File(tempDir, ".html4ignore")
+        ignoreDir.mkdir()
+        val ll = LinkedList()
+        val topEntry = LinkedListEntry(tempDir, 0, read_file_identity(tempDir).key)
+        ll.push(topEntry)
+
+        crawl_directories(
+            ll = ll,
+            maxLevel = -1,
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock") }
+        )
     }
 
     @Test
@@ -762,10 +782,14 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // Should fail-closed and throw IgnoreFileReadException
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException to be thrown")
     }
 
     @Test
