@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-24 - BiDi 스푸핑 취약점 (CVE-2021-42574)
+**Vulnerability:** 파일명에 유니코드 양방향(BiDi) 제어 문자(예: RLO, LRI)가 포함될 경우 UI에서 확장자가 스푸핑되어 악성 파일(예: `.exe`가 `.txt`로 보임)이 다운로드될 수 있는 Trojan Source 취약점이 발견되었습니다.
+**Learning:** `escapeHtml()` 함수에서 HTML 예약어 이외의 렌더링에 영향을 미치는 숨겨진 제어 문자는 기본적으로 필터링되지 않았으며, `dir="auto"`와 같은 단순한 설정은 `<title>` 등의 속성에서 완벽히 격리되지 않습니다.
+**Prevention:** 렌더링 시 악용될 수 있는 `\u202E`, `\u2066` 등의 BiDi 제어 문자를 `escapeHtml()`에서 명시적으로 리터럴(예: `\\u202E`)로 이스케이프하여 노출시킵니다. 또한, 디렉토리명 및 파일명 등 사용자가 통제 가능한 임의의 문자열을 HTML에 렌더링할 때는 W3C 권고안에 따라 First Strong Isolate (`&#x2068;`) 및 Pop Directional Isolate (`&#x2069;`)를 래핑하여 텍스트의 방향성을 구조적으로 격리해야 합니다.
