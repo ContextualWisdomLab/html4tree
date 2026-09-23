@@ -306,7 +306,14 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
-fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
+fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> =
+    process_ignore_file_with_validation_hook(curr_dir, dirFilesNames) {}
+
+internal fun process_ignore_file_with_validation_hook(
+    curr_dir: File,
+    dirFilesNames: Array<String>? = null,
+    afterValidation: () -> Unit
+): Set<String> {
 
     val ignore_filename = ".html4ignore"
  
@@ -323,6 +330,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
         if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead() || ignore_file.length() > 1048576) {
             throw IgnoreFileReadException("Policy file is inaccessible, unsafe, or too large")
         }
+        afterValidation()
         val ignored_matchers = mutableListOf<java.nio.file.PathMatcher>()
 
        ignore_file.useLines { lines ->
