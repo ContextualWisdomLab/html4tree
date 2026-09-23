@@ -19,6 +19,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- 시각적으로 숨겨진 화면 판독기용 텍스트에 호버 스타일이 누수되어 실제 파일 이름에 밑줄이 표시되지 않던 문제 수정.
+
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
