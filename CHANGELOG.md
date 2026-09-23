@@ -6,7 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Security
 
-- BiDi(양방향 텍스트) 스푸핑 공격을 방지하기 위해 사용자 제어 입력값 주위에 First Strong Isolate(`&#x2068;`) 및 Pop Directional Isolate(`&#x2069;`)를 추가하여 격리하고, 제어 문자를 이스케이프 처리하여 악성 파일 확장자 위조를 방지합니다.
+- 사용자 제어 파일·디렉터리 이름의 BiDi 표시 혼동을 줄이기 위해 Unicode bidirectional ordering control(ALM/LRM/RLM, embedding/override, isolate)을 가시적인 escape 문자열로 변환하고, 생성 HTML의 표시 이름을 FSI/PDI로 격리합니다. 이 변경은 표시 경계 hardening이며 기만적인 파일 실행 자체를 차단한다고 보장하지 않습니다.
 
 ### Added
 
