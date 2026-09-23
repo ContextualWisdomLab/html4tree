@@ -311,7 +311,7 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
-private fun read_ignore_policy_bytes(
+internal fun read_ignore_policy_bytes(
     channel: java.nio.channels.SeekableByteChannel
 ): ByteArray {
     val output = ByteArrayOutputStream()
