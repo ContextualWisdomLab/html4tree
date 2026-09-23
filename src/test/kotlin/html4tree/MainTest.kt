@@ -781,6 +781,7 @@ class MainTest {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("*.txt")
         org.junit.Assume.assumeTrue("Test requires ability to make file unreadable", ignoreFile.setReadable(false))
+        org.junit.Assume.assumeFalse("Test requires the file to be effectively unreadable", ignoreFile.canRead())
 
         var thrown = false
         try {
