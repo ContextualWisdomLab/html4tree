@@ -107,6 +107,14 @@ class MainTest {
     }
 
     @Test
+    fun testEscapeHtmlWithBiDiControlCharacters() {
+        val bidiInput = "\u202Etest\u2068file\u2069.txt"
+        val escaped = bidiInput.escapeHtml()
+        assertEquals("\\u202Etest\\u2068file\\u2069.txt", escaped)
+    }
+
+
+    @Test
     fun testGoEmptyDir() {
         go(tempDir.absolutePath, -1)
         val indexFile = File(tempDir, "index.html")
@@ -942,8 +950,8 @@ class MainTest {
         val indexHtml = File(fakeRoot, "index.html")
         assertTrue(indexHtml.exists())
         val content = indexHtml.readText()
-        assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
-        assertTrue(content.contains("<h1>Root</h1>"))
+        assertTrue(content.contains("<title>&#x2068;Root&#x2069; - 디렉토리 목록</title>"))
+        assertTrue(content.contains("<h1>&#x2068;Root&#x2069;</h1>"))
     }
 
 }
