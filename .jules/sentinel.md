@@ -99,11 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-## 2024-05-27 - [정책 파일 접근 불가능 시 Fail-open 처리되는 TOCTOU 취약점 수정]
-**Vulnerability:** `process_ignore_file`에서 디렉토리 스캔 이후 정책 파일(`.html4ignore`)을 읽기 전에 해당 파일이 접근 불가능 상태(예: 심볼릭 링크로 변경 또는 읽기 권한 제거)로 변경될 경우, 예외가 발생하면서 Fail-closed 보호 없이 디렉토리 파싱이 중단되는 TOCTOU 취약점 발견.
-**Learning:** 파일 속성(`canRead`, `isFile`)을 순차적으로 확인하고 파일 읽기 실패 시 빈 제외 목록을 반환하는 방식은 Fail-open 동작을 초래하여, `.html4ignore` 파일이 보호하려던 민감한 파일들을 노출시킴.
-**Prevention:** 보안 경계 역할을 하는 정책 파일을 안전하게 읽을 수 없을 때는 항상 특정 예외(예: `IgnoreFileReadException`)를 발생시켜 Fail-closed 동작을 강제해야 하며, 상위 레벨에서 이 예외를 잡아 해당 디렉토리 전체의 처리를 차단하도록 구현해야 함.
-## 2024-05-27 - [자바 File.exists() 심볼릭 링크 처리 방식에 따른 우회 취약점]
-**Vulnerability:** 자바의 `File.exists()`가 끊어진 심볼릭 링크(broken symlink)에 대해 `false`를 반환하는 특성을 악용하여 정책 파일 검증 로직을 우회할 수 있음.
-**Learning:** `if (ignore_file.exists())` 안에 정책 파일 검사(`!isFile`, `isSymbolicLink`)를 넣으면, 공격자가 정책 파일을 끊어진 심볼릭 링크로 대체했을 때 `exists()`가 `false`가 되어 예외를 던지는 차단 로직 자체가 실행되지 않고 우회(Fail-open)됨.
-**Prevention:** 심볼릭 링크 우회 검사를 할 때는 `Files.exists(path, LinkOption.NOFOLLOW_LINKS)`를 사용하여 링크가 끊어져 있더라도 해당 파일 항목의 존재 자체를 정확히 확인한 후 후속 검사(isFile, isSymbolicLink 등)를 수행해야 함.
