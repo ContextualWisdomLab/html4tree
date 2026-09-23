@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2024-08-30 - 긴 디렉토리 경로로 인한 DoS 방지
-**Vulnerability:** 파일 시스템 API에 전달되는 사용자 입력 경로 길이에 대한 제한이 없어 OOM이나 DoS 공격의 위험이 있었습니다.
-**Learning:** unbounded string 입력에 대한 사전 검증의 중요성을 깨달았습니다.
-**Prevention:** 경로 문자열 변수에 대해 최대 길이를 명시적으로 제한하여 시스템 자원 소모를 방지해야 합니다.
