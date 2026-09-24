@@ -726,6 +726,36 @@ class MainTest {
         }
         assertTrue(thrown, "Expected IgnoreFileReadException")
     }
+    @Test
+    fun testProcessIgnoreFileLargeSizeExceedingLimits() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        // Just over the limit
+        val largeContent = "a".repeat(1048577)
+        ignoreFile.writeText(largeContent)
+
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch(e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException for >1MB file")
+    }
+
+    @Test
+    fun testProcessIgnoreFileCanRead() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*.txt")
+        org.junit.Assume.assumeTrue("Test requires ability to make file unreadable", ignoreFile.setReadable(false))
+
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch(e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown, "Expected IgnoreFileReadException when file is unreadable")
+    }
 
     @Test
     fun testProcessIgnoreFileDosProtection() {
@@ -781,7 +811,6 @@ class MainTest {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("*.txt")
         org.junit.Assume.assumeTrue("Test requires ability to make file unreadable", ignoreFile.setReadable(false))
-        org.junit.Assume.assumeFalse("Test requires the file to be effectively unreadable", ignoreFile.canRead())
 
         var thrown = false
         try {
