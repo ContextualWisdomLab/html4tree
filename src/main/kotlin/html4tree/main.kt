@@ -303,8 +303,8 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val files_to_exclude = mutableSetOf<String>()
 
-    // ⚡ Bolt Performance Optimization: Fetch directory list once
-    // Avoids multiple redundant File.list() system I/O calls within this function.
+    // ⚡ Bolt 성능 향상: 디렉토리 목록을 한 번만 가져옵니다.
+    // 이 함수 내에서 반복되는 File.list() 시스템 I/O 호출을 방지합니다.
     val fileList = dirFilesNames ?: curr_dir.list()
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
@@ -327,6 +327,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
            }
        }
 
+       // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
        fileList?.forEach {
            val current = it
            val pathCurrent = try {
