@@ -356,7 +356,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
             it.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
-            Constants.defaultSensitiveExtensions.any { extension ->
+            Constants.defaultSensitiveExtensionsArray.any { extension ->
                 normalizedName.endsWith(extension)
             }
         ) {
@@ -503,8 +503,9 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
+    // ⚡ Bolt: Kotlin에서 List.any {} 호출 시 매번 발생하는 Iterator 할당 오버헤드를 방지하기 위해 정적 배열로 변환
     @JvmField
-    val defaultSensitiveExtensions = listOf(
+    val defaultSensitiveExtensionsArray = arrayOf(
         ".pem",
         ".key",
         ".p12",
@@ -526,4 +527,7 @@ private object Constants {
         ".swo",
         ".swpx"
     )
+
+    @JvmField
+    val defaultSensitiveExtensions = defaultSensitiveExtensionsArray.toList()
 }
