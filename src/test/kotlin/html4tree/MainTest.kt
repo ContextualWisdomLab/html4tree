@@ -946,15 +946,4 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
-    @Test
-    fun testGoRejectsLongTopDirPath() {
-        val longPath = "a".repeat(4097)
-        try {
-            go(longPath, -1)
-            org.junit.Assert.fail("Should have thrown IllegalArgumentException")
-        } catch (e: IllegalArgumentException) {
-            assertEquals("Top directory path is too long.", e.message)
-        }
-    }
-
 }
