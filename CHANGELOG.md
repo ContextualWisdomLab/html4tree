@@ -1,7 +1,3 @@
-## [Unreleased]
-### Changed
-- ⚡ Bolt: `isHiddenFile()` 확장 함수에서 `firstOrNull()`을 사용하여 발생하는 불필요한 메모리 할당(Char? 박싱) 오버헤드를 제거하기 위해 `isEmpty()`와 인덱스 직접 접근 방식으로 최적화했습니다.
-
 # Changelog
 
 All notable changes to this project are documented in this file.
