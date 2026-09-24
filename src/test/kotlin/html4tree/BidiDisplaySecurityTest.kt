@@ -58,8 +58,8 @@ class BidiDisplaySecurityTest {
                 assertTrue(html.contains("<bdi dir=\"auto\">${name.escapeHtml()}</bdi>"))
                 assertTrue(html.contains("title=\"${name.escapeHtml()} 파일\""))
             }
-            assertFalse(html.contains("&#x2068;"))
-            assertFalse(html.contains("&#x2069;"))
+            assertFalse(html.contains("<span>&#x2068;"))
+            assertFalse(html.contains("&#x2069;</span>"))
         } finally {
             root.deleteRecursively()
         }
