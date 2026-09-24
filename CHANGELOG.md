@@ -19,7 +19,11 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
-- 양방향(BiDi) 제어 문자를 통한 파일 이름 및 확장자 스푸핑 방지를 위해, 해당 문자를 이스케이프 처리하고 생성되는 HTML에 FSI(`&#x2068;`) 및 PDI(`&#x2069;`) 태그를 적용하여 입력값을 안전하게 격리하도록 수정했습니다.
+- Neutralize the full Unicode `Bidi_Control` set in rendered directory and file
+  names while preserving the original filename bytes in encoded link targets.
+  File labels use HTML `<bdi dir="auto">` isolation so ordinary RTL/LTR names
+  remain readable without letting embedded directional controls reorder nearby
+  UI text.
 
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
@@ -27,6 +31,9 @@ All notable changes to this project are documented in this file.
 
 ### Tests
 
+- Cover all Unicode `Bidi_Control` characters, encoded href preservation,
+  natural RTL/LTR text, tooltip text, and the generated filename isolation
+  boundary.
 - Add a real generated-file regression test that independently recomputes the
   declared style hash from the emitted `<style>` text.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
