@@ -456,12 +456,22 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
-                  val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
-                  l.append('\n')
+                  val typeLabel = if (isLinkedDirectory) "디렉토리" else "파일"
+                  val icon = if (isLinkedDirectory) "&#128193;" else "&#128196;"
+                  val escapedName = fileName.escapeHtml()
+
+                  l.append("          <li><a class=\"dir-link\" href=\"./")
+                  l.append(fileName.urlEncodePath())
+                  if (isLinkedDirectory) l.append("/")
+                  l.append("\" title=\"")
+                  l.append(escapedName).append(" ").append(typeLabel)
+                  l.append("\"><span class=\"icon\" aria-hidden=\"true\">")
+                  l.append(icon)
+                  l.append("</span> <span>")
+                  l.append(escapedName)
+                  l.append("</span> <span class=\"visually-hidden\">")
+                  l.append(typeLabel)
+                  l.append("</span></a></li>\n")
                }
            }
         }
