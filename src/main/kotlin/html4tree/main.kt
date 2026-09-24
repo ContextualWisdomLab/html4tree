@@ -243,7 +243,16 @@ fun String.escapeHtml(): String {
             '"' -> "&quot;"
             '\'' -> "&#x27;"
             '`' -> "&#x60;"
+            '\u061C' -> "\\u061C"
+            '\u200E' -> "\\u200E"
+            '\u200F' -> "\\u200F"
+            '\u202A' -> "\\u202A"
+            '\u202B' -> "\\u202B"
+            '\u202C' -> "\\u202C"
+            '\u202D' -> "\\u202D"
             '\u202E' -> "\\u202E"
+            '\u2066' -> "\\u2066"
+            '\u2067' -> "\\u2067"
             '\u2068' -> "\\u2068"
             '\u2069' -> "\\u2069"
             else -> null
@@ -460,10 +469,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "&#x2068;${fileName.escapeHtml()}&#x2069; ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}"
+                  val ariaLabel = "${fileName.escapeHtml()} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}"
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>&#x2068;${fileName.escapeHtml()}&#x2069;</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <bdi dir="auto">${fileName.escapeHtml()}</bdi> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
