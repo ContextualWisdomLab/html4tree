@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-09-24 - [서비스 거부] 무한 경로 길이로 인한 메모리 부족 및 서비스 거부
+**Vulnerability:** `go` 함수에서 `topDir` 입력값의 길이를 제한하지 않아, 공격자가 극단적으로 긴 경로 문자열을 제공할 경우 파일 시스템 작업 호출 전에 과도한 메모리가 할당되어 메모리 부족 및 서비스 거부가 발생할 수 있습니다.
+**Learning:** 파일 시스템 작업을 수행하기 전에 사용자 입력 문자열(특히 파일 경로나 디렉토리 경로)은 운영 체제의 최대 경로 길이를 고려하여 엄격한 길이 제한을 가져야 합니다.
+**Prevention:** `require(topDir.length <= 4096)`과 같이 경로 길이를 합리적인 제한(예: 4096바이트) 내로 명시적으로 제한하여 리소스 고갈을 방지하십시오.
