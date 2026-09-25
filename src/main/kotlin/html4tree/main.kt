@@ -356,7 +356,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
             it.isHiddenFile() ||
             normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
             normalizedName.endsWith("~") ||
-            Constants.defaultSensitiveExtensions.any { extension ->
+            Constants.DEFAULT_SENSITIVE_EXTENSIONS.any { extension ->
                 normalizedName.endsWith(extension)
             }
         ) {
@@ -503,8 +503,8 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
-    @JvmField
-    val defaultSensitiveExtensions = arrayOf(
+    // ⚡ Bolt Performance Optimization: Extract to private primitive array to avoid Iterator allocation on hot paths
+    val DEFAULT_SENSITIVE_EXTENSIONS = arrayOf(
         ".pem",
         ".key",
         ".p12",
@@ -526,4 +526,7 @@ private object Constants {
         ".swo",
         ".swpx"
     )
+
+    @JvmField
+    val defaultSensitiveExtensions = DEFAULT_SENSITIVE_EXTENSIONS.toList()
 }

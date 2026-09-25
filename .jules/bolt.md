@@ -65,3 +65,6 @@
 ## 2026-09-25 - Array.any를 활용한 Iterator 할당 최적화
 **학습:** `defaultSensitiveExtensions`와 같은 반복 가능한(iterable) 객체를 `listOf` 대신 `arrayOf`로 선언하면, `.any { ... }` 같은 밀집된 루프(tight loop)에서 `Iterator` 객체 할당을 방지하여 가비지 컬렉션(GC) 오버헤드를 줄일 수 있습니다.
 **조치:** 자주 읽히는 고정 크기 데이터 구조의 경우, 동적 크기의 리스트(`listOf` 등)보다 원시 배열(primitive array)이나 명시적으로 크기가 지정된 구조를 항상 우선적으로 사용해야 합니다.
+## 2026-09-25 - 내부 순회용 배열과 외부 노출 리스트 분리
+**학습:** Java/외부 API 호환성을 위해 `@JvmField List<String>`으로 노출된 컬렉션은 타입을 변경(`arrayOf` 등)하면 호환성 문제가 발생합니다. 동시에, 핫 패스(`hot path`)에서 해당 리스트의 \`.any { ... }\` 등을 사용하면 불필요한 \`Iterator\` 할당으로 GC 부하가 발생합니다.
+**조치:** 외부 인터페이스와 내부 성능을 모두 만족하기 위해, 단일 진실의 원천(Single Source of Truth)으로 내부용 `arrayOf` 배열(`DEFAULT_SENSITIVE_EXTENSIONS`)을 선언하여 핫 패스 순회에 사용하고, 외부에 노출되는 리스트는 이 배열에서 파생(`.toList()`)시켜 API 호환성을 유지해야 합니다.
