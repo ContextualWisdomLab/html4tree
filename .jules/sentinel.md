@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-18 - BiDi Spoofing Prevention
+**Vulnerability:** Bidirectional (BiDi) text spoofing (e.g., RTL injection) can hide malicious file extensions by reversing character display order.
+**Learning:** `dir="auto"` is inadequate for isolating user-controlled text within HTML attributes or elements like `<title>`. Raw Unicode Bidi_Control characters (like `\u202E`) must be escaped.
+**Prevention:** Deterministically expose raw Unicode Bidi_Control characters as escaped strings within HTML escaping functions. Additionally, isolate user-controlled text with First Strong Isolate (`&#x2068;`) and Pop Directional Isolate (`&#x2069;`).
