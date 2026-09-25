@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-09-25 - BiDi Text Spoofing 방지
+**Vulnerability:** 파일명에 RTL(Right-to-Left) 오버라이드 등 유니코드 양방향(BiDi) 제어 문자가 포함될 경우 확장자가 위조되는 취약점이 발견되었습니다.
+**Learning:** BiDi 오버라이드는 시각적으로 위험한 파일(예: `.exe`)을 무해한 파일(예: `.txt`)처럼 보이게 만들 수 있습니다. HTML을 렌더링할 때 사용자 통제 영역이 이를 적절히 처리하거나 무효화하지 않으면 XSS 또는 악성 다운로드를 유도할 수 있습니다.
+**Prevention:** HTML 이스케이프 과정에서 유니코드 BiDi 제어 문자(예: `\u202E`)를 이스케이프(예: `\\u202E`)하여 무력화하고, 렌더링된 요소(예: `<title>`, `<a>`의 텍스트)를 `&#x2068;`(FSI) 및 `&#x2069;`(PDI)로 감싸 텍스트 방향성이 문서 내 다른 요소에 영향을 미치지 않도록 격리해야 합니다.
