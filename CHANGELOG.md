@@ -1,3 +1,4 @@
+- BiDi(양방향) 텍스트 제어 문자를 이스케이프하고 FSI/PDI 래퍼를 적용하여 파일명/확장자 스푸핑(Trojan Source) 취약점 수정
 # Changelog
 
 All notable changes to this project are documented in this file.
