@@ -223,6 +223,8 @@ internal fun crawl_directories(
 }
 
 fun String.isHiddenFile(): Boolean {
+    // ⚡ Bolt Performance Optimization: Replace firstOrNull() with isEmpty() and direct index access
+    // to avoid object allocation overhead (boxing to Char?) during frequent directory traversals.
     if (this.isEmpty()) return false
     return when (this[0]) {
         '.', '\u3002', '\uFF0E', '\uFF61' -> true
