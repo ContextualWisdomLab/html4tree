@@ -17,6 +17,15 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MainTest {
+
+    @Test
+    fun testGoRejectsExtremelyLongPath() {
+        val longPath = "a".repeat(4097)
+        assertFailsWith<IllegalArgumentException> {
+            go(longPath, -1)
+        }
+    }
+
     private lateinit var tempDir: File
 
     private fun createMockAttributes(isDir: Boolean, isSymlink: Boolean): BasicFileAttributes {
