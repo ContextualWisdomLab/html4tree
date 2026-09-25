@@ -319,7 +319,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val ignoreExists = ignore_file.exists() || Files.isSymbolicLink(ignore_file.toPath())
     if (ignoreExists) {
-        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead()) {
+        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead() || ignore_file.length() > 1048576) {
             throw IgnoreFileReadException("Policy file $ignore_filename is inaccessible or invalid. Failing closed to prevent TOCTOU bypass.")
         }
     }

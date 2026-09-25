@@ -719,13 +719,9 @@ class MainTest {
         ignoreDir.mkdir()
 
         // This should fail-closed and throw IgnoreFileReadException
-        var thrown = false
-        try {
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
             process_ignore_file(tempDir, null)
-        } catch (e: IgnoreFileReadException) {
-            thrown = true
         }
-        assertTrue(thrown, "Expected IgnoreFileReadException to be thrown")
     }
 
     @Test
@@ -741,6 +737,17 @@ class MainTest {
             maxLevel = -1,
             processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock") }
         )
+    }
+
+    @Test
+    fun testIgnoreFileTooLarge() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val largeBytes = ByteArray(1048576 + 1)
+        ignoreFile.writeBytes(largeBytes)
+
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
@@ -783,13 +790,9 @@ class MainTest {
         File(tempDir, "test.txt").createNewFile()
 
         // Should fail-closed and throw IgnoreFileReadException
-        var thrown = false
-        try {
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
             process_ignore_file(tempDir, null)
-        } catch (e: IgnoreFileReadException) {
-            thrown = true
         }
-        assertTrue(thrown, "Expected IgnoreFileReadException to be thrown")
     }
 
     @Test
@@ -801,10 +804,10 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // Should fail-closed and throw IgnoreFileReadException
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
