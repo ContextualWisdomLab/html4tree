@@ -62,6 +62,6 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
-## 2024-09-24 - Iterator Allocation with Array.any
-**Learning:** Changing iterables like `defaultSensitiveExtensions` from `listOf` to `arrayOf` avoids `Iterator` allocation during tight loops like `.any { ... }`, thereby reducing garbage collection overhead.
-**Action:** Always favor primitive arrays or explicitly sized structures over dynamically sized lists (such as `listOf`) for statically sized structures that are read frequently within hot paths.
+## 2026-09-25 - Array.any를 활용한 Iterator 할당 최적화
+**학습:** `defaultSensitiveExtensions`와 같은 반복 가능한(iterable) 객체를 `listOf` 대신 `arrayOf`로 선언하면, `.any { ... }` 같은 밀집된 루프(tight loop)에서 `Iterator` 객체 할당을 방지하여 가비지 컬렉션(GC) 오버헤드를 줄일 수 있습니다.
+**조치:** 자주 읽히는 고정 크기 데이터 구조의 경우, 동적 크기의 리스트(`listOf` 등)보다 원시 배열(primitive array)이나 명시적으로 크기가 지정된 구조를 항상 우선적으로 사용해야 합니다.
