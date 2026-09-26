@@ -1,3 +1,6 @@
+### Security
+* `escapeHtml()` 함수에서 BiDi 제어 문자를 명시적으로 이스케이프 처리하고 HTML 템플릿의 디렉토리/파일 이름을 FSI/PDI로 감싸서 양방향(BiDi) 텍스트 스푸핑 취약점을 수정했습니다.
+
 # Changelog
 
 All notable changes to this project are documented in this file.
