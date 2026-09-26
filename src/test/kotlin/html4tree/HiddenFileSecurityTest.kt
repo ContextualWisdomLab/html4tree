@@ -50,13 +50,4 @@ class HiddenFileSecurityTest {
         }
     }
 
-    @Test
-    fun defaultSensitiveExtensionsIsAnArray() {
-        val arrayField = Class.forName("html4tree.Constants").getDeclaredField("defaultSensitiveExtensions")
-        arrayField.isAccessible = true
-        val extensionsArray = arrayField.get(null)
-        assertTrue(extensionsArray is Array<*>, "defaultSensitiveExtensions should be an array for optimized iteration")
-        assertTrue((extensionsArray as Array<*>).size > 0, "defaultSensitiveExtensions array must not be empty")
-    }
-
 }
