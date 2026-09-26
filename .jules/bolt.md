@@ -62,3 +62,6 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+## 2024-09-26 - Constants의 확장자 리스트 배열로 최적화
+**Learning:** `Constants` 객체 내의 `defaultSensitiveExtensions`와 같은 정적 컬렉션을 `listOf`로 선언하면 순회(iteration) 시 매번 Iterator 객체가 할당되어 가비지 컬렉션(GC) 압력이 발생합니다. 이는 반복적으로 호출되는 핫 패스에서 성능 저하를 일으킬 수 있습니다.
+**Action:** 내부적으로만 사용되는(private object의) 정적 컬렉션은 `arrayOf`를 사용하여 배열로 선언하고 `@JvmField`를 제거하여(필요 없는 경우) 불필요한 Iterator 할당 오버헤드를 줄입니다.
