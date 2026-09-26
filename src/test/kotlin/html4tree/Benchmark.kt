@@ -1,6 +1,9 @@
 package html4tree
 
 object Benchmark {
+    @Volatile
+    private var sink: String = ""
+
     @JvmStatic fun main(args: Array<String>) {
         val testFiles = Array(10000) { "test_file_$it.txt" }
         val testFilesWithHtml = Array(1000) { "test<file>&'$it.txt" }
@@ -15,22 +18,28 @@ object Benchmark {
         var oldTime = 0L
         var newTime = 0L
 
+        var oldChecksum = 0
+        var newChecksum = 0
+
         for (i in 1..10) {
             oldTime += kotlin.system.measureTimeMillis {
                 for (j in 1..100) {
-                    benchmarkOld(allFiles)
+                    oldChecksum += benchmarkOld(allFiles)
                 }
             }
 
             newTime += kotlin.system.measureTimeMillis {
                 for (j in 1..100) {
-                    benchmarkNew(allFiles)
+                    newChecksum += benchmarkNew(allFiles)
                 }
             }
         }
 
-        println("Old escapeHtml: $oldTime ms")
-        println("New escapeHtml (Array lookup fastpath check first): $newTime ms")
+        println("Old escapeHtml: $oldTime ms, Checksum: $oldChecksum")
+        println("New escapeHtml: $newTime ms, Checksum: $newChecksum")
+        if (oldChecksum != newChecksum) {
+            println("WARNING: Checksums do not match!")
+        }
     }
 
     private fun String.escapeHtmlOld(): String {
@@ -62,7 +71,9 @@ object Benchmark {
     private fun benchmarkOld(files: Array<String>): Int {
         var len = 0
         files.forEach {
-            len += it.escapeHtmlOld().length
+            val res = it.escapeHtmlOld()
+            sink = res
+            len += res.length
         }
         return len
     }
@@ -70,7 +81,9 @@ object Benchmark {
     private fun benchmarkNew(files: Array<String>): Int {
         var len = 0
         files.forEach {
-            len += it.escapeHtml().length
+            val res = it.escapeHtml()
+            sink = res
+            len += res.length
         }
         return len
     }
