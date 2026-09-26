@@ -348,7 +348,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     if ("index.html" !in files_to_exclude)
        files_to_exclude.add("index.html")
 
-    // ⚡ Bolt Performance Optimization: Extract static list to prevent redundant allocations per directory
+    // ⚡ Bolt Performance Optimization: 디렉토리당 중복 할당을 방지하기 위한 정적 리스트 추출
     // 보안 향상: 민감한 시스템, 설정, 시크릿 파일을 디렉토리 목록에서 기본적으로 제외하여 정보 노출(Information Exposure) 방지
     files_to_exclude.addAll(Constants.defaultSensitiveFiles)
 
