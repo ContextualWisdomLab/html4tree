@@ -503,8 +503,8 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
-    @JvmField
-    val defaultSensitiveExtensions = listOf(
+    // ⚡ Bolt Performance Optimization: Use arrayOf to avoid Iterator allocation on hot path
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
