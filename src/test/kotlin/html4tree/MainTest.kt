@@ -946,4 +946,11 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+    @Test
+    fun testIsHiddenFile() {
+        assertTrue(".hidden".isHiddenFile())
+        assertFalse("visible".isHiddenFile())
+        assertFalse("".isHiddenFile())
+        assertTrue("\u3002hidden".isHiddenFile())
+    }
 }
