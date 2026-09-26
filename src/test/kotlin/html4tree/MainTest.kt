@@ -60,7 +60,7 @@ class MainTest {
         assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
         assertEquals("mix text &amp; and &lt;tag&gt;", "mix text & and <tag>".escapeHtml())
-        assertEquals("file\\u202Ename", "file\u202Ename".escapeHtml())
+        assertEquals("bidi\\u202A\\u202B\\u202C\\u202D\\u202E\\u2066\\u2067\\u2068\\u2069chars", "bidi\u202A\u202B\u202C\u202D\u202E\u2066\u2067\u2068\u2069chars".escapeHtml())
     }
 
     @Test
