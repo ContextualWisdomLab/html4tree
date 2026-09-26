@@ -45,6 +45,7 @@ a.dir-link {
   text-align: center;
 }
 a {
+  display: inline-block;
   padding: 0.75rem 0.5rem;
   text-decoration: none;
   color: #0969da;

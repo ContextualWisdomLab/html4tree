@@ -96,6 +96,7 @@ class GeneratedIndexReadabilityTest {
             style.contains(
                 """
                 a {
+                  display: inline-block;
                   padding: 0.75rem 0.5rem;
                   text-decoration: none;
                 """.trimIndent()
