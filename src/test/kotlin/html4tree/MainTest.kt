@@ -718,9 +718,13 @@ class MainTest {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown)
     }
 
     @Test
@@ -762,10 +766,13 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown)
     }
 
     @Test
@@ -777,10 +784,13 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        var thrown = false
+        try {
+            process_ignore_file(tempDir, null)
+        } catch (e: IgnoreFileReadException) {
+            thrown = true
+        }
+        assertTrue(thrown)
     }
 
     @Test
@@ -944,6 +954,34 @@ class MainTest {
         val content = indexHtml.readText()
         assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
         assertTrue(content.contains("<h1>Root</h1>"))
+    }
+
+    @Test
+    fun testCrawlDirectoriesThrowsIgnoreFileReadException() {
+        val subdir = File(tempDir, "ignore_exception_test")
+        subdir.mkdir()
+        val ll = LinkedList()
+        val entry = LinkedListEntry(subdir, 0)
+        entry.fileKey = "test-key"
+        ll.push(entry)
+
+        var processed = false
+        var listed = false
+
+        crawl_directories(
+            ll,
+            -1,
+            processDirectory = { _, _, _ -> processed = true },
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock") },
+            listFiles = {
+                listed = true
+                emptyArray()
+            },
+            readAttributes = { _ -> createMockAttributes(isDir = true, isSymlink = false) },
+            readIdentity = { FileIdentity("test-key", true) }
+        )
+
+        assertFalse(processed, "Directory must not be processed if IgnoreFileReadException is thrown")
     }
 
 }
