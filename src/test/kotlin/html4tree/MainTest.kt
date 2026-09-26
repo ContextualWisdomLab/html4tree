@@ -83,12 +83,6 @@ class MainTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun testGoPathTooLong() {
-        val longPath = "a".repeat(4097)
-        go(longPath, -1)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
     fun testGoInvalidDir() {
         go("non_existent_directory", -1)
     }
