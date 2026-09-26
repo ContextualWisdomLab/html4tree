@@ -5,3 +5,5 @@
 build
 
 .idea
+# Ignore backup files created during exploration
+*.orig
