@@ -504,7 +504,7 @@ private object Constants {
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
     // Internal fixed extension table used by the directory exclusion path.
-    private val DEFAULT_SENSITIVE_EXTENSIONS = arrayOf(
+    val DEFAULT_SENSITIVE_EXTENSIONS = arrayOf(
         ".pem",
         ".key",
         ".p12",
