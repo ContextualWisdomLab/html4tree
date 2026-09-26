@@ -56,7 +56,7 @@ a:hover, a:focus-visible {
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
-a:hover span:last-child, a:focus-visible span:last-child {
+a:hover span.entry-name, a:focus-visible span.entry-name {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -243,6 +243,7 @@ fun String.escapeHtml(): String {
             '"' -> "&quot;"
             '\'' -> "&#x27;"
             '`' -> "&#x60;"
+            '\u202E' -> "\\u202E"
             else -> null
         }
         if (replacement != null) {
@@ -421,15 +422,15 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         <!-- 보안 향상: 리퍼러를 통한 디렉토리 경로 노출 방지 -->
         <meta name="referrer" content="no-referrer">
         <meta name="robots" content="noindex, nofollow">
-        <title>${directoryName.escapeHtml()} - 디렉토리 목록</title>
+        <title>&#x2068;${directoryName.escapeHtml()}&#x2069; - 디렉토리 목록</title>
         <style>${CSS_CONTENT}</style>
      </head>
      <body>
        <main>
-         <h1>${directoryName.escapeHtml()}</h1>
+         <h1>&#x2068;${directoryName.escapeHtml()}&#x2069;</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
-            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
+            <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동" aria-label="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span class="entry-name" aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
 """ 
 
     val index_middle = fun():String{ 
@@ -457,10 +458,10 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
+                  val ariaLabel = "&#x2068;${fileName.escapeHtml()}&#x2069; ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}"
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}" aria-label="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span class="entry-name">&#x2068;${fileName.escapeHtml()}&#x2069;</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
