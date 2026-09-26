@@ -236,15 +236,11 @@ fun String.escapeHtml(): String {
     var sb: StringBuilder? = null
     for (i in 0 until this.length) {
         val c = this[i]
-        val replacement = when (c) {
-            '&' -> "&amp;"
-            '<' -> "&lt;"
-            '>' -> "&gt;"
-            '"' -> "&quot;"
-            '\'' -> "&#x27;"
-            '`' -> "&#x60;"
-            else -> null
-        }
+        // ⚡ Bolt Performance Optimization: Replace `when` conditional jump table with a direct array lookup
+        // This avoids branch prediction penalties and speeds up character mapping in hot paths.
+        val cInt = c.toInt()
+        // Ensure the character is within ASCII bounds before array access to avoid IndexOutOfBoundsException
+        val replacement = if (cInt < 128) Constants.htmlEscapeTable[cInt] else null
         if (replacement != null) {
             if (sb == null) {
                 sb = StringBuilder(this.length + 16)
@@ -496,6 +492,16 @@ fun help() {
 }
 
 private object Constants {
+    @JvmField
+    val htmlEscapeTable = Array<String?>(128) { null }.apply {
+        this['&'.toInt()] = "&amp;"
+        this['<'.toInt()] = "&lt;"
+        this['>'.toInt()] = "&gt;"
+        this['"'.toInt()] = "&quot;"
+        this['\''.toInt()] = "&#x27;"
+        this['`'.toInt()] = "&#x60;"
+    }
+
     @JvmField
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
 
