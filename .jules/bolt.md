@@ -64,4 +64,12 @@
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
 ## 2024-05-20 - LinkedList Refactoring with ArrayDeque
 **Learning:** Custom LinkedList implementations that allocate wrapper objects (like Entry) for every push/pull operation during BFS traversals increase GC overhead and can create performance bottlenecks.
-**Action:** Replace custom linked lists with java.util.ArrayDeque to avoid object allocation overhead while maintaining BFS traversal (FIFO) by mapping push to addLast. Ensure public API properties (like first and last) are preserved for backward compatibility even if unused internally.
+**Action:** Replace custom linked lists with java.util.ArrayDeque to avoid object allocation overhead while maintaining BFS traversal (FIFO) by mapping push to addLast. Ensure public API properties (like first and last) are preserved and correctly updated for backward compatibility.
+
+## 2026-09-20 - LinkedList Compatibility Refactoring with ArrayDeque
+**Learning:** The previous ArrayDeque refactoring detached the `first` and `last` properties, breaking behavioral compatibility for any external mutation or reading of the queue state. Removing tests that verified this behavior rather than fixing the code was an incorrect approach.
+**Action:** Ensure that the `first` and `last` properties stay synchronized with the underlying deque after every push/pull operation, including handling cases where `last` might have been externally mutated while the deque was empty. Restored the original compatibility tests to prove it.
+
+## 2026-09-20 - LinkedList Compatibility Refactoring with ArrayDeque
+**Learning:** The previous ArrayDeque refactoring detached the `first` and `last` properties, breaking behavioral compatibility for any external mutation or reading of the queue state. Removing tests that verified this behavior rather than fixing the code was an incorrect approach.
+**Action:** Ensure that the `first` and `last` properties stay synchronized with the underlying deque after every push/pull operation, including handling cases where `last` might have been externally mutated while the deque was empty. Restored the original compatibility tests to prove it.
