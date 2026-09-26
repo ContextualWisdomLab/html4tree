@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-09-07 - [보안 향상] 사용자 제어 텍스트에 대한 양방향(BiDi) 텍스트 지원
+**Vulnerability:** 파일 이름 및 디렉토리 이름과 같은 사용자 제어 텍스트를 포함하는 HTML 요소에 방향성이 명시적으로 지정되지 않았습니다. 이는 우측에서 좌측(RTL)으로 읽는 언어를 사용할 때 생성된 인덱스의 렌더링이 깨지거나, 잠재적으로 악의적인 유니코드 제어 문자를 사용하여 텍스트 표시 순서를 조작하는 공격(Trojan Source)의 위험이 있을 수 있습니다.
+**Learning:** 양방향 텍스트(BiDi)가 포함될 수 있는 사용자 제어 콘텐츠(예: 파일명)를 렌더링할 때는 해당 요소에 `dir="auto"`를 추가해야 렌더링 손상을 막고 예상치 못한 텍스트 섞임을 방지할 수 있습니다. 단, 고정된 UI 요소(`..` 같은 상위 디렉토리 링크 등)에는 광범위하게 적용하면 의도된 방향성이 깨질 수 있으므로 주의해야 합니다.
+**Prevention:** 생성된 HTML의 텍스트가 사용자 입력을 기반으로 하는 경우 해당 요소(예: `<h1>`, 리스트의 파일명 `<span>`)에 한해 명시적으로 `dir="auto"` 속성을 부여하여 안전하고 정확한 표시를 보장하십시오. 추가로, 특정 요소 타겟팅을 위해 `span:last-child` 같은 범용 구조적 선택자보다 명시적 클래스(예: `.entry-name`)를 사용하는 것이 안전하고 일관된 스타일링을 보장합니다.
