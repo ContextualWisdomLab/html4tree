@@ -19,6 +19,8 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- 양방향(BiDi) 제어 문자를 통한 파일 이름 및 확장자 스푸핑 방지를 위해, 해당 문자를 이스케이프 처리하고 생성되는 HTML에 FSI(`&#x2068;`) 및 PDI(`&#x2069;`) 태그를 적용하여 입력값을 안전하게 격리하도록 수정했습니다.
+
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
