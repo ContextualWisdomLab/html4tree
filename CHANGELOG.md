@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- Keep sensitive-extension matching behind one private fixed table and preserve case-insensitive `.pem`, `.key`, and `.p12` exclusion with a focused behavioral contract. No directory-crawl performance improvement is claimed until a reproducible allocation/GC and median/p95 benchmark exists.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
