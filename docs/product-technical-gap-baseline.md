@@ -106,3 +106,17 @@ Keep html4tree#783 Draft/Proposed. Measure the exact directory-crawl path with r
 ## Release decision
 
 Keep html4tree#725 **Draft/Proposed** until exact-head CI/security checks are terminal GREEN, current-head independent approval exists, and applicable browser, accessibility, responsive, locale, performance, and recovery rows pass. No release or GitHub Pages publication is claimed.
+
+## 2026-09-27 generated-index writer reconciliation
+
+- #783 exact `6cb97e465ab27e03cc0ffb42579e5218c9e74359` removes the applied `patch11.diff` artifact and its private-reflection test while retaining the user-visible mixed-case exclusion contract. It is three commits ahead of verified `aa20abcf…` with `files: []`.
+- #716 exact `8edccd4…` remains Draft as a duplicate hover/focus writer. #744 exact `d20027b…` carries the visible-name selector plus parent-entry coverage; neither is closed before protected integration or proven carryover.
+- #723 exact `19a2492…` remains Draft: `aria-labelledby` source strings exist, but browser translation and accessibility-tree behavior are not evidenced.
+
+| Concern | Required exact evidence | Status |
+|---|---|---|
+| Hover/focus ownership | One protected writer with visible label, hidden assistive text, parent entry, and full-link focus contract | Proposed |
+| Translation semantics | Chromium/Firefox/WebKit plus AT for the labeled nav in ko/en/ja/zh/vi/es/de/fr | FAIL |
+| Responsive/touch/keyboard | 320/768/desktop screenshots and pointer/touch/Tab/Enter replay | FAIL |
+| Recovery/performance | Reload/replacement failure plus realistic large-directory median/p95 | FAIL |
+| Hosted governance | Terminal exact-head CI/security and independent approval | FAIL |
