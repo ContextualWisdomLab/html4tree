@@ -10,7 +10,7 @@ The generated `index.html` page is html4tree's primary user-facing artifact. Its
 - reduced-motion behavior remains unchanged; and
 - dark-mode overrides appear after their corresponding base declarations so the cascade is deterministic.
 
-The empty-directory information icon remains decorative, is hidden from assistive technology with `aria-hidden="true"`, and stays inside the existing `role="status"` container. No new emoji is selected solely for visual appearance.
+The empty-directory information icon remains decorative, is hidden from assistive technology with `aria-hidden="true"`, and stays inside the existing empty-dir container. No new emoji is selected solely for visual appearance.
 
 ## Accessibility engineering basis
 
