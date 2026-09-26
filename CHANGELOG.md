@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- Keep sensitive-extension matching behind one private fixed table and preserve case-insensitive `.pem`, `.key`, and `.p12` exclusion with a focused behavioral contract. No directory-crawl performance improvement is claimed until a reproducible allocation/GC and median/p95 benchmark exists.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
@@ -40,6 +41,3 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
-
-### Changed
-- 성능 향상을 위해 `Constants.defaultSensitiveExtensions`를 `arrayOf`로 변경하여 반복 순회 시 발생하는 Iterator 할당 오버헤드를 최적화했습니다. (Bolt)
