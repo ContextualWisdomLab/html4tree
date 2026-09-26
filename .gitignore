@@ -5,6 +5,5 @@
 build
 
 .idea
-
-# Completed editor/source-fix backup artifacts
+# Ignore backup files created during exploration
 *.orig
