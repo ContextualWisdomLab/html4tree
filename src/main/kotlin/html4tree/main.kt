@@ -503,8 +503,8 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
-    // ⚡ Bolt Performance Optimization: Extract to private primitive array to avoid Iterator allocation on hot paths
-    val DEFAULT_SENSITIVE_EXTENSIONS = arrayOf(
+    // Internal fixed extension table used by the directory exclusion path.
+    private val DEFAULT_SENSITIVE_EXTENSIONS = arrayOf(
         ".pem",
         ".key",
         ".p12",
@@ -526,7 +526,4 @@ private object Constants {
         ".swo",
         ".swpx"
     )
-
-    @JvmField
-    val defaultSensitiveExtensions = DEFAULT_SENSITIVE_EXTENSIONS.toList()
 }
