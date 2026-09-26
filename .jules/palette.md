@@ -77,3 +77,7 @@
 ## 2024-05-18 - [Add BiDi support to generated HTML]
 **Learning:** This app generates HTML index files. To correctly render BiDi (Bidirectional text) like file or directory names with Right-To-Left characters in a Left-To-Right layout, elements containing text should have `dir="auto"`.
 **Action:** Add `dir="auto"` to text-containing elements (`<h1>` and `<span>`).
+
+## 2026-08-26 - [Refine hover selector for BiDi text]
+**Learning:** When changing the structure of file name items (e.g., adding `dir="auto"` to a `<span>`), existing CSS selectors relying on DOM position (like `:last-child`) might become brittle or break if additional hidden spans exist (like `<span class="visually-hidden">`).
+**Action:** Update specific hover/focus CSS selectors from relying on `:last-child` to target the explicitly added `span[dir="auto"]` instead, ensuring the text-decoration target is correctly identified.
