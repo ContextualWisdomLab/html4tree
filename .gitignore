@@ -5,6 +5,6 @@
 build
 
 .idea
-*.orig
 
+# Completed editor/source-fix backup artifacts
 *.orig
