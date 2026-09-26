@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- 민감한 CI/CD 설정(GitHub Actions 및 GitLab CI) 파일 정보 노출을 방지하기 위해 기본 무시 파일 목록에 `.github` 및 `.gitlab` 디렉토리를 추가하였습니다.
 - Emit a `noindex, nofollow` robots meta preference on every generated
   directory page, with the explicit boundary that supporting crawlers must
   first fetch the page and that confidential data still requires server-side
