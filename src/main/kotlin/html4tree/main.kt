@@ -200,20 +200,27 @@ internal fun crawl_directories(
         val dirFilesNames = dirFiles?.let { files ->
             Array(files.size) { index -> files[index].name }
         }
-        val exclude = processIgnoreFile(lle.file, dirFilesNames)
 
-        if(maxLevel == -1 || currentLevel <= maxLevel)
-           processDirectory(lle.file, exclude, dirFiles)
+        val exclude = try {
+            processIgnoreFile(lle.file, dirFilesNames)
+        } catch (e: IgnoreFileReadException) {
+            null
+        }
 
-        if(maxLevel == -1 || currentLevel < maxLevel) {
-            dirFiles?.forEach {
-                // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
-                // by checking cheap in-memory string exclusion rules first
-                if(!it.name.isHiddenFile() && it.name !in exclude) {
-                    val childAttrs = readAttributes(it)
-                    if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
-                        val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
-                        ll.push(childEntry)
+        if (exclude != null) {
+            if(maxLevel == -1 || currentLevel <= maxLevel)
+               processDirectory(lle.file, exclude, dirFiles)
+
+            if(maxLevel == -1 || currentLevel < maxLevel) {
+                dirFiles?.forEach {
+                    // ⚡ Bolt Performance Optimization: Short-circuit OS stat calls
+                    // by checking cheap in-memory string exclusion rules first
+                    if(!it.name.isHiddenFile() && it.name !in exclude) {
+                        val childAttrs = readAttributes(it)
+                        if(childAttrs != null && childAttrs.isDirectory && !childAttrs.isSymbolicLink) {
+                            val childEntry = LinkedListEntry(it, currentLevel+1, readIdentity(it).key)
+                            ll.push(childEntry)
+                        }
                     }
                 }
             }
@@ -293,6 +300,13 @@ fun String.urlEncodePath(): String {
     return encoded?.toString() ?: this
 }
 
+/**
+ * Exception thrown when a security policy file (e.g., .html4ignore) is detected
+ * but cannot be read or disappears (TOCTOU race condition).
+ * Enforces fail-closed behavior to suppress directory publication and traversal.
+ */
+class IgnoreFileReadException(message: String) : Exception(message)
+
 fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): Set<String> {
 
     val ignore_filename = ".html4ignore"
@@ -302,6 +316,13 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
     val ignore_file = File(ignore_file_path)
 
     val files_to_exclude = mutableSetOf<String>()
+
+    val ignoreExists = ignore_file.exists() || Files.isSymbolicLink(ignore_file.toPath())
+    if (ignoreExists) {
+        if (!ignore_file.isFile || Files.isSymbolicLink(ignore_file.toPath()) || !ignore_file.canRead() || ignore_file.length() > 1048576) {
+            throw IgnoreFileReadException("Policy file $ignore_filename is inaccessible or invalid. Failing closed to prevent TOCTOU bypass.")
+        }
+    }
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
     // 보안 향상: 파일 크기(1MB 제한) 및 줄 수(1000줄), 정규식 길이(100자)를 제한하여 ReDoS 및 메모리 고갈(OOM) 방지

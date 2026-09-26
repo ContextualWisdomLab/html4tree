@@ -718,9 +718,36 @@ class MainTest {
         val ignoreDir = File(tempDir, ".html4ignore")
         ignoreDir.mkdir()
 
-        // This should not crash or parse the directory
-        val excluded = process_ignore_file(tempDir, null)
-        assertTrue(excluded.contains("index.html"))
+        // This should fail-closed and throw IgnoreFileReadException
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
+            process_ignore_file(tempDir, null)
+        }
+    }
+
+    @Test
+    fun testCrawlDirectoriesIgnoreFileReadException() {
+        val ignoreDir = File(tempDir, ".html4ignore")
+        ignoreDir.mkdir()
+        val ll = LinkedList()
+        val topEntry = LinkedListEntry(tempDir, 0, read_file_identity(tempDir).key)
+        ll.push(topEntry)
+
+        crawl_directories(
+            ll = ll,
+            maxLevel = -1,
+            processIgnoreFile = { _, _ -> throw IgnoreFileReadException("mock") }
+        )
+    }
+
+    @Test
+    fun testIgnoreFileTooLarge() {
+        val ignoreFile = File(tempDir, ".html4ignore")
+        val largeBytes = ByteArray(1048576 + 1)
+        ignoreFile.writeBytes(largeBytes)
+
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
@@ -762,10 +789,10 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the symlink and NOT parse it
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // Should fail-closed and throw IgnoreFileReadException
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
@@ -777,10 +804,10 @@ class MainTest {
 
         File(tempDir, "test.txt").createNewFile()
 
-        // Should ignore the file because it's too large
-        val excluded = process_ignore_file(tempDir, null)
-        assertFalse(excluded.contains("test.txt"))
-        assertTrue(excluded.contains("index.html"))
+        // Should fail-closed and throw IgnoreFileReadException
+        assertFailsWith<IgnoreFileReadException>("Expected IgnoreFileReadException to be thrown") {
+            process_ignore_file(tempDir, null)
+        }
     }
 
     @Test
