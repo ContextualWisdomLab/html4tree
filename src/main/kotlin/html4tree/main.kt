@@ -301,6 +301,11 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     val ignore_file = File(ignore_file_path)
 
+    // 보안 향상: TOCTOU 우회 방지를 위해, .html4ignore 파일이 디렉토리 스냅샷에 존재하지만 읽을 수 없는 경우 무시하지 않고 예외를 던져 Fail-Closed 동작을 강제합니다.
+    if (ignore_file.exists() && ignore_file.isFile && !ignore_file.canRead()) {
+        throw IgnoreFileReadException("Security policy file $ignore_filename exists but cannot be read. Failing closed to prevent policy bypass.")
+    }
+
     val files_to_exclude = mutableSetOf<String>()
 
     // 보안 향상: .html4ignore 파일이 일반 파일인지 확인하고, 심볼릭 링크인 경우 무시하여 DoS 및 경로 조작을 방지합니다.
