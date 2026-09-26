@@ -147,7 +147,7 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover span:last-child, a:focus-visible span:last-child {
+                a:hover span[dir="auto"], a:focus-visible span[dir="auto"] {
                   text-decoration: underline;
                 }
                 """.trimIndent()
