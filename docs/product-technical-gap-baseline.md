@@ -82,7 +82,7 @@ No database entity or relationship is owned by this product. Input is a filesyst
 
 ## Sensitive-extension matching acceptance — html4tree#783
 
-Product source remains single-writer [html4tree#783](https://github.com/ContextualWisdomLab/html4tree/pull/783); this documentation lane records evidence only. Product evidence exact: `70e87db2af253fb158f55e467c6202e6410a094c`.
+Product source remains single-writer [html4tree#783](https://github.com/ContextualWisdomLab/html4tree/pull/783); this documentation lane records evidence only. Product evidence exact: `79cb115a3c832d48ae34052ab0e60758c0264dd9`.
 
 ### PRD / TRD / ownership
 
