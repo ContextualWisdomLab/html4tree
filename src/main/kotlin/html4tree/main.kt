@@ -503,8 +503,10 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
+    // ⚡ Bolt Performance Optimization: Use arrayOf instead of listOf to avoid Iterator allocation
+    // Array.any is inline and uses a standard for-loop without allocating an Iterator object per file
     @JvmField
-    val defaultSensitiveExtensions = listOf(
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
