@@ -946,4 +946,15 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+
+    @Test
+    fun testProcessIgnoreFileWithNullDirFilesNames() {
+        val testDir = File(tempDir, "testIgnoreWithNull")
+        testDir.mkdirs()
+        File(testDir, "file1.txt").createNewFile()
+        File(testDir, "file2.txt").createNewFile()
+
+        val ignoreSet = process_ignore_file(testDir, null)
+        assertTrue(ignoreSet.contains("index.html"))
+    }
 }
