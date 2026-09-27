@@ -438,6 +438,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
         val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
         dir_files.sortWith(FILE_NAME_COMPARATOR)
+
+        val lenBeforeLoop = l.length
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
@@ -464,8 +466,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            }
         }
 
-        // index_top으로 인해 항상 내용이 있으므로, 하위 파일이 없는 경우를 별도로 검사합니다.
-        if(dir_files.isEmpty()){
+        // ⚡ Bolt Performance Optimization: Use length difference to check if any files were appended
+        // This preserves the exact behavior of the original `if(l.isEmpty())` check for fully-excluded directories.
+        if (l.length == lenBeforeLoop) {
             l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
