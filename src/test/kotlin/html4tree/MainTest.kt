@@ -416,6 +416,21 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileCreatesPosixReadableFile() {
+        write_index_file(tempDir, "content")
+        val indexFile = File(tempDir, "index.html")
+        try {
+            val perms = Files.getPosixFilePermissions(indexFile.toPath())
+            assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_READ))
+            assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_WRITE))
+            assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.GROUP_READ))
+            assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_READ))
+        } catch (e: UnsupportedOperationException) {
+            // Non-POSIX filesystem, test passes vacuously
+        }
+    }
+
+    @Test
     fun testWriteIndexFileFallsBackWhenAtomicReplacementRejectsExistingTarget() {
         val indexFile = File(tempDir, "index.html")
         indexFile.writeText("old content")

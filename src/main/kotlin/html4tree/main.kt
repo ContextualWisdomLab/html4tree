@@ -380,7 +380,15 @@ fun write_index_file(
     }
 ) {
     val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+
+    val tempPath = try {
+        val perms = java.nio.file.attribute.PosixFilePermissions.fromString("rw-r--r--")
+        val attrs = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(perms)
+        Files.createTempFile(curr_dir.toPath(), ".index-", ".html", attrs)
+    } catch (e: UnsupportedOperationException) {
+        Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    }
+
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
