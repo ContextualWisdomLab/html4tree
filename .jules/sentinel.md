@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-09-27 - [MEDIUM] 기본 무시 목록에 민감한 CI/CD 설정 폴더 추가
+**Vulnerability:** CI/CD 워크플로우 디렉토리(`.github`, `.gitlab`)가 디렉토리 인덱스에 노출되어 잠재적인 내부 설정 유출 가능성 존재.
+**Learning:** 기본적으로 숨김 처리되지 않은 중요 시스템/설정 파일은 자동 생성되는 정적 페이지를 통해 유출될 수 있으며, 이는 사용자가 의도치 않게 정보를 공개할 수 있는 보안 사각지대입니다.
+**Prevention:** 널리 사용되는 민감한 파일/폴더(`.github`, `.gitlab` 등)는 반드시 애플리케이션 레벨의 기본 무시 목록(default deny-list)에 포함시켜 기본적으로 보안(secure by default)을 확보해야 합니다.

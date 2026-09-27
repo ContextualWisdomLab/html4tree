@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### 보안
+- CI/CD 워크플로우 설정(`.github`, `.gitlab`) 디렉토리를 기본 무시 목록에 추가하여 잠재적인 정보 유출 방지.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
