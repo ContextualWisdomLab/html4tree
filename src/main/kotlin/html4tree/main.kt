@@ -351,16 +351,18 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
     // 보안 향상: dot-like prefixes and case variants of known sensitive names are excluded.
     (dirFilesNames ?: curr_dir.list())?.forEach {
-        val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
         if (
             it.isHiddenFile() ||
-            normalizedName in Constants.defaultSensitiveFileNamesLowercase ||
-            normalizedName.endsWith("~") ||
-            Constants.defaultSensitiveExtensions.any { extension ->
-                normalizedName.endsWith(extension)
-            }
+            it.endsWith("~")
         ) {
             files_to_exclude.add(it)
+        } else {
+            // ⚡ Bolt Performance Optimization: 문자열 지연 할당(Lazy allocation)으로 가비지 컬렉션(GC) 오버헤드 감소
+            // isHiddenFile()이나 endsWith() 같은 비용이 적은 검사를 먼저 수행한 후 소문자 변환(toLowerCase)을 지연 실행합니다.
+            val normalizedName = it.toLowerCase(java.util.Locale.ROOT)
+            if (normalizedName in Constants.defaultSensitiveFileNamesLowercase || Constants.defaultSensitiveExtensions.any { ext -> normalizedName.endsWith(ext) }) {
+                files_to_exclude.add(it)
+            }
         }
     }
 
@@ -503,8 +505,7 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
-    @JvmField
-    val defaultSensitiveExtensions = listOf(
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
