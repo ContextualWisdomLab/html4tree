@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-08-20 - 디렉토리 확인 및 작성 시점에서의 TOCTOU (Time-of-Check-Time-of-Use) 취약점 완화
+**학습:** `process_dir` 등 파일 시스템 순회 기능에서, 디렉토리를 식별(심볼릭 링크 배제 등)한 후 결과(예: `index.html`)를 해당 디렉토리에 작성하기까지의 시간 차이(Window of Vulnerability)에 공격자가 기존 디렉토리를 다른 디렉토리로 향하는 심볼릭 링크로 교체하면 임의 파일 쓰기(Arbitrary File Write) 공격이 가능합니다.
+**조치:** 디렉토리 내용물을 읽은 뒤 인덱스 파일을 생성하여 저장하기 직전, `Files.isDirectory(..., LinkOption.NOFOLLOW_LINKS)` 등의 API를 통해 다시 한번 타겟이 정상적인 디렉토리인지(심볼릭 링크가 아닌지) 재확인하여 TOCTOU 취약점을 방지(Fail Secure)하십시오.

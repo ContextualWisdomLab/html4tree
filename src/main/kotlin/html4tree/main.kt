@@ -426,7 +426,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
      </head>
      <body>
        <main>
-         <h1>${directoryName.escapeHtml()}</h1>
+         <h1 dir="auto">${directoryName.escapeHtml()}</h1>
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
@@ -460,7 +460,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span dir="auto">${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
                   l.append('\n')
                }
            }
@@ -483,6 +483,9 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
 """
 
    try {
+       if (!Files.isDirectory(curr_dir.toPath(), LinkOption.NOFOLLOW_LINKS)) {
+           return
+       }
        write_index_file(curr_dir, index_top+index_middle()+index_bottom)
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
