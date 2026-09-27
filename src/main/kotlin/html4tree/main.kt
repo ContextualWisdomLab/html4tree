@@ -456,12 +456,22 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
-                  val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
-                  l.append('\n')
+                  // ⚡ Bolt Performance Optimization: Prevent intermediate string allocations by using direct StringBuilder.append chaining
+                  val urlEncoded = fileName.urlEncodePath()
+                  val escapedName = fileName.escapeHtml()
+                  l.append("          <li><a class=\"dir-link\" href=\"./")
+                   .append(urlEncoded)
+                  if (isLinkedDirectory) l.append("/")
+                  l.append("\" title=\"")
+                   .append(escapedName)
+                   .append(if (isLinkedDirectory) " 디렉토리" else " 파일")
+                   .append("\"><span class=\"icon\" aria-hidden=\"true\">")
+                   .append(if (isLinkedDirectory) "&#128193;" else "&#128196;")
+                   .append("</span> <span>")
+                   .append(escapedName)
+                   .append("</span> <span class=\"visually-hidden\">")
+                   .append(if (isLinkedDirectory) "디렉토리" else "파일")
+                   .append("</span></a></li>\n")
                }
            }
         }
