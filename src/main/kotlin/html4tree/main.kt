@@ -408,7 +408,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
     val exclude: Set<String> = excludeSet ?: process_ignore_file(curr_dir)
     val directoryName = curr_dir.name.ifEmpty { "Root" }
 
-    val index_top = """<!doctype html>
+    val l = StringBuilder()
+    l.append("""<!doctype html>
 <html lang="ko">
      <head>
         <meta charset="UTF-8">
@@ -430,16 +431,15 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
          <nav aria-label="디렉토리 목록">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
-""" 
-
-    val index_middle = fun():String{ 
-        val l = StringBuilder()
+""")
 
         val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
         val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
         dir_files.sortWith(FILE_NAME_COMPARATOR)
+
+        val lenBeforeLoop = l.length
         dir_files.forEach {
            val fileName = it.getName()
            // ⚡ Bolt Performance Optimization: Short-circuit string match before expensive OS filesystem calls
@@ -466,24 +466,23 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
            }
         }
 
-        if(l.isEmpty()){
+        // ⚡ Bolt Performance Optimization: Use length difference to check if any files were appended
+        // This preserves the exact behavior of the original `if(l.isEmpty())` check for fully-excluded directories.
+        if (l.length == lenBeforeLoop) {
             l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
 
-        return l.toString();
-     } 
-
-   val index_bottom="""
+   l.append("""
          </ul>
          </nav>
        </main>
     </body>
 </html>
-"""
+""")
 
    try {
-       write_index_file(curr_dir, index_top+index_middle()+index_bottom)
+       write_index_file(curr_dir, l.toString())
    } catch (e: Exception) {
        // 보안 향상: 디렉토리에 쓰기 권한이 없거나 파일 시스템 오류가 발생했을 때
        // 전체 크롤링(프로세스)이 중단되는 DoS를 방지합니다. (Fail Securely)
