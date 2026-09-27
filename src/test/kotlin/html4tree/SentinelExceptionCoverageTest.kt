@@ -39,4 +39,15 @@ class SentinelExceptionCoverageTest {
         val excluded = process_ignore_file(mockDir, arrayOf())
         assertTrue(excluded.contains("index.html"))
     }
+
+    @Test
+    fun testProcessIgnoreFileWithListException() {
+        val mockDir = object : File("test") {
+            override fun list(): Array<String> {
+                throw SecurityException("mock")
+            }
+        }
+        val excluded = process_ignore_file(mockDir, null)
+        assertTrue(excluded.contains("index.html"))
+    }
 }
