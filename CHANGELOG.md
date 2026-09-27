@@ -30,6 +30,9 @@ All notable changes to this project are documented in this file.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
   cascade ordering, reduced-motion retention, text-only decoration, and numeric
   text/focus contrast thresholds.
+- 링크 내부의 특정 시각적 콘텐츠에만 호버 및 포커스 스타일(예: 밑줄)이 적용되도록,
+  일반적인 `span:last-child` 선택자 대신 `.entry-name` 클래스를 사용하도록 변경하여
+  스크린 리더용 숨김 텍스트에 불필요한 시각적 스타일이 적용되는 것을 방지.
 
 ### Documentation
 
