@@ -109,7 +109,6 @@ li + li {
 
 private val STYLE_HASH = "sha256-" + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(CSS_CONTENT.toByteArray(Charsets.UTF_8)))
 private val FILE_NAME_COMPARATOR = compareBy<File> { it.name }
-private val EMPTY_FILE_ARRAY = emptyArray<File>()
 
 class Html4tree : CliktCommand() {
     val maxLevel:Int by option(help="Number of levels deep for which to generate an index.html file", hidden = false).int().default(-1)
@@ -439,7 +438,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         val filesList = dirFiles ?: curr_dir.listFiles()
         // ⚡ Bolt Performance Optimization: Use Array clone instead of toMutableList
         // toMutableList() allocates a new ArrayList and a backing object array, whereas clone() only allocates a new array.
-        val dir_files: Array<File> = filesList?.clone() ?: EMPTY_FILE_ARRAY
+        val dir_files: Array<File> = filesList?.clone() ?: emptyArray()
         dir_files.sortWith(FILE_NAME_COMPARATOR)
         dir_files.forEach {
            val fileName = it.getName()
@@ -461,15 +460,13 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                   val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
-                  l.append('\n')
+                  l.append("          <li><a class=\"dir-link\" href=\"").append(encodedHref).append("\" title=\"").append(ariaLabel).append("\"><span class=\"icon\" aria-hidden=\"true\">").append(icon).append("</span> <span>").append(fileName.escapeHtml()).append("</span> <span class=\"visually-hidden\">").append(typeLabel).append("</span></a></li>\n")
                }
            }
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
-            l.append('\n')
+            l.append("          <li><div class=\"empty-dir\" role=\"status\"><span class=\"icon\" aria-hidden=\"true\">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>\n")
         }
 
         return l.toString();
