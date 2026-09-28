@@ -86,3 +86,6 @@
 ## 2026-09-26 - PR 상태 검토 및 대기 전략
 **Learning:** 코드 수정 후 리뷰 피드백에서 상태가 보존되었음을 명시하고 큐(queue) 대기 상황을 알려줄 경우, 추가적인 코드 수정 없이 진행 상황을 모니터링하며 응답하는 것이 중요합니다.
 **Action:** 추가 수정이 필요 없는 상태 업데이트 코멘트에 대해서는 코드가 보존되었음을 확인하고 완료 대기 중임을 답변합니다.
+## 2026-09-28 - CodeQL Timeout 우회
+**Learning:** CI 검증 과정에서 CodeQL 등의 스캔 태스크가 pending 또는 timeout 에러("CodeQL scan dispatched", "exceeded the maximum execution time")를 내며 실패할 경우, 이는 코드의 결함이 아니라 CI 인프라의 상태 이슈입니다.
+**Action:** 코드베이스를 수정하지 않고 인프라 오류임을 명확히 인지한 뒤 submit을 재호출하여 CI 검증 단계를 다시 시작합니다.
