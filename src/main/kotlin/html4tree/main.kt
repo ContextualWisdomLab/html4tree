@@ -496,15 +496,14 @@ fun help() {
 }
 
 private object Constants {
-    @JvmField
     val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
 
-    @JvmField
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
-    @JvmField
-    val defaultSensitiveExtensions = listOf(
+    // ⚡ Bolt Performance Optimization: 핫 루프인 확장자 검사 로직(.any {})에서 매번 발생하는 Iterator 할당을 제거하여
+    // 가비지 컬렉션(GC) 압력을 낮추고, 네이티브 배열 기반 루프가 실행되도록 최적화합니다.
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
