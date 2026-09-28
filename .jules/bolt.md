@@ -89,3 +89,6 @@
 ## 2026-09-28 - CodeQL Timeout 우회
 **Learning:** CI 검증 과정에서 CodeQL 등의 스캔 태스크가 pending 또는 timeout 에러("CodeQL scan dispatched", "exceeded the maximum execution time")를 내며 실패할 경우, 이는 코드의 결함이 아니라 CI 인프라의 상태 이슈입니다.
 **Action:** 코드베이스를 수정하지 않고 인프라 오류임을 명확히 인지한 뒤 submit을 재호출하여 CI 검증 단계를 다시 시작합니다.
+## 2026-09-28 - CodeQL Timeout 재우회
+**Learning:** 동일한 CodeQL dispatch pending/timeout 이슈가 계속 발생할 경우, 인프라의 한계로 인해 추가 코드 수정 없이 재시도를 진행해야 할 수 있습니다.
+**Action:** 코드의 논리적 결함이 아니므로 리뷰어의 요구사항에 맞춘 후 테스트 통과를 확인했다면 submit을 다시 실행하여 CI 프로세스가 올바르게 동작하도록 기다립니다.
