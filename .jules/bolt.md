@@ -92,3 +92,6 @@
 ## 2026-09-28 - CodeQL Timeout 재우회
 **Learning:** 동일한 CodeQL dispatch pending/timeout 이슈가 계속 발생할 경우, 인프라의 한계로 인해 추가 코드 수정 없이 재시도를 진행해야 할 수 있습니다.
 **Action:** 코드의 논리적 결함이 아니므로 리뷰어의 요구사항에 맞춘 후 테스트 통과를 확인했다면 submit을 다시 실행하여 CI 프로세스가 올바르게 동작하도록 기다립니다.
+## 2026-09-28 - 반복적인 인프라 timeout 회피
+**Learning:** CodeQL의 timeout 이슈로 인해 CI 검증이 여러 번 실패할 때도 있습니다.
+**Action:** 코드 문제가 없으므로, 다시 한 번 submit하여 인프라가 원활히 동작할 때까지 기다립니다.
