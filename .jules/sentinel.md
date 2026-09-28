@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-09-14 - [BiDi Spoofing in HTML Escaping]
+**Vulnerability:** HTML 렌더링 시 사용자 통제 문자열이 양방향 텍스트(BiDi) 우회를 통해 주변 텍스트의 방향성을 교란할 수 있습니다.
+**Learning:** `dir="auto"` 속성 없이 텍스트를 이스케이프하더라도 BiDi 컨트롤 문자가 주입될 경우 전체 문자열의 방향성이 변경될 위험이 있습니다.
+**Prevention:** 사용자 입력을 포함하는 텍스트는 First Strong Isolate(`&#x2068;`)와 Pop Directional Isolate(`&#x2069;`)로 감싸서 양방향 텍스트가 다른 요소에 영향을 미치지 않도록 격리해야 합니다.
