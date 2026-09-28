@@ -40,3 +40,4 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+- 보안 향상: `.github` 및 `.gitlab` 디렉토리를 기본 민감 파일 목록에 추가하여 정보 노출 방지
