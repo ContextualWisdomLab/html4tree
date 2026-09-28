@@ -946,4 +946,11 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+    @Test
+    fun testGoTopDirLength() {
+        assertFailsWith<IllegalArgumentException> {
+            go("a".repeat(4097), -1)
+        }
+    }
+
 }

@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-09-28 - [html4tree] 파일 시스템 API 입력 길이 제한 부재로 인한 DoS 및 OOM 취약점
+**Vulnerability:** 파일 경로를 처리하는 `go` 함수에서 `topDir` 인자에 대한 길이 제한이 없어, 매우 긴 문자열이 전달될 경우 파일 시스템 연산 과정에서 서비스 거부(DoS) 및 메모리 고갈(OOM)이 발생할 수 있습니다.
+**Learning:** 제한 없이 사용자 제공 문자열을 파일 시스템 경로로 수용할 경우, 악의적인 입력으로 인해 리소스가 과도하게 소비되거나 프로세스가 크래시될 수 있습니다.
+**Prevention:** 파일 시스템 API 호출 전, 입력 문자열(`topDir`)의 길이를 합리적인 제한(예: 4096자) 이내로 강제(`require(topDir.length <= 4096)`)하여 잠재적인 DoS 및 OOM 공격을 방지하십시오.
