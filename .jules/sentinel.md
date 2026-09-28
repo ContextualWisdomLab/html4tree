@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-08-18 - [MEDIUM] File.useLines() 내부의 읽기 불가 오류로 인한 크롤링 중단 방지
+**Vulnerability:** `.html4ignore` 파일을 파싱할 때 `isFile()`, `canRead()` 등을 확인하더라도 TOCTOU 또는 디스크 I/O 오류로 인해 `useLines()` 내부 스트림에서 `java.io.IOException`이나 `java.io.UncheckedIOException`이 발생하면 전체 디렉토리 트리 크롤링(프로세스)이 예외와 함께 완전히 중단(DoS)되는 취약점이 있습니다.
+**Learning:** 파일 경로를 검증한 직후(Time of Check)부터 실제 내용을 읽기 시작할 때(Time of Use)까지의 짧은 순간에도 파일의 상태가 변경되거나 I/O 장치 오류가 발생할 수 있습니다.
+**Prevention:** `File.useLines()` 또는 사용자 제공 파일을 읽는 파일 I/O 작업은 언제나 `try-catch` 블록으로 감싸 `IOException` 및 `UncheckedIOException`을 안전하게 처리(Fail Securely)하고 크롤러가 중단되지 않도록 보호해야 합니다.
