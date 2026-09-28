@@ -44,7 +44,7 @@ class GeneratedIndexReadabilityTest {
         )
 
         val generatedHtml = generatedHtml()
-        val parentIndex = generatedHtml.indexOf("<span aria-hidden=\"true\">..</span>")
+        val parentIndex = generatedHtml.indexOf("<span class=\"link-text\" aria-hidden=\"true\">..</span>")
         val firstIndex = generatedHtml.indexOf("alpha.txt")
         val middleIndex = generatedHtml.indexOf("middle.txt")
         val lastIndex = generatedHtml.indexOf("zulu.txt")
@@ -147,7 +147,7 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover span:last-child, a:focus-visible span:last-child {
+                a:hover .link-text, a:focus-visible .link-text {
                   text-decoration: underline;
                 }
                 """.trimIndent()
