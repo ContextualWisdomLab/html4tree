@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-09-24 - BiDi Spoofing / Trojan Source Prevention
+**Vulnerability:** 파일 및 디렉토리 이름이 디렉토리 목록 화면에 표시될 때, 공격자가 악의적으로 유니코드 양방향 텍스트(BiDi) 제어 문자인 Right-to-Left Override(\u202E)를 삽입하여 확장자를 속일 수 있는(BiDi Spoofing) 취약점이 있었습니다. 이로 인해 악성 실행 파일이 안전한 문서 파일인 것처럼 보이게 할 수 있었습니다.
+**Learning:** HTML 이스케이핑만으로는 충분하지 않습니다. 파일 이름 같은 사용자 입력이 브라우저에서 방향성을 띄지 않고 있는 그대로 안전하게 출력되려면, 제어 문자를 명시적으로 보여주는 처리와 함께 텍스트 방향을 격리(Isolate)해야 한다는 것을 배웠습니다.
+**Prevention:** HTML 이스케이프 함수 내에서 `\u202E` 문자를 문자열 `\\u202E`로 렌더링되게 치환하고, HTML 내에서 사용자 입력이 들어가는 부분을 First Strong Isolate (`&#x2068;`)와 Pop Directional Isolate (`&#x2069;`) 기호로 감싸 렌더링 방향이 왜곡되지 않게 보호해야 합니다.
