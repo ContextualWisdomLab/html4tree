@@ -62,3 +62,7 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+
+## 2026-08-14 - 중복된 OS I/O 호출 (curr_dir.list()) 캐싱
+**Learning:** `process_ignore_file`에서 `dirFilesNames ?: curr_dir.list()` 구문이 조건부로 여러 번 평가될 수 있어 `.html4ignore` 파일이 존재하는 경우 불필요하게 동일한 디렉토리에 대한 I/O `list()` 호출이 두 번 발생합니다.
+**Action:** `dirFilesNames ?: curr_dir.list()`의 평가 결과를 지역 변수(`cachedDirFilesNames`)에 캐싱하여 OS 수준의 파일 시스템 접근 횟수를 줄이고 중복 오버헤드를 제거합니다.
