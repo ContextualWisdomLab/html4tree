@@ -223,7 +223,11 @@ internal fun crawl_directories(
 }
 
 fun String.isHiddenFile(): Boolean {
-    return when (firstOrNull()) {
+    if (this.isEmpty()) return false
+    // ⚡ Bolt Performance Optimization: firstOrNull()을 isEmpty() + this[0]로 대체
+    // String에서 firstOrNull()을 호출하면 nullable Char?가 반환되어 기본 타입 박싱 오버헤드가 발생합니다.
+    // 직접적인 인덱스 접근을 사용하면 객체 할당을 방지하고 핫 루프에서 GC 압력을 줄일 수 있습니다.
+    return when (this[0]) {
         '.', '\u3002', '\uFF0E', '\uFF61' -> true
         else -> false
     }
