@@ -261,7 +261,10 @@ fun String.escapeHtml(): String {
 fun String.urlEncodePath(): String {
     val bytes = this.toByteArray(Charsets.UTF_8)
     var encoded: StringBuilder? = null
-    for (i in bytes.indices) {
+    // ⚡ Bolt Performance Optimization: Loop array bounds check hint
+    // Extracting `size` locally guarantees the JVM won't re-evaluate property getters in hot paths.
+    val size = bytes.size
+    for (i in 0 until size) {
         val byte = bytes[i].toInt() and 0xff
         val isUnreserved = (byte in 'A'.toInt()..'Z'.toInt()) ||
                            (byte in 'a'.toInt()..'z'.toInt()) ||
@@ -325,19 +328,24 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 
        // ⚡ Bolt Performance Optimization: 디렉토리 목록을 Set에 추가하기 위해 필터링만 할 때는 정렬이 불필요하므로 .sorted()를 제거하여 O(N log N) 오버헤드를 방지합니다.
        val list = dirFilesNames ?: curr_dir.list()
-       list?.forEach {
-           val current = it
-           val pathCurrent = try {
-               java.nio.file.Paths.get(current)
-           } catch (_: java.nio.file.InvalidPathException) {
-               files_to_exclude.add(current)
-               return@forEach
-           }
-           for (matcher in ignored_matchers) {
-              if (matcher.matches(pathCurrent)) {
-                 files_to_exclude.add(current)
-                 break
-              }
+
+       // ⚡ Bolt Performance Optimization: Early exit when matcher list is empty
+       // If the ignore file parsed without any valid matchers, skip the costly string/path iterations completely.
+       if (ignored_matchers.isNotEmpty()) {
+           list?.forEach {
+               val current = it
+               val pathCurrent = try {
+                   java.nio.file.Paths.get(current)
+               } catch (_: java.nio.file.InvalidPathException) {
+                   files_to_exclude.add(current)
+                   return@forEach
+               }
+               for (matcher in ignored_matchers) {
+                  if (matcher.matches(pathCurrent)) {
+                     files_to_exclude.add(current)
+                     break
+                  }
+               }
            }
        }
     }

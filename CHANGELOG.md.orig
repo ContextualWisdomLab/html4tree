@@ -13,8 +13,6 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
-- `.html4ignore` 매치 패턴이 없을 때 파일 시스템 반복 조회를 완전히 건너뛰도록 `process_ignore_file` 함수에 조기 종료(Early Exit) 최적화를 적용했습니다.
-
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
