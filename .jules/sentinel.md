@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-08-14 - [HIGH] .html4ignore 처리 중 심볼릭 링크 스왑(TOCTOU) 취약점 방지
+**Vulnerability:** `.html4ignore` 파일을 `File.useLines`로 읽을 때, 검사(isFile 등) 시점과 실제 파일을 여는 시점 사이에 해당 파일이 심볼릭 링크로 교체되면 심볼릭 링크를 따라가는 TOCTOU(Time-of-Check to Time-of-Use) 취약점이 발생할 수 있습니다.
+**Learning:** 파일 기반의 단순한 `useLines` 메서드는 내부적으로 심볼릭 링크를 자동으로 따라갑니다. 보안 검사(예: `!Files.isSymbolicLink`)를 먼저 수행하더라도, 파일을 다시 열 때 `LinkOption.NOFOLLOW_LINKS`와 같은 명시적인 제어가 없으면 검사가 무력화될 수 있습니다.
+**Prevention:** 파일을 안전하게 읽으면서 심볼릭 링크 탐색을 방지하려면, `File.useLines` 대신 `java.nio.file.Files.newInputStream(file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS).bufferedReader().useLines { ... }` 방식을 사용하여 파일을 여는 시점에도 심볼릭 링크를 명시적으로 거부하도록 해야 합니다.
