@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-09-29 - [CI/CD Configuration Exposure]
+**Vulnerability:** CI/CD configuration directories (e.g. `.github`, `.gitlab`) are not excluded by default, potentially exposing sensitive workflow information and secrets.
+**Learning:** Automated directory indexing should explicitly exclude CI/CD configuration directories to prevent unauthorized access to build pipelines and deployment configurations.
+**Prevention:** Add `.github` and `.gitlab` to the default list of sensitive files (`Constants.defaultSensitiveFiles`) to ensure they are excluded from generated directory listings.
