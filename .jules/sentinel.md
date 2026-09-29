@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-09-29 - [html4tree] POSIX 환경 임시 파일 권한 제어를 통한 파일 서비스 거부(DoS) 방지
+**Vulnerability:** `Files.createTempFile`이 생성하는 임시 파일은 POSIX 환경에서 기본적으로 소유자만 읽고 쓸 수 있는 권한(`rw-------`)을 가집니다. `write_index_file` 함수에서 원자적 교체(atomic move)가 실패하여 백포트 복사(fallback)가 실행될 경우, 생성된 `index.html`이 여전히 이 제한된 권한을 유지하게 됩니다. 결과적으로, Nginx나 Apache와 같은 웹 서버가 이 파일을 읽지 못해 사용자에게 403 Forbidden 에러가 발생하여 서비스가 거부될 수 있습니다.
+**Learning:** POSIX 파일 시스템에서 정적 리소스(예: 웹 페이지)를 생성하기 위해 임시 파일을 사용할 때, 기본 권한은 보안상 강력하지만(기밀성), 웹 서버가 읽어야 하는 공개 문서의 경우 가용성을 훼손할 수 있습니다(권한 거부 DoS).
+**Prevention:** 플랫폼이 POSIX 파일 속성을 지원하는 경우 `Files.createTempFile`에 명시적으로 넓은 읽기 권한(`rw-r--r--`)을 설정하여, 어떤 백업/복사 경로를 타더라도 파일이 올바르게 웹 서버에 의해 읽힐 수 있도록 보장해야 합니다.

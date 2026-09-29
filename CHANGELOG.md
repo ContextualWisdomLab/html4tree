@@ -6,6 +6,10 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- 🛡️ Sentinel: POSIX 파일 시스템에서 HTML 생성 시, 임시 `index.html` 파일을 전체 읽기 권한(`rw-r--r--`)으로 생성하도록 변경. 기본적으로 `Files.createTempFile`은 `rw-------` 권한으로 파일을 생성하는데, 원자적 교체가 실패하고 `Files.move(REPLACE_EXISTING)` 백폴백이 작동할 경우 이 제한된 권한이 그대로 유지됨. 이로 인해 그룹이나 전체 읽기 권한에 의존하는 웹 서버에서 403 Forbidden Error(서비스 거부, DoS)가 발생하는 것을 방지하기 위해 권한을 명시적으로 설정.
+- 올바른 권한 대체를 검증하기 위한 `testWriteIndexFileCreatesWorldReadableTempFileWhenPosixSupported` 테스트 케이스 추가.
+- `testWriteIndexFileWithoutPosixSupport` 테스트 케이스 추가.
+
 - Emit a `noindex, nofollow` robots meta preference on every generated
   directory page, with the explicit boundary that supporting crawlers must
   first fetch the page and that confidential data still requires server-side
