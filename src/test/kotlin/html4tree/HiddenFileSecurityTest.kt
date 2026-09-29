@@ -33,4 +33,21 @@ class HiddenFileSecurityTest {
             directory.deleteRecursively()
         }
     }
+    @Test
+    fun sensitiveExtensionsRemainExcludedCaseInsensitively() {
+        val directory = Files.createTempDirectory("html4tree-sensitive-").toFile()
+        try {
+            val names = arrayOf("server.PEM", "client.key", "archive.P12", "report.txt")
+
+            val excluded = process_ignore_file(directory, names)
+
+            assertTrue("server.PEM" in excluded)
+            assertTrue("client.key" in excluded)
+            assertTrue("archive.P12" in excluded)
+            assertFalse("report.txt" in excluded)
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
 }
