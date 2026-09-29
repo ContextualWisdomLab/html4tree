@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### UX Improvements 🎨
+- 파일 및 디렉토리 링크에 마우스 호버 및 키보드 포커스 시, 시각적으로 숨겨진 스크린 리더 텍스트 대신 실제 파일 이름에 밑줄이 표시되도록 접근성 및 시각적 피드백을 개선했습니다.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
