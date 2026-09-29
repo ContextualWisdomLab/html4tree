@@ -43,6 +43,13 @@ class UtilTest {
 
         assertEquals(entry1, entry2)
         assertEquals("Entry(data=file1, level=0, next=null, fileKey=null)", entry1.toString())
+
+        // explicitly read/write to satisfy jacoco for unused properties
+        entry1.next = entry2
+        assertEquals(entry2, entry1.next)
+
+        val entry3 = Entry(file1, 0, null, "key")
+        assertEquals("key", entry3.fileKey)
     }
 
     @Test
@@ -62,10 +69,11 @@ class UtilTest {
         assertEquals(2, copied.level)
         assertNull(copied.next)
 
-        val (data, level, next) = entry
+        val (data, level, next, fileKey) = entry
         assertEquals(file1, data)
         assertEquals(0, level)
         assertNull(next)
+        assertNull(fileKey)
     }
 
     @Test
@@ -152,5 +160,59 @@ class UtilTest {
         assertEquals(File("f2"), list.pull()?.file)
         assertEquals(File("f3"), list.pull()?.file)
         assertNull(list.pull())
+    }
+
+    @Test
+    fun testLinkedListPullDequeEmptyLNull() {
+        val list = LinkedList()
+        list.last = null
+        val e = LinkedListEntry(File("test"), 0)
+        list.push(e)
+        // manipulate internal deque directly for test coverage of the fallback
+        val m = LinkedList::class.java.getDeclaredField("deque")
+        m.isAccessible = true
+        val deque = m.get(list) as java.util.ArrayDeque<LinkedListEntry>
+        deque.clear() // make deque empty again
+        deque.add(LinkedListEntry(File("test2"), 0))
+        list.last = null // force l == null path and deque.isEmpty() == false
+
+        val pulled = list.pull()
+        assertEquals(File("test2"), pulled?.file)
+    }
+
+    @Test
+    fun testLinkedListPullLNotNullDequeEmpty() {
+        val list = LinkedList()
+        list.last = Entry(File("f1"), 0, null)
+        val pulled = list.pull()
+        assertEquals(File("f1"), pulled?.file)
+
+        val list2 = LinkedList()
+        list2.last = Entry(File("f1"), 0, Entry(File("f2"), 0, null))
+        val pulled2 = list2.pull()
+        assertEquals(File("f1"), pulled2?.file)
+    }
+
+    @Test
+    fun testLinkedListPushEmptyDequeLastNotNull() {
+        val list = LinkedList()
+        list.last = Entry(File("f1"), 0, null)
+        list.push(LinkedListEntry(File("f2"), 0))
+        val pulled1 = list.pull()
+        val pulled2 = list.pull()
+        assertEquals(File("f1"), pulled1?.file)
+        assertEquals(File("f2"), pulled2?.file)
+    }
+
+    @Test
+    fun testLinkedListPullDequeNotEmptyLNotNull() {
+        val list = LinkedList()
+        list.push(LinkedListEntry(File("f1"), 0))
+        list.push(LinkedListEntry(File("f2"), 0))
+
+        // internal deque now has f1, f2
+        // last should be pointing to f2
+        val pulled1 = list.pull() // pulls f1
+        assertEquals(File("f1"), pulled1?.file)
     }
 }
