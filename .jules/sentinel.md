@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-08-30 - [MEDIUM] 민감한 클라우드 인프라 자격 증명 및 SSH 키 파일 노출 방지
+**Vulnerability:** `terraform.tfstate`나 `id_ecdsa` 같은 민감한 파일들이 숨김 파일(hidden file)로 취급되지 않아(dot으로 시작하지 않음) 디렉토리 인덱스에 노출될 수 있었습니다.
+**Learning:** 숨김 파일 필터링만으로는 충분하지 않습니다. 파일 이름이 `.`으로 시작하지 않으면서도 클라우드 인프라 자격 증명이나 암호화 키를 평문으로 담고 있는 중요한 파일(예: `terraform.tfstate`, `id_ecdsa`)이 존재합니다.
+**Prevention:** 널리 쓰이는 비 숨김형(non-hidden) 민감 파일 목록을 정적 인덱서의 기본 제외(deny-list)에 명시적으로 추가하여 원천 차단하십시오.
