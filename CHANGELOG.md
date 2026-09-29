@@ -41,3 +41,6 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+
+### Changed
+- 성능 향상을 위해 `Constants.defaultSensitiveExtensions` 필터링 수행 시 발생하는 Iterator 할당 오버헤드를 내부 배열 객체(Object array)를 활용하여 최적화했습니다. (Bolt)
