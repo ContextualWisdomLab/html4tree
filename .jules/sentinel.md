@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-10-25 - [html4tree] .html4ignore 처리 중 TOCTOU/DoS 방지
+**Vulnerability:** 파일 길이나 상태(isFile, canRead 등)를 확인한 후 `useLines`로 열 때, 그 짧은 시간(Time-Of-Check to Time-Of-Use) 사이에 대상이 심볼릭 링크나 다른 파일/디렉토리로 교체되거나 읽기 불가 상태가 될 경우 `IOException` 또는 `UncheckedIOException`이 발생하여 전체 프로세스가 다운될 수 있습니다.
+**Learning:** `File.useLines()`와 같이 파일 I/O 스트림을 직접 인스턴스화하고 사용하는 연산은 TOCTOU 타이밍 공격이나 예기치 못한 시스템 I/O 에러에 매우 취약하며, 로컬 서비스 거부(DoS) 공격으로 이어질 수 있습니다.
+**Prevention:** `File.useLines()` 등 사용자 제공 파일을 처리할 때는 외부 상태 의존을 최소화하고, 반드시 전체 파일 검증 및 열기 작업을 `try-catch`로 감싸 `IOException`, `UncheckedIOException`, `SecurityException` 등을 안전하게 삼켜 애플리케이션 충돌 대신 우아하게 처리(Fail Securely)하도록 하십시오.
