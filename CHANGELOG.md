@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- UX 개선: 시각적으로 숨겨진 텍스트(.visually-hidden)에 hover/focus 밑줄이 적용되는 현상을 방지하기 위해 .entry-name 클래스를 도입하여 상호작용 텍스트에만 밑줄이 표시되도록 개선했습니다.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
