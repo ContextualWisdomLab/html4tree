@@ -370,6 +370,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 fun write_index_file(
     curr_dir: File,
     content: String,
+    supportsPosix: Boolean = curr_dir.toPath().fileSystem.supportedFileAttributeViews().contains("posix"),
     moveFile: (
         java.nio.file.Path,
         java.nio.file.Path,
@@ -381,11 +382,11 @@ fun write_index_file(
 ) {
     val indexPath = curr_dir.toPath().resolve("index.html")
 
-    val tempPath = try {
+    val tempPath = if (supportsPosix) {
         val perms = java.nio.file.attribute.PosixFilePermissions.fromString("rw-r--r--")
         val attrs = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(perms)
         Files.createTempFile(curr_dir.toPath(), ".index-", ".html", attrs)
-    } catch (e: UnsupportedOperationException) {
+    } else {
         Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     }
 

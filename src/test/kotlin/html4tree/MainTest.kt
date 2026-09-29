@@ -431,6 +431,14 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileHandlesNonPosixFileSystem() {
+        write_index_file(tempDir, "content", supportsPosix = false)
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals("content", indexFile.readText())
+    }
+
+    @Test
     fun testWriteIndexFileFallsBackWhenAtomicReplacementRejectsExistingTarget() {
         val indexFile = File(tempDir, "index.html")
         indexFile.writeText("old content")
