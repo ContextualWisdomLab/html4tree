@@ -101,6 +101,6 @@
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
 
 ## 2024-09-28 - [MEDIUM] Insecure Temporary File Permissions in NIO
-**Vulnerability:** When using `java.nio.file.Files.createTempFile` on POSIX systems without specifying attributes, the file is created with highly restrictive default permissions (`rw-------` or `0600`). In the context of a static HTML generator like `html4tree`, if this temporary file is then moved to the final destination (`index.html`) using mechanisms that preserve permissions (or fallback mechanisms), the resulting file may not be readable by the web server (e.g., Apache or Nginx). This causes a 403 Forbidden Denial of Service (DoS) for users trying to access the directory index.
-**Learning:** Default secure defaults in APIs (like `createTempFile`'s 0600) can inadvertently cause availability or integration issues when generating public assets. We must explicitly define the required file permissions based on the asset's intended lifecycle and audience.
-**Prevention:** Always explicitly set the required permissions on temporary files intended for public access using `PosixFilePermissions`. Wrap the permission setting in a `try-catch` block catching `UnsupportedOperationException` to maintain cross-platform compatibility (e.g., on Windows where POSIX views are not supported).
+**Vulnerability:** `java.nio.file.Files.createTempFile`을 POSIX 시스템에서 사용할 때 기본적으로 매우 제한적인 권한(`0600`)으로 생성되어, 웹 서버가 인덱스 파일을 읽지 못하는 서비스 거부(DoS) 상태를 유발할 수 있습니다.
+**Learning:** 퍼블릭 접근이 필요한 에셋을 생성할 때는 API의 안전한 기본값(`0600`)이 오히려 호환성 문제를 일으킬 수 있으므로 명시적으로 권한을 지정해야 합니다.
+**Prevention:** 웹 접근을 위해 임시 파일 생성 후 `PosixFilePermissions`를 사용해 `rw-r--r--` 권한을 설정하고, `UnsupportedOperationException`을 예외 처리하여 비 POSIX 시스템에서도 안전하게 동작하도록 합니다.

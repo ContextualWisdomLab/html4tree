@@ -384,7 +384,7 @@ fun write_index_file(
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
         Files.setPosixFilePermissions(tempPath, PosixFilePermissions.fromString("rw-r--r--"))
-    } catch (_: UnsupportedOperationException) {
+    } catch (e: UnsupportedOperationException) {
     }
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
