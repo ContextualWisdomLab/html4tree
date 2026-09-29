@@ -95,3 +95,6 @@
 ## 2026-09-28 - 반복적인 인프라 timeout 회피
 **Learning:** CodeQL의 timeout 이슈로 인해 CI 검증이 여러 번 실패할 때도 있습니다.
 **Action:** 코드 문제가 없으므로, 다시 한 번 submit하여 인프라가 원활히 동작할 때까지 기다립니다.
+## 2026-09-29 - strix 에러 대응
+**Learning:** CI 단계에서 strix의 provider가 timeout, token cap, connection 등의 이슈로 실패할 경우, 코드를 수정할 필요 없이 일시적인 장애를 통과할 때까지 재시도해야 합니다.
+**Action:** 코드나 설정의 결함이 아니므로 동일한 작업을 submit 도구로 재호출합니다.
