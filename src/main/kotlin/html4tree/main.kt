@@ -56,6 +56,9 @@ a:hover, a:focus-visible {
   outline: 2px solid #0969da;
   outline-offset: -2px;
 }
+a:active {
+  background-color: #eaeef2;
+}
 a:hover span:last-child, a:focus-visible span:last-child {
   text-decoration: underline;
 }
@@ -97,6 +100,9 @@ li + li {
   a:hover, a:focus-visible {
     background-color: #161b22;
     outline-color: #58a6ff;
+  }
+  a:active {
+    background-color: #21262d;
   }
   li + li {
     border-top-color: #21262d;
@@ -427,7 +433,8 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
      <body>
        <main>
          <h1>${directoryName.escapeHtml()}</h1>
-         <nav aria-label="디렉토리 목록">
+         <h2 id="dir-list-label" class="visually-hidden">디렉토리 목록</h2>
+         <nav aria-labelledby="dir-list-label">
          <ul role="list">
             <li><a class="dir-link" href="./.." title="상위 디렉토리로 이동"><span class="icon" aria-hidden="true">&#x21B0;</span> <span aria-hidden="true">..</span> <span class="visually-hidden">상위 디렉토리로 이동</span></a></li>
 """ 
