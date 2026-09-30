@@ -769,6 +769,17 @@ class MainTest {
     }
 
     @Test
+    fun testIgnoreFileNofollowLinksException() {
+        val targetFile = File(tempDir, "target.ignore")
+        targetFile.writeText("*.txt")
+        val ignoreFile = File(tempDir, ".html4ignore")
+        ignoreFile.writeText("*.txt")
+        ignoreFile.setReadable(false)
+
+        process_ignore_file(tempDir, null)
+    }
+
+    @Test
     fun testProcessIgnoreFileLargeSize() {
         val ignoreFile = File(tempDir, ".html4ignore")
         // Write slightly more than 1MB
