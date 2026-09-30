@@ -40,3 +40,7 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+
+### Security
+
+- POSIX 시스템에서 index.html을 원자적으로 교체하기 위한 임시 파일을 생성할 때 기본 권한(0600)을 `rw-r--r--`로 넓혀 웹 서버 환경에서 발생하는 로컬 접근 거부(DoS) 취약점을 해결했습니다.

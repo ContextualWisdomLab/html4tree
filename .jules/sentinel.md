@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-10-01 - Prevent Web Server File Unavailability Due to Restrictive Temp File Permissions
+**Vulnerability:** Files created with `Files.createTempFile` have default restrictive permissions (0600 on POSIX). Moving these files to `index.html` leaves them unreadable by standard web server users or regular users trying to browse the directory, leading to broken functionality and localized denial of access.
+**Learning:** In Java/Kotlin NIO, when temp files are eventually exposed as web assets, you must explicitly set broader permissions like `rw-r--r--` during creation or fallback to setting them post-creation for unsupported platforms.
+**Prevention:** Always use `PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-r--r--"))` combined with a platform check when creating temp files intended for broader access, injecting the OS capability check to ensure testability.
