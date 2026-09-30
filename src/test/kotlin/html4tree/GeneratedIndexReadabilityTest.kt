@@ -134,7 +134,14 @@ class GeneratedIndexReadabilityTest {
 
     @Test
     fun hoverAndKeyboardFocusUnderlineOnlyLinkText() {
-        process_dir(temporaryDirectory, setOf("index.html"), emptyArray())
+        val linkedFile = File(temporaryDirectory, "file.txt").apply { writeText("") }
+        process_dir(temporaryDirectory, setOf("index.html"), arrayOf(linkedFile))
+
+        assertTrue(
+            generatedHtml().contains(
+                """<a class="dir-link" href="./file.txt" title="file.txt 파일"><span class="icon" aria-hidden="true">&#128196;</span> <span>file.txt</span> <span class="visually-hidden">파일</span></a>"""
+            )
+        )
 
         val style = emittedStyle()
         val completeTargetRule = Regex("""a:hover, a:focus-visible \{([\s\S]*?)\}""")
@@ -147,7 +154,7 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
-                a:hover span:last-child, a:focus-visible span:last-child {
+                a:hover span:nth-child(2), a:focus-visible span:nth-child(2) {
                   text-decoration: underline;
                 }
                 """.trimIndent()
