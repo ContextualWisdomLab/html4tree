@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Changed
+- 디렉토리 및 파일 순회 시 숨김 파일 검사의 성능을 최적화하여 핫 루프 내 불필요한 `Char?` 박싱 및 객체 할당을 제거했습니다.
+
 # Changelog
 
 All notable changes to this project are documented in this file.
