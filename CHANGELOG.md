@@ -40,3 +40,4 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+- [접근성] 스크린 리더용 숨김 텍스트(.visually-hidden)에 의도치 않게 hover/focus 밑줄 스타일이 적용되던 현상 수정
