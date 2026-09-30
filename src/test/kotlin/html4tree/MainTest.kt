@@ -946,4 +946,12 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+    @Test
+    fun testWriteIndexFileNonPosixFallback() {
+        val indexFile = File(tempDir, "index.html")
+        indexFile.writeText("old")
+        write_index_file(tempDir, "non-posix content", supportsPosix = false)
+        assertEquals("non-posix content", indexFile.readText())
+    }
+
 }
