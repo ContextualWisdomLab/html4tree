@@ -2,6 +2,7 @@ package html4tree
 
 import org.junit.Test
 import java.io.File
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CoverageTest {
@@ -29,6 +30,13 @@ class CoverageTest {
         ll.push(LinkedListEntry(readOnlyDir, 0, null))
         crawl_directories(ll, -1, readAttributes = { null })
         assertTrue(true)
+    }
+
+    @Test
+    fun testIsHiddenFileBoundaryConditions() {
+        assertFalse("".isHiddenFile())
+        assertTrue(".".isHiddenFile())
+        assertFalse("a".isHiddenFile())
     }
 
     @Test

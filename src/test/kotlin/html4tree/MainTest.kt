@@ -435,6 +435,35 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileCreatesWorldReadableTempFileWhenPosixSupported() {
+        val supportsPosix = java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix")
+        if (!supportsPosix) return
+
+        var tempPathStr = ""
+        write_index_file(tempDir, "content", true, moveFile = { source, target, options ->
+            tempPathStr = source.toString()
+            val attrs = java.nio.file.Files.readAttributes(source, "posix:permissions")
+            @Suppress("UNCHECKED_CAST")
+            val permissions = attrs["permissions"] as Set<java.nio.file.attribute.PosixFilePermission>
+            assertTrue(permissions.contains(java.nio.file.attribute.PosixFilePermission.OWNER_READ))
+            assertTrue(permissions.contains(java.nio.file.attribute.PosixFilePermission.OWNER_WRITE))
+            assertTrue(permissions.contains(java.nio.file.attribute.PosixFilePermission.GROUP_READ))
+            assertTrue(permissions.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_READ))
+            assertFalse(permissions.contains(java.nio.file.attribute.PosixFilePermission.GROUP_WRITE))
+            assertFalse(permissions.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE))
+            Files.move(source, target, *options)
+            Unit
+        })
+        assertTrue(tempPathStr.isNotEmpty())
+    }
+
+    @Test
+    fun testWriteIndexFileWithoutPosixSupport() {
+        write_index_file(tempDir, "content fallback", false)
+        assertEquals("content fallback", File(tempDir, "index.html").readText())
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
