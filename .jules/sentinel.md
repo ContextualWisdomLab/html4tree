@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-09-30 - [MEDIUM] CI/CD 구성 디렉토리 정보 노출 방지
+**Vulnerability:** .github, .gitlab과 같은 CI/CD 관련 구성 디렉토리가 디렉토리 목록을 통해 외부로 노출될 경우, 민감한 워크플로우나 보안 설정 정보가 유출될 위험이 있습니다.
+**Learning:** 자동화된 디렉토리 인덱서가 제외해야 할 기본 민감 파일 목록에는 일반적인 인증 정보 파일뿐만 아니라, 잠재적으로 보안과 직결된 CI/CD 파이프라인 디렉토리도 기본적으로 포함되어야 함을 배웠습니다.
+**Prevention:** Constants.defaultSensitiveFiles 목록에 .github와 .gitlab 디렉토리를 기본적으로 제외하도록 추가하여, 무심코 공개된 디렉토리 목록에서 CI/CD 설정 파일이 노출되는 정보 유출(Information Exposure)을 방지하십시오.
