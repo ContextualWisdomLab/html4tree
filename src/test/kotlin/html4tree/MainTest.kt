@@ -60,6 +60,16 @@ class MainTest {
         assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
         assertEquals("mix text &amp; and &lt;tag&gt;", "mix text & and <tag>".escapeHtml())
+        assertEquals("\\u202E", "\u202E".escapeHtml())
+        assertEquals("evil\\u202Etxt.sh", "evil\u202Etxt.sh".escapeHtml())
+        assertEquals("\\u202D", "\u202D".escapeHtml())
+        assertEquals("\\u202B", "\u202B".escapeHtml())
+        assertEquals("\\u202A", "\u202A".escapeHtml())
+        assertEquals("\\u202C", "\u202C".escapeHtml())
+        assertEquals("\\u2066", "\u2066".escapeHtml())
+        assertEquals("\\u2067", "\u2067".escapeHtml())
+        assertEquals("\\u2068", "\u2068".escapeHtml())
+        assertEquals("\\u2069", "\u2069".escapeHtml())
     }
 
     @Test
@@ -339,9 +349,9 @@ class MainTest {
         assertTrue(htmlContent.contains("title=\"상위 디렉토리로 이동\""))
         assertTrue(htmlContent.contains("aria-hidden=\"true\""))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">파일</span>"))
-        assertTrue(htmlContent.contains("title=\"file1.txt 파일\""))
+        assertTrue(htmlContent.contains("title=\"&#x2068;file1.txt 파일&#x2069;\""))
         assertTrue(htmlContent.contains("<span class=\"visually-hidden\">디렉토리</span>"))
-        assertTrue(htmlContent.contains("title=\"subdir 디렉토리\""))
+        assertTrue(htmlContent.contains("title=\"&#x2068;subdir 디렉토리&#x2069;\""))
         assertTrue(htmlContent.contains("file1.txt"))
         assertTrue(htmlContent.contains("subdir/"))
         assertTrue(htmlContent.contains("&#128193;"))
@@ -942,8 +952,8 @@ class MainTest {
         val indexHtml = File(fakeRoot, "index.html")
         assertTrue(indexHtml.exists())
         val content = indexHtml.readText()
-        assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
-        assertTrue(content.contains("<h1>Root</h1>"))
+        assertTrue(content.contains("<title>&#x2068;Root&#x2069; - 디렉토리 목록</title>"))
+        assertTrue(content.contains("<h1>&#x2068;Root&#x2069;</h1>"))
     }
 
 }
