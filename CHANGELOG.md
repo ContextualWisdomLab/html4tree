@@ -30,8 +30,6 @@ All notable changes to this project are documented in this file.
 - Add generated-page regressions for row ordering, empty-state semantics, CSS
   cascade ordering, reduced-motion retention, text-only decoration, and numeric
   text/focus contrast thresholds.
-- Bind the text-only hover/focus selector to a real generated file link whose
-  visible label remains between the decorative icon and assistive type text.
 
 ### Documentation
 
@@ -42,5 +40,3 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
-- Add `docs/product-technical-gap-baseline.md` with the exact-head UI
-  acceptance matrix and remaining browser, locale, and large-directory gates.
