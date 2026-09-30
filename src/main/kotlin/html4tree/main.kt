@@ -503,8 +503,7 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
-    @JvmField
-    val defaultSensitiveExtensions = listOf(
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
