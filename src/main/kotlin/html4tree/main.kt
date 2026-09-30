@@ -457,21 +457,11 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                }
                if (!isSymbolicLink) {
                   val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
+                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
                   val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val ariaLabel = "${fileName} ${typeLabel}".escapeHtml()
                   val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  // ⚡ Bolt Performance Optimization: 체인형 append 호출로 문자열 보간(String interpolation)에 의한 중간 객체 할당 방지
-                  l.append("          <li><a class=\"dir-link\" href=\"")
-                   .append(encodedHref)
-                   .append("\" title=\"")
-                   .append(ariaLabel)
-                   .append("\"><span class=\"icon\" aria-hidden=\"true\">")
-                   .append(icon)
-                   .append("</span> <span>")
-                   .append(fileName.escapeHtml())
-                   .append("</span> <span class=\"visually-hidden\">")
-                   .append(typeLabel)
-                   .append("</span></a></li>\n")
+                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
+                  l.append('\n')
                }
            }
         }
