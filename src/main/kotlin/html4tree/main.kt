@@ -222,8 +222,12 @@ internal fun crawl_directories(
     }
 }
 
+// ⚡ Bolt Performance Optimization: Replace firstOrNull() with direct index access
+// Calling String.firstOrNull() returns a nullable Char?, causing primitive boxing overhead.
+// Replacing it with an isEmpty() check and direct index access eliminates object allocation and reduces garbage collection pressure.
 fun String.isHiddenFile(): Boolean {
-    return when (firstOrNull()) {
+    if (this.isEmpty()) return false
+    return when (this[0]) {
         '.', '\u3002', '\uFF0E', '\uFF61' -> true
         else -> false
     }
