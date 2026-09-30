@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-09-28 - [MEDIUM] Insecure Temporary File Permissions in NIO
+**Vulnerability:** `java.nio.file.Files.createTempFile`을 POSIX 시스템에서 사용할 때 기본적으로 매우 제한적인 권한(`0600`)으로 생성되어, 웹 서버가 인덱스 파일을 읽지 못하는 서비스 거부(DoS) 상태를 유발할 수 있습니다.
+**Learning:** 퍼블릭 접근이 필요한 에셋을 생성할 때는 API의 안전한 기본값(`0600`)이 오히려 호환성 문제를 일으킬 수 있으므로 명시적으로 권한을 지정해야 합니다.
+**Prevention:** 웹 접근을 위해 임시 파일 생성 후 `PosixFilePermissions`를 사용해 `rw-r--r--` 권한을 설정하고, `UnsupportedOperationException`을 예외 처리하여 비 POSIX 시스템에서도 안전하게 동작하도록 합니다.

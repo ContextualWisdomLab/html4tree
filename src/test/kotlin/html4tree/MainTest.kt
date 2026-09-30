@@ -10,6 +10,7 @@ import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -944,6 +945,21 @@ class MainTest {
         val content = indexHtml.readText()
         assertTrue(content.contains("<title>Root - 디렉토리 목록</title>"))
         assertTrue(content.contains("<h1>Root</h1>"))
+    }
+
+    @Test
+    fun testWriteIndexFileTempPermissions() {
+        val subdir = File(tempDir, "perms")
+        subdir.mkdir()
+        write_index_file(subdir, "test")
+        val indexFile = File(subdir, "index.html")
+        assertTrue(indexFile.exists())
+        try {
+            val perms = Files.getPosixFilePermissions(indexFile.toPath())
+            assertEquals(PosixFilePermissions.fromString("rw-r--r--"), perms)
+        } catch (e: UnsupportedOperationException) {
+            // Windows etc. Ignore POSIX test
+        }
     }
 
 }
