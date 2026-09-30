@@ -60,6 +60,8 @@ class MainTest {
         assertEquals("&amp;&lt;&gt;&quot;&#x27;&#x60;", "&<>\"'`".escapeHtml())
         assertEquals("normal text", "normal text".escapeHtml())
         assertEquals("mix text &amp; and &lt;tag&gt;", "mix text & and <tag>".escapeHtml())
+        assertTrue("normal text" === "normal text".escapeHtml())
+        assertEquals("a&amp;b", "a&b".escapeHtml())
     }
 
     @Test
