@@ -440,7 +440,7 @@ class MainTest {
         if (!supportsPosix) return
 
         var tempPathStr = ""
-        write_index_file(tempDir, "content", true) { source, target, options ->
+        write_index_file(tempDir, "content", true, moveFile = { source, target, options ->
             tempPathStr = source.toString()
             val attrs = java.nio.file.Files.readAttributes(source, "posix:permissions")
             @Suppress("UNCHECKED_CAST")
@@ -453,7 +453,7 @@ class MainTest {
             assertFalse(permissions.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE))
             Files.move(source, target, *options)
             Unit
-        }
+        })
         assertTrue(tempPathStr.isNotEmpty())
     }
 
