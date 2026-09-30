@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Performance**: 문자열의 `isHiddenFile` 함수 내 객체 할당(sequence materialization) 제거
+
 - Emit a `noindex, nofollow` robots meta preference on every generated
   directory page, with the explicit boundary that supporting crawlers must
   first fetch the page and that confidential data still requires server-side
