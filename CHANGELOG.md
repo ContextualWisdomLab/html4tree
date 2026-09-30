@@ -1,4 +1,5 @@
-# Changelog
+## [Unreleased]
+- 🛡️ Sentinel: [MEDIUM] Fix BiDi spoofing (RTL injection 방지 및 디렉토리명/파일명 FSI/PDI 격리)
 
 All notable changes to this project are documented in this file.
 

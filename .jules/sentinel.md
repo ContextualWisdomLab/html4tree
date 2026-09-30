@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-09-17 - [MEDIUM] Fix BiDi spoofing
+**Vulnerability:** 파일명이나 디렉토리명에 유니코드 양방향 텍스트 제어 문자(BiDi)가 삽입될 경우(예: RTL 문자 삽입), 브라우저 렌더링 시 원래의 확장자나 정보를 숨기고 악성 파일로 위장할 수 있는 보안 취약점이 존재했습니다.
+**Learning:** 애플리케이션에서 생성하는 HTML 내 사용자 제어 문자열이 올바르게 렌더링되고 악의적인 표시 변조가 발생하지 않도록 하기 위해, 유니코드 제어 문자를 명시적으로 보여주도록 이스케이프해야 함을 알게 되었습니다.
+**Prevention:** HTML 내 변수 삽입 시, 변수에 `.escapeHtml()`을 먼저 적용하여 이스케이프한 뒤, 해당 값을 `&#x2068;` (FSI)와 `&#x2069;` (PDI)로 감싸 렌더링을 격리하고 BiDi 스푸핑을 방지해야 합니다. 또한, 이스케이프 함수 내에 BiDi 제어 문자에 대한 이스케이프 로직을 추가하여 해당 문자가 강제로 표시되도록 조치해야 합니다.
