@@ -13,6 +13,8 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- 성능 향상을 위해 `String.isHiddenFile()`의 `firstOrNull()` 호출을 제거하고 직접 인덱스 접근(`this[0]`)을 사용하여 객체 할당(boxing) 오버헤드 감소
+
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
