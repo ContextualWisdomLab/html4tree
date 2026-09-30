@@ -40,3 +40,7 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+
+### Fixed
+
+- 링크 호버/포커스 시 밑줄 효과가 접근성용 숨김 텍스트에 적용되는 버그 수정 (`span:last-child` 대신 `.entry-name` 클래스 사용)
