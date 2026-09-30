@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2023-09-20 - [HIGH] TOCTOU 취약점 및 정보 누출 방지 (Fail-Closed Policy)
+**Vulnerability:** 디렉토리 내부의 .html4ignore 파일(정책 파일)이 디렉토리 스냅샷 목록에 존재하지만, 프로세스가 파일을 읽으려 할 때 접근 불가능해지거나(삭제, 권한 변경 등 TOCTOU) 심볼릭 링크 공격을 받는 경우, 프로그램이 정상적으로 정책 파일을 불러오지 못하고 해당 디렉토리의 파일들을 외부에 노출할 위험(Information Exposure)이 존재함.
+**Learning:** 파일 시스템에서 보안 정책 파일을 읽어올 때, 파일 목록 조회 시점(Time-of-Check)과 파일 내용 참조 시점(Time-of-Use) 사이의 상태 변경(TOCTOU)이나 권한 변경 시, 프로그램은 예기치 않은 오류로 종료(Fail-Open)되거나 정책을 무시하고 파일 목록을 노출할 수 있음. 이러한 경우 정책을 강제할 수 없으므로, 해당 디렉토리를 통째로 무시하여(Fail-Closed) 정보 누출을 방지하는 것이 안전한 기본값(Secure by Default)임.
+**Prevention:** 보안 정책 파일 접근 시 발생할 수 있는 오류(TOCTOU 등) 상황에 대해 `IgnoreFileReadException`과 같은 전용 예외를 발생시키고(Fail-Closed), 상위 제어 로직(`crawl_directories`)에서 이를 안전하게 포착하여 문제가 발생한 디렉토리는 하위 탐색과 인덱싱에서 완전히 제외하도록 구성해야 함.
