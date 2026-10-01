@@ -40,3 +40,7 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+
+### Performance
+
+* 문자열 보간(String interpolation) 대신 `StringBuilder.append()` 체이닝을 활용하여 디렉토리 목록 생성 시 객체 생성 오버헤드를 감소시켰습니다.
