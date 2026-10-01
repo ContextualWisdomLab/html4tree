@@ -946,4 +946,14 @@ class MainTest {
         assertTrue(content.contains("<h1>Root</h1>"))
     }
 
+    @Test
+    fun testDefaultSensitiveExtensions() {
+        val extensions = Class.forName("html4tree.Constants").getDeclaredField("defaultSensitiveExtensions")
+        extensions.isAccessible = true
+        val exts = extensions.get(null) as Array<*>
+
+        assertTrue(exts.size > 0)
+        assertTrue(exts.contains(".pem"))
+        assertTrue(exts.contains(".key"))
+    }
 }
