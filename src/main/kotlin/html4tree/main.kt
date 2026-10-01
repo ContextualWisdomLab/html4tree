@@ -503,8 +503,10 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
+    // ⚡ Bolt Performance Optimization: Array over List in Hot Loops
+    // Kotlin `List`의 내장 함수는 호출 시마다 `Iterator`를 생성하여 GC 부하를 증가시키므로, 정적인 상수 리스트는 `arrayOf`를 사용하여 불필요한 할당을 제거했습니다.
     @JvmField
-    val defaultSensitiveExtensions = listOf(
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
