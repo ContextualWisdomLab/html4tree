@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2026-10-01 - [MEDIUM] 정적으로 생성된 빈 상태에서 role="status" 제거
-**Vulnerability:** 정적 HTML에서 페이지 로딩 시 렌더링되는 빈 상태(empty state) 메시지에 role="status"(ARIA 라이브 리전)를 적용하는 접근성 안티 패턴.
-**Learning:** 정적인 콘텐츠에 role="status"를 적용하면 스크린 리더가 중복으로 알림을 읽거나 정상적인 문서 읽기 흐름을 방해할 수 있습니다. 이는 동적으로 업데이트되는 콘텐츠에만 사용되어야 합니다.
-**Prevention:** 정적으로 생성되는 HTML 인덱스에서 페이지 초기 로딩 시 표시되는 메시지에는 role="status"와 같은 ARIA 라이브 리전 속성을 사용하지 않도록 해야 합니다.
