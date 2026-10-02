@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-07-14 - [MEDIUM] POSIX 환경에서 index.html 파일의 올바른 권한 설정 보장
+**Vulnerability:** NIO의 `Files.createTempFile`을 사용할 때 POSIX 시스템에서는 기본적으로 매우 제한적인 `rw-------` (0600) 권한으로 파일이 생성됩니다. 이 임시 파일을 `index.html`로 덮어씌울 때 권한이 유지되어, 웹 서버가 생성된 디렉토리 인덱스에 접근하지 못하는 서비스 거부(DoS)가 발생할 수 있습니다.
+**Learning:** 웹 서비스의 정적 애셋(static asset)으로 서빙될 파일(예: `index.html`)을 생성할 때는, 플랫폼 독립적인 임시 파일 생성 API를 사용하더라도 최종 파일에 퍼블릭 접근(read)이 가능하도록 의도된 권한(e.g., `rw-r--r--`)을 명시적으로 부여해야 합니다.
+**Prevention:** 파일 생성 시 플랫폼이 POSIX 파일 속성 뷰를 지원하는지 확인(`supportsPosix`)하고, 지원한다면 `Files.setPosixFilePermissions`를 통해 `rw-r--r--` 등의 적절한 읽기 권한을 명시적으로 설정하여 웹 서버의 접근을 보장하십시오.

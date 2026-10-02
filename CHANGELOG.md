@@ -40,3 +40,7 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+
+### Security
+
+* POSIX 시스템에서 생성된 `index.html` 파일이 매우 제한적인 기본 권한(`0600`)으로 인해 웹 서버에서 접근할 수 없었던 문제를 해결하기 위해, 명시적으로 `rw-r--r--` 권한을 부여하도록 수정했습니다.
