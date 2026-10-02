@@ -196,4 +196,24 @@ class GeneratedIndexReadabilityTest {
             }
         return (0.2126 * channels[0]) + (0.7152 * channels[1]) + (0.0722 * channels[2])
     }
+
+    @Test
+    fun performanceHTMLByteEquivalenceTest() {
+        val testDir = createTempDir("html4tree-perf-test")
+        testDir.deleteOnExit()
+        File(testDir, "test.txt").createNewFile()
+
+        go(testDir.absolutePath, 1)
+
+        val generatedFile = File(testDir, "index.html")
+        val contentBytes = generatedFile.readBytes()
+        val contentStr = generatedFile.readText(Charsets.UTF_8)
+
+        val expectedSubString = "<li><a class=\"dir-link\" href=\"./test.txt\" title=\"test.txt 파일\"><span class=\"icon\" aria-hidden=\"true\">&#128196;</span> <span>test.txt</span> <span class=\"visually-hidden\">파일</span></a></li>"
+        assertTrue(contentStr.contains(expectedSubString))
+
+        // verify UTF-8 byte equivalence for the constructed element string
+        val expectedBytes = expectedSubString.toByteArray(Charsets.UTF_8)
+        assertTrue(contentBytes.toList().containsAll(expectedBytes.toList()))
+    }
 }
