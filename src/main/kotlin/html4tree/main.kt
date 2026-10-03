@@ -370,6 +370,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 fun write_index_file(
     curr_dir: File,
     content: String,
+    supportsPosix: Boolean = java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
     moveFile: (
         java.nio.file.Path,
         java.nio.file.Path,
@@ -380,7 +381,15 @@ fun write_index_file(
     }
 ) {
     val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    val tempPath = if (supportsPosix) {
+        // 보안 향상: 생성된 index.html을 웹 서버가 접근할 수 있도록
+        // Files.createTempFile의 기본 권한(rw-------)을 (rw-r--r--)로 명시적으로 완화합니다.
+        val permissions = java.nio.file.attribute.PosixFilePermissions.fromString("rw-r--r--")
+        val attrs = java.nio.file.attribute.PosixFilePermissions.asFileAttribute(permissions)
+        Files.createTempFile(curr_dir.toPath(), ".index-", ".html", attrs)
+    } else {
+        Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    }
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
