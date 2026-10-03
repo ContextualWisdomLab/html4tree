@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Security
+
+- `.github` 및 `.gitlab` 디렉토리를 기본 제외 목록에 추가하여 CI/CD 환경 정보 및 시크릿 노출 방지 (Security enhancement).
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
