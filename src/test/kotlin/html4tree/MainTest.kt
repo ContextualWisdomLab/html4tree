@@ -294,7 +294,7 @@ class MainTest {
         val ignoreFile = File(tempDir, ".html4ignore")
         ignoreFile.writeText("test1.txt\ntest2.txt")
 
-        val excluded = process_ignore_file(tempDir, arrayOf("test1.txt", "test3.txt"))
+        val excluded = process_ignore_file(tempDir, arrayOf("test1.txt", "test3.txt", ".html4ignore"))
         assertTrue(excluded.contains("index.html"))
         assertEquals(18, excluded.size) // index.html + 16 default sensitive + test1.txt
     }
@@ -666,7 +666,7 @@ class MainTest {
 
         val excluded = process_ignore_file(
             tempDir,
-            arrayOf("valid.txt", malformedName)
+            arrayOf("valid.txt", malformedName, ".html4ignore")
         )
 
         assertTrue(excluded.contains("valid.txt"))

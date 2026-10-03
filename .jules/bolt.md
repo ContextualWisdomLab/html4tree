@@ -62,3 +62,10 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+## 2025-01-24 - 단일 readAttributes 호출로 파일 속성 조회 최적화 (순회 루프)
+**학습:** 디렉토리 순회 루프 내에서 isDirectory 및 isSymbolicLink 두 번의 stat을 각각 호출하면 파일 시스템 I/O 오버헤드가 배가됩니다. 메모리 내 제외 규칙 확인 후 한 번의 readAttributes로 속성을 한 번에 가져오는 것이 훨씬 빠릅니다.
+**조치:** Files.isDirectory 및 Files.isSymbolicLink를 단일 Files.readAttributes 호출로 교체하여 O(N) I/O 통신을 최적화했습니다.
+
+## 2025-01-25 - .html4ignore 존재 여부 메모리 내 사전 확인
+**학습:** `process_ignore_file` 함수에서 무거운 OS stat 호출(`isFile`, `isSymbolicLink`, `canRead`, `length()`)을 무조건 수행하면 `.html4ignore` 파일이 없는 대부분의 일반적인 디렉토리에서 I/O 낭비가 발생합니다.
+**조치:** 이미 디렉토리의 파일 목록을 포함하고 있는 `dirFilesNames` 배열을 통해 `.html4ignore` 파일의 존재 여부를 메모리 내에서 먼저 단축 평가(short-circuit)하여, 존재하지 않는 경우 불필요한 파일 시스템 호출을 완전히 생략합니다.
