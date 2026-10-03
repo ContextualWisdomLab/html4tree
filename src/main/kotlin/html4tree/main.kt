@@ -456,12 +456,27 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
-                  val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
-                  l.append('\n')
+                  // ⚡ Bolt 성능 최적화: 자주 실행되는 루프 내에서 GC 부하를 줄이기 위해
+                  // 문자열 보간을 직접 StringBuilder append로 교체
+                  val escapedFileName = fileName.escapeHtml()
+                  val encodedFileName = fileName.urlEncodePath()
+                  val typeLabel = if (isLinkedDirectory) "디렉토리" else "파일"
+                  val icon = if (isLinkedDirectory) "&#128193;" else "&#128196;"
+
+                  l.append("          <li><a class=\"dir-link\" href=\"./")
+                   .append(encodedFileName)
+                   .append(if (isLinkedDirectory) "/" else "")
+                   .append("\" title=\"")
+                   .append(escapedFileName)
+                   .append(" ")
+                   .append(typeLabel)
+                   .append("\"><span class=\"icon\" aria-hidden=\"true\">")
+                   .append(icon)
+                   .append("</span> <span>")
+                   .append(escapedFileName)
+                   .append("</span> <span class=\"visually-hidden\">")
+                   .append(typeLabel)
+                   .append("</span></a></li>\n")
                }
            }
         }
