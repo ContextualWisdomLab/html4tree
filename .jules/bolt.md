@@ -62,3 +62,6 @@
 ## 2026-08-11 - Array의 toMutableList 할당 오버헤드 최적화
 **학습:** 배열을 정렬하기 위해 `.toMutableList()`를 호출하면 새로운 `ArrayList` 객체와 내부 배열 객체가 할당되어 대규모 디렉토리를 순회할 때 가비지 컬렉션(GC) 부하를 유발합니다. 배열 복제가 필요한 경우 `.clone()`을 사용하면 하나의 배열 객체만 새로 할당되므로 더 효율적입니다.
 **조치:** 디렉토리 파일 배열을 정렬하기 전에 복사할 때 `.toMutableList()` 대신 `.clone()`을 사용하여 불필요한 중간 컬렉션 할당을 제거하고 성능을 향상시켰습니다.
+## 2026-10-03 - [핫 루프에서의 코틀린 Array와 List 성능 비교]
+**Learning:** [코틀린에서 정적 리스트를 순회할 때 List를 Array로 변환(.toTypedArray() 또는 arrayOf)하면 Iterator 할당 오버헤드가 제거되어 성능이 크게 향상됩니다. 특히 파일 시스템 탐색과 같은 핫 루프에서 유용합니다.]
+**Action:** [자주 순회하는 정적 List(예: Constants.defaultSensitiveExtensions)를 Array로 변경하여 Iterator 생성을 방지합니다.]
