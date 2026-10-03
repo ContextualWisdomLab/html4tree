@@ -40,3 +40,4 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+- [UX 개선] 디렉토리 목록의 링크에 마우스를 올리거나 키보드 포커스 시 파일 이름에 밑줄이 표시되지 않던 문제 수정 (CSS 선택자가 시각적으로 숨겨진 접근성 텍스트를 지정하던 오류 개선).
