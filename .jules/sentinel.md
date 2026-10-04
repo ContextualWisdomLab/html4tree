@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-05-24 - [웹 서버 에셋 생성을 위한 안전한 임시 파일 권한 설정]
+**Vulnerability:** `Files.createTempFile`은 POSIX 시스템에서 기본적으로 `rw-------` (0600) 권한으로 파일을 생성합니다. 생성된 index.html 파일이 웹 서버에 의해 외부로 서빙되는 경우, 웹 서버 프로세스가 해당 파일에 대한 읽기 권한을 가지지 못해 접근 불가 오류(403 Forbidden)가 발생할 수 있습니다.
+**Learning:** 애플리케이션이 공용 웹 자산(public web assets)으로 사용될 파일을 생성할 때, 생성 대상 파일은 웹 서버가 읽을 수 있도록 명시적으로 더 넓은 권한(예: `rw-r--r--`)을 부여받아야 합니다. Kotlin/Java의 기본 임시 파일 생성 로직은 지나치게 제한적이어서 이 목적에 맞지 않습니다.
+**Prevention:** 공용 리소스를 생성하는 코드에서 임시 파일을 사용할 경우, 항상 `PosixFilePermissions`를 활용하여 생성하려는 파일의 성격에 맞는 명시적인 권한(`rw-r--r--`)을 설정하십시오. 테스트 시에는 플랫폼 의존성을 피하기 위해 권한 검증 로직을 매개변수화하여 100% 코드 커버리지를 달성하십시오.
