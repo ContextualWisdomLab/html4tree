@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-24 - [MEDIUM] Fix restricted file permissions causing Denial of Service
+**Vulnerability:** `Files.createTempFile`를 사용하여 파일을 생성하면 기본 권한이 600(`rw-------`)으로 설정됩니다. 이로 인해 임시 파일을 생성하고 다른 이름으로 옮기더라도 600 권한이 유지되어, 웹 서버 등이 해당 파일을 읽지 못해 가용성이 침해(서비스 거부)되는 문제가 발생합니다.
+**Learning:** 시스템에서 생성된 파일을 웹 서버 등 다른 프로세스가 접근해야 하는 정적 리소스 생성기의 경우, 임시 파일의 기본 권한이 접근을 차단할 수 있음을 인지해야 합니다. Fail Securely의 원칙은 가용성 또한 고려해야 합니다.
+**Prevention:** 플랫폼 종속적인 코드이므로 `supportsPosix` 같은 체크를 추가한 뒤, POSIX를 지원하는 환경에서는 `PosixFilePermissions`를 사용하여 명시적으로 권한을 644(`rw-r--r--`)와 같이 접근 가능하도록 설정해야 합니다.

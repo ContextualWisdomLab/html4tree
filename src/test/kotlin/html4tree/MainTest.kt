@@ -10,6 +10,7 @@ import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -387,6 +388,25 @@ class MainTest {
         assertEquals("keep", File(indexDir, "occupant.txt").readText())
         val leftoverTemp = tempDir.listFiles()?.filter { it.name.startsWith(".index-") } ?: emptyList()
         assertTrue(leftoverTemp.isEmpty(), "temporary index file should be cleaned up on failure")
+    }
+
+    @Test
+    fun testWriteIndexFileSetsPosixPermissions() {
+        Assume.assumeTrue("Test requires POSIX file system support",
+            tempDir.toPath().fileSystem.supportedFileAttributeViews().contains("posix"))
+
+        write_index_file(tempDir, "posix check content", supportsPosix = true)
+        val indexFile = File(tempDir, "index.html")
+        val attrs = Files.readAttributes(indexFile.toPath(), java.nio.file.attribute.PosixFileAttributes::class.java)
+        assertEquals("rw-r--r--", PosixFilePermissions.toString(attrs.permissions()))
+        assertEquals("posix check content", indexFile.readText())
+    }
+
+    @Test
+    fun testWriteIndexFileWithoutPosixSupport() {
+        write_index_file(tempDir, "no posix content", supportsPosix = false)
+        val indexFile = File(tempDir, "index.html")
+        assertEquals("no posix content", indexFile.readText())
     }
 
     @Test
