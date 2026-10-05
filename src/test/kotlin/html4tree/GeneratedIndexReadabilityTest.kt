@@ -76,6 +76,15 @@ class GeneratedIndexReadabilityTest {
         assertTrue(
             style.contains(
                 """
+                a:active {
+                  background-color: #ebf0f4;
+                }
+                """.trimIndent()
+            )
+        )
+        assertTrue(
+            style.contains(
+                """
                 li + li {
                   border-top: 1px solid #d0d7de;
                 }
