@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- 링크 내부의 숨김 텍스트가 아닌 실제 가시 텍스트에만 호버 스타일(밑줄)이 적용되도록 CSS를 수정하고 .link-text 클래스를 추가했습니다.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
