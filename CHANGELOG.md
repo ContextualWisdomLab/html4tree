@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- 기본 민감 파일 목록에 `.github` 및 `.gitlab` 디렉토리를 추가하여 웹 인터페이스를 통한 CI/CD 워크플로우 로직 및 인프라 구성 정보 노출을 방지함.
 - Emit a `noindex, nofollow` robots meta preference on every generated
   directory page, with the explicit boundary that supporting crawlers must
   first fetch the page and that confidential data still requires server-side
