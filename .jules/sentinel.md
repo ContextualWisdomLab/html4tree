@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-10-06 - CI/CD 구성 파일 노출 방지
+**Vulnerability:** .github 및 .gitlab 디렉토리가 기본 민감 파일 목록에 포함되지 않아, 자동 생성된 디렉토리 목록을 통해 CI/CD 워크플로우 로직 및 환경 설정이 노출될 위험이 존재함.
+**Learning:** CI/CD 설정 파일은 종종 저장소 내에 위치하지만 웹을 통해 공개되어서는 안 되는 중요한 인프라 구성 정보를 포함함.
+**Prevention:** 디렉토리 인덱스 생성 시 제외되는 기본 민감 파일 목록(Constants.defaultSensitiveFiles)에 .github 및 .gitlab을 추가하여 이러한 정보의 우발적인 노출을 차단함.
