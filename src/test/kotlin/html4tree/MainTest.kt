@@ -10,6 +10,7 @@ import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -369,6 +370,25 @@ class MainTest {
             Regex("""h1\s*\{[^}]*overflow-wrap:\s*anywhere;""").containsMatchIn(htmlContent),
             "long directory headings must wrap within narrow viewports"
         )
+    }
+
+    @Test
+    fun testWriteIndexFileSetsPosixPermissionsWhenSupported() {
+        // Run only if the filesystem supports POSIX to avoid spurious failures
+        if (!java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) return
+
+        write_index_file(tempDir, "posix test content", supportsPosix = true)
+        val indexFile = File(tempDir, "index.html")
+        val perms = Files.getPosixFilePermissions(indexFile.toPath())
+        assertEquals(PosixFilePermissions.fromString("rw-r--r--"), perms)
+    }
+
+    @Test
+    fun testWriteIndexFileIgnoresPosixPermissionsWhenUnsupported() {
+        // By passing supportsPosix = false, we hit the branch that skips setting permissions.
+        write_index_file(tempDir, "non-posix test content", supportsPosix = false)
+        val indexFile = File(tempDir, "index.html")
+        assertEquals("non-posix test content", indexFile.readText())
     }
 
     @Test
