@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- 정적 HTML 콘텐츠(예: 빈 디렉토리 상태)에서 불필요한 ARIA 라이브 리전(role="status")을 제거하여 스크린 리더 사용자의 접근성을 개선했습니다.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
