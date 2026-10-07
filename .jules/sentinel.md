@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-10-07 - [CRITICAL/HIGH] 안전하지 않은 임시 파일 생성 문제 수정
+
+**Vulnerability:** `Files.createTempFile`은 기본 시스템 권한을 사용하여 임시 파일을 생성하므로 (종종 전역 읽기 가능인 `-rw-r--r--`), 인덱스 생성 과정 중에 민감한 디렉토리 내용이 최종 위치로 이동하기 전에 노출될 위험이 있었습니다.
+**Learning:** 기본 임시 파일 생성 API는 플랫폼 간에 안전한 파일 권한을 보장하지 않습니다. POSIX 시스템에서는 파일 소유자로 접근을 제한하기 위해 명시적인 파일 속성을 제공해야 합니다.
+**Prevention:** POSIX 파일 시스템에서 민감한 데이터를 포함할 수 있는 임시 파일을 생성할 때는 항상 `PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))`를 사용해야 합니다.

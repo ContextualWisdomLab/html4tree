@@ -6,7 +6,10 @@ import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.attribute.PosixFilePermissions
 import java.util.Base64
+import java.util.EnumSet
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.default
@@ -380,7 +383,22 @@ fun write_index_file(
     }
 ) {
     val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+
+    val isPosix = try {
+        curr_dir.toPath().fileSystem.supportedFileAttributeViews().contains("posix")
+    } catch (e: Exception) { false }
+
+    val tempPath = if (isPosix) {
+        val attrs = PosixFilePermissions.asFileAttribute(EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))
+        try {
+            Files.createTempFile(curr_dir.toPath(), ".index-", ".html", attrs)
+        } catch (e: UnsupportedOperationException) {
+            Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+        }
+    } else {
+        Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    }
+
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
