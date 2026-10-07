@@ -170,6 +170,9 @@ internal fun crawl_directories(
 ) {
     var lle: LinkedListEntry? = ll.pull()
 
+    // 보안 향상: 방문한 디렉토리의 고유 키(fileKey 또는 절대 경로)를 추적하여 바인드 마운트 등으로 인한 무한 루프(DoS)를 방지합니다.
+    val visitedKeys = mutableSetOf<Any>()
+
     while(lle != null){
         val attrs = readAttributes(lle.file)
         if (attrs == null || !attrs.isDirectory) {
@@ -179,6 +182,12 @@ internal fun crawl_directories(
 
         val currentIdentity = readIdentity(lle.file)
         if (!currentIdentity.readable || (lle.fileKey != null && currentIdentity.key != lle.fileKey)) {
+            lle = ll.pull()
+            continue
+        }
+
+        val trackKey = currentIdentity.key ?: lle.file.absolutePath
+        if (!visitedKeys.add(trackKey)) {
             lle = ll.pull()
             continue
         }
