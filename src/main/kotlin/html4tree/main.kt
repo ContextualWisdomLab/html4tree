@@ -504,7 +504,10 @@ private object Constants {
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
     @JvmField
-    val defaultSensitiveExtensions = listOf(
+    // ⚡ Bolt Performance Optimization: Use Array instead of List for static collections
+    // Iterating over an Array with .any {} compiles to a primitive indexed loop,
+    // eliminating Iterator allocation overhead per file during directory traversal.
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",
