@@ -370,6 +370,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 fun write_index_file(
     curr_dir: File,
     content: String,
+    supportsPosix: Boolean = java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
     moveFile: (
         java.nio.file.Path,
         java.nio.file.Path,
@@ -382,6 +383,13 @@ fun write_index_file(
     val indexPath = curr_dir.toPath().resolve("index.html")
     val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
     try {
+        // 보안 향상: 임시 파일이 웹 서버에서 접근 가능하도록 생성 시 기본 0600 권한을 0644(rw-r--r--)로 변경하여 403 Forbidden 에러를 방지합니다.
+        if (supportsPosix) {
+            try {
+                Files.setPosixFilePermissions(tempPath, java.nio.file.attribute.PosixFilePermissions.fromString("rw-r--r--"))
+            } catch (e: UnsupportedOperationException) {
+            }
+        }
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
             // With ATOMIC_MOVE, Java ignores every other copy option and the

@@ -933,6 +933,22 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFilePosixPermissionsCoverage() {
+        val tempDir = Files.createTempDirectory("html4tree-test-posix-").toFile()
+        try {
+            write_index_file(
+                tempDir,
+                "posix test",
+                supportsPosix = false
+            )
+            val indexFile = File(tempDir, "index.html")
+            assertTrue(indexFile.exists())
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun testProcessDirEmptyNameFallback() {
         val fakeRoot = object : File(tempDir, "fakeRoot") {
             override fun getName() = ""

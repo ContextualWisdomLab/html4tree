@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-10-08 - [임시 파일 생성 시 과도하게 제한적인 권한 문제 수정]
+**Vulnerability:** Files.createTempFile()로 생성한 임시 파일이 JVM 기본 설정(0600)으로 생성되어, 웹 서버 등이 이를 제공하려 할 때 403 Forbidden(접근 거부) 오류나 가용성 문제가 발생할 수 있음 (정보 가용성 제한 또는 잠재적 DoS 가능성).
+**Learning:** `Files.move()`를 통해 임시 파일을 복사/이동하더라도 권한 설정이 보존될 수 있으므로, 웹을 통해 공개되는 목적의 파일은 생성 시 명시적으로 읽기 권한을 부여해야 한다는 점을 배움. JVM의 임시 파일 기본 권한이 OS 환경마다 다르게 취급될 수 있음에 유의.
+**Prevention:** 웹 자원으로 공개될 파일을 생성할 때에는 `supportsPosix` 체크와 함께 `setPosixFilePermissions`를 사용해 의도한 권한(rw-r--r--)을 파일에 명시적으로 부여.
