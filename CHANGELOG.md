@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- 🎨 접근성 개선: 정적으로 생성되는 빈 디렉토리 안내 메시지에서 불필요한 `role="status"` ARIA 속성을 제거하여 스크린 리더의 오작동을 방지했습니다.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
