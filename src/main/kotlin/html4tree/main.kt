@@ -119,7 +119,14 @@ class Html4tree : CliktCommand() {
     }
 }
 
-fun main(args: Array<String>)  = Html4tree().main(args)
+fun main(args: Array<String>) {
+    try {
+        Html4tree().main(args)
+    } catch (e: Exception) {
+        System.err.println("Operation failed: " + (e.message ?: "An error occurred"))
+        kotlin.system.exitProcess(1)
+    }
+}
 
 
 internal data class FileIdentity(val key: Any?, val readable: Boolean)
@@ -497,7 +504,7 @@ fun help() {
 
 private object Constants {
     @JvmField
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", "secrets.json", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "config.yml", "config.yaml", "credentials.json", "credentials.yml", "credentials.yaml")
 
     @JvmField
     val defaultSensitiveFileNamesLowercase =

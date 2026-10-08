@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-10-08 - 스택 트레이스 노출 방지 및 민감한 파일 필터링 강화
+**Vulnerability:** 예외 발생 시 스택 트레이스가 그대로 노출되어 내부 구조가 유출되는 문제와 기본 민감한 파일 목록(secrets.json 등)이 누락된 문제 발견
+**Learning:** 예외 처리 누락으로 인해 스택 트레이스가 사용자에게 노출되었으며, 하드코딩된 시크릿 파일 목록이 모든 확장자 변형을 커버하지 못함
+**Prevention:** 프로그램 진입점에서 예외를 안전하게 포착하고 (Fail Securely) 민감한 설정 파일 이름들을 추가하여 정보 노출 방지

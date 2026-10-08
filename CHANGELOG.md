@@ -19,6 +19,9 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
+- 잘못된 인자 전달 등 예외 상황 발생 시 스택 트레이스가 노출되는 정보 유출 취약점을 전역 예외 처리(Fail Securely)를 통해 수정했습니다.
+- 기본 보안 필터링 목록에 누락된 시크릿 파일(secrets.json, config.yml, credentials.yml 등)을 추가하여 안전한 인덱싱을 보장합니다.
+
 - Generate the inline-style Content Security Policy SHA-256 source expression
   from the exact normalized UTF-8 stylesheet bytes emitted into each generated
   `index.html` file, preventing template whitespace from invalidating the policy.
