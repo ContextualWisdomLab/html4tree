@@ -503,8 +503,10 @@ private object Constants {
     val defaultSensitiveFileNamesLowercase =
         defaultSensitiveFiles.map { it.toLowerCase(java.util.Locale.ROOT) }.toSet()
 
+    // ⚡ Bolt Performance Optimization: 핫 루프에서 반복되는 정적 컬렉션에 List 대신 Array 사용
+    // Array에 대해 .any {}를 호출하면 원시 인덱스 루프로 컴파일되어 파일당 Iterator 할당 오버헤드가 제거됩니다.
     @JvmField
-    val defaultSensitiveExtensions = listOf(
+    val defaultSensitiveExtensions = arrayOf(
         ".pem",
         ".key",
         ".p12",

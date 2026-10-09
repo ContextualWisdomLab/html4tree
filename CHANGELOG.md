@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- 파일 순회 중 발생하는 Iterator 할당 오버헤드를 줄이기 위해 `Constants.defaultSensitiveExtensions`를 `List`에서 `Array`로 변경했습니다.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated
