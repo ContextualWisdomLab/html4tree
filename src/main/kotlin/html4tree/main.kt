@@ -456,12 +456,29 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
                } catch (e: Exception) {
                }
                if (!isSymbolicLink) {
-                  val encodedHref = if (isLinkedDirectory) { "./${fileName.urlEncodePath()}/" } else { "./${fileName.urlEncodePath()}" }
-                  val ariaLabel = "${fileName} ${if (isLinkedDirectory) { "디렉토리" } else { "파일" }}".escapeHtml()
-                  val typeLabel = if (isLinkedDirectory) { "디렉토리" } else { "파일" }
-                  val icon = if (isLinkedDirectory) { "&#128193;" } else { "&#128196;" }
-                  l.append("""          <li><a class="dir-link" href="${encodedHref}" title="${ariaLabel}"><span class="icon" aria-hidden="true">${icon}</span> <span>${fileName.escapeHtml()}</span> <span class="visually-hidden">${typeLabel}</span></a></li>""")
-                  l.append('\n')
+                  // ⚡ Bolt Performance Optimization: 캐싱 및 직접 append 사용
+                  // 반복문 내에서 escapeHtml() 중복 호출 방지 및 문자열 보간(string interpolation)으로 인한
+                  // 불필요한 StringBuilder 할당을 줄여 가비지 컬렉션 부하를 감소시킵니다.
+                  val escapedName = fileName.escapeHtml()
+                  val encodedName = fileName.urlEncodePath()
+                  val typeLabel = if (isLinkedDirectory) "디렉토리" else "파일"
+                  val icon = if (isLinkedDirectory) "&#128193;" else "&#128196;"
+                  val suffix = if (isLinkedDirectory) "/" else ""
+
+                  l.append("          <li><a class=\"dir-link\" href=\"./")
+                   .append(encodedName)
+                   .append(suffix)
+                   .append("\" title=\"")
+                   .append(escapedName)
+                   .append(" ")
+                   .append(typeLabel)
+                   .append("\"><span class=\"icon\" aria-hidden=\"true\">")
+                   .append(icon)
+                   .append("</span> <span>")
+                   .append(escapedName)
+                   .append("</span> <span class=\"visually-hidden\">")
+                   .append(typeLabel)
+                   .append("</span></a></li>\n")
                }
            }
         }
