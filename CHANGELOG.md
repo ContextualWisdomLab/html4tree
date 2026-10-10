@@ -40,3 +40,6 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+
+### Fixed
+- 시각적으로 숨겨진 화면 낭독기용 텍스트(`.visually-hidden`)로 인해 깨지던 hover 및 focus 상태의 밑줄 효과 수정
