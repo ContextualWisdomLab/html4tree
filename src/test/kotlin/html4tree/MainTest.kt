@@ -372,6 +372,14 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileWithoutPosixSupport() {
+        val indexFile = File(tempDir, "index.html")
+        write_index_file(tempDir, "content without posix", supportsPosix = false)
+        assertTrue(indexFile.exists())
+        assertEquals("content without posix", indexFile.readText())
+    }
+
+    @Test
     fun testWriteIndexFileCleansUpTempFileOnFailure() {
         // Files.move cannot replace a non-empty directory, so this drives the
         // exception path through write_index_file's finally block.

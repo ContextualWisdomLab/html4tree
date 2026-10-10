@@ -6,6 +6,7 @@ import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.PosixFilePermissions
 import java.util.Base64
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
@@ -370,6 +371,7 @@ fun process_ignore_file(curr_dir: File, dirFilesNames: Array<String>? = null): S
 fun write_index_file(
     curr_dir: File,
     content: String,
+    supportsPosix: Boolean = java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
     moveFile: (
         java.nio.file.Path,
         java.nio.file.Path,
@@ -380,7 +382,18 @@ fun write_index_file(
     }
 ) {
     val indexPath = curr_dir.toPath().resolve("index.html")
-    val tempPath = Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    // 보안 향상: 임시 파일이 웹 서버에 의해 제공될 때 403 Forbidden 오류가 발생하는 것을 방지하기 위해,
+    // JVM 기본 임시 파일 권한(0600) 대신 전역 읽기 가능 권한(0644)을 명시적으로 설정합니다.
+    val tempPath = if (supportsPosix) {
+        Files.createTempFile(
+            curr_dir.toPath(),
+            ".index-",
+            ".html",
+            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-r--r--"))
+        )
+    } else {
+        Files.createTempFile(curr_dir.toPath(), ".index-", ".html")
+    }
     try {
         Files.write(tempPath, content.toByteArray(Charsets.UTF_8))
         try {
