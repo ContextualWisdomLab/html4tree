@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2026-10-10 - [MEDIUM] 민감한 정보 유출 방지를 위한 제외 목록 강화
+**Vulnerability:** CI/CD 설정 파일(\.github), IDE 설정 디렉토리(\.idea, \.vscode), 빌드 디렉토리(build), 도커/인프라 설정 파일(\.dockerignore, docker-compose.yml, terraform.tfstate 등)과 같은 민감한 파일들이 기본적으로 제외 목록에 누락되어 있어 디렉토리 인덱싱을 통해 유출될 위험이 존재했습니다.
+**Learning:** 애플리케이션의 디렉토리 목록을 생성할 때는, 현대의 다양한 개발 환경 및 클라우드 인프라 배포와 관련된 숨겨진 구성 파일들을 "기본적으로 차단"해야 예상치 못한 보안 설정 누출을 방지할 수 있습니다.
+**Prevention:** Constants.defaultSensitiveFiles 및 Constants.defaultSensitiveExtensions의 차단 목록에 개발 도구, 컨테이너 인프라 설정, 그리고 범용 구성 파일 확장자(\.cfg, \.ini, \.conf)를 추가하여 심층 방어를 더욱 강화하십시오.
