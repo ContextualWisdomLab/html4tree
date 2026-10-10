@@ -497,7 +497,7 @@ fun help() {
 
 private object Constants {
     @JvmField
-    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json")
+    val defaultSensitiveFiles = listOf(".git", ".env", ".ssh", ".htpasswd", ".htaccess", "id_rsa", "id_ed25519", "secrets.yml", ".html4ignore", ".DS_Store", ".aws", ".kube", ".npmrc", ".gnupg", "config.json", "credentials.json", ".github", ".idea", ".vscode", "build", ".dockerignore", ".terraform", ".vagrant", "docker-compose.yml", "Dockerrun.aws.json", "terraform.tfstate", "terraform.tfvars")
 
     @JvmField
     val defaultSensitiveFileNamesLowercase =
@@ -524,6 +524,9 @@ private object Constants {
         ".log",
         ".swp",
         ".swo",
-        ".swpx"
+        ".swpx",
+        ".cfg",
+        ".ini",
+        ".conf"
     )
 }
