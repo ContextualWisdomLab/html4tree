@@ -40,3 +40,4 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+- 보안 수정: 임시 파일 생성 시 403 Forbidden 오류를 방지하기 위해 파일 권한을 0644로 설정하도록 변경
