@@ -435,6 +435,24 @@ class MainTest {
     }
 
     @Test
+    fun testWriteIndexFileWithPosixPermissions() {
+        val supportsPosix = java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix")
+        Assume.assumeTrue("POSIX not supported", supportsPosix)
+        write_index_file(tempDir, "content", supportsPosix = true)
+        val indexFile = File(tempDir, "index.html")
+        val permissions = Files.getPosixFilePermissions(indexFile.toPath())
+        assertEquals("rw-r--r--", java.nio.file.attribute.PosixFilePermissions.toString(permissions))
+    }
+
+    @Test
+    fun testWriteIndexFileWithoutPosixPermissionsFallback() {
+        write_index_file(tempDir, "content", supportsPosix = false)
+        val indexFile = File(tempDir, "index.html")
+        assertTrue(indexFile.exists())
+        assertEquals("content", indexFile.readText())
+    }
+
+    @Test
     fun testProcessDirReplacesIndexSymlinkWithoutTouchingTarget() {
         val targetFile = File(tempDir, "target.txt")
         targetFile.writeText("original content")
