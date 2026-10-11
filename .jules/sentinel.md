@@ -99,8 +99,3 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
-
-## 2024-10-11 - [MEDIUM] 생성된 임시 파일의 엄격한 기본 권한으로 인한 접근 거부 방지
-**Vulnerability:** `Files.createTempFile()`은 기본적으로 사용자 본인에게만 권한이 부여된(`0600`) 파일을 생성합니다. 애플리케이션이 이 파일을 생성하여 웹 서버로 호스팅되는 문서(예: `index.html`)로 이동(move)시킬 때, 이동된 파일의 권한이 그대로 유지되어 웹 방문자에게 "403 Forbidden" 에러를 발생시킬 수 있습니다.
-**Learning:** 시스템의 임시 파일 생성 API는 종종 가장 엄격한 보안을 기본으로 사용합니다. 공개적으로 호스팅될 목적으로 임시 파일을 사용하는 경우, 이동 또는 이름 변경 후에 해당 파일이 적절하게 읽을 수 있는지 확인해야 합니다.
-**Prevention:** `Files.createTempFile()` 호출 시 명시적으로 전역 읽기 권한(`rw-r--r--`)을 부여하는 `FileAttribute`를 주입하여 생성된 파일이 안전하게 교체된 후에도 접근 가능하도록 하십시오.
