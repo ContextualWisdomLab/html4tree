@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2026-10-11 - 민감 파일 필터링 강화
+**Vulnerability:** 디폴트로 필터링되는 민감한 파일 목록에 일부 중요한 파일(예: docker-compose.yml, id_dsa 등)이 누락되어 정보 노출(Information Exposure) 위험이 존재함.
+**Learning:** 디렉토리 인덱싱 도구는 기본적으로 널리 사용되는 시크릿 및 인프라 설정 파일을 제외해야 함.
+**Prevention:** Constants.defaultSensitiveFiles 에 더 많은 기본 제외 대상을 추가하여 보안을 한층 강화함.
