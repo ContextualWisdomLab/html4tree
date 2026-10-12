@@ -467,7 +467,7 @@ fun process_dir(curr_dir: File, excludeSet: Set<String>? = null, dirFiles: Array
         }
 
         if(l.isEmpty()){
-            l.append("""          <li><div class="empty-dir" role="status"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
+            l.append("""          <li><div class="empty-dir"><span class="icon" aria-hidden="true">&#128194;</span> <span>이 디렉토리는 비어 있습니다.</span></div></li>""")
             l.append('\n')
         }
 
