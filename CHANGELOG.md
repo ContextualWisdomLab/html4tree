@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Security
+
+- `docker-compose.yml` 및 `.env.local`과 같은 민감한 개발 및 환경 설정 파일을 기본 제외 목록(`defaultSensitiveFiles`)에 추가하여 디렉토리 목록을 통한 우발적인 정보 노출을 방지하도록 보안을 향상시켰습니다.
+
 ### Added
 
 - Emit a `noindex, nofollow` robots meta preference on every generated

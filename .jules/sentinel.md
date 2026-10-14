@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## 2024-10-15 - [보안 강화: 추가적인 민감한 설정 파일 기본 제외]
+**Vulnerability:** `docker-compose.yml` 및 `.env.local`과 같은 민감한 개발 및 환경 설정 파일이 기본 제외 목록에 없어 디렉토리 목록을 통해 정보 노출(Information Exposure)이 발생할 수 있었습니다.
+**Learning:** 애플리케이션의 기본 거부 목록(deny-list)은 널리 사용되는 현대적인 개발 도구와 클라우드 인프라 설정 파일을 지속적으로 반영하여 최신화되어야 합니다.
+**Prevention:** 정적 디렉토리 인덱스를 생성할 때, `.env` 변형 파일이나 `docker-compose.yml`과 같은 잠재적인 시크릿/인프라 구성 파일을 기본 제외 목록(`defaultSensitiveFiles`)에 항상 포함하여 우발적인 정보 유출을 방지하십시오.
