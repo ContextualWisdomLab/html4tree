@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- 스크린 리더용 숨김 텍스트(.visually-hidden)가 추가된 링크 요소에서 호버 밑줄이 보이지 않던 문제를 CSS 선택자 변경(`:last-child` -> `:nth-child(2)`)으로 수정.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
