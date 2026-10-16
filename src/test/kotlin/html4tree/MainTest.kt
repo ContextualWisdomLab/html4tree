@@ -286,7 +286,7 @@ class MainTest {
     fun testProcessIgnoreFileNoIgnore() {
         val excluded = process_ignore_file(tempDir, null)
         assertTrue(excluded.contains("index.html"))
-        assertEquals(17, excluded.size) // index.html + 16 default sensitive files
+        assertEquals(23, excluded.size) // index.html + 22 default sensitive files
     }
 
     @Test
@@ -296,7 +296,7 @@ class MainTest {
 
         val excluded = process_ignore_file(tempDir, arrayOf("test1.txt", "test3.txt"))
         assertTrue(excluded.contains("index.html"))
-        assertEquals(18, excluded.size) // index.html + 16 default sensitive + test1.txt
+        assertEquals(24, excluded.size) // index.html + 22 default sensitive + test1.txt
     }
 
     @Test

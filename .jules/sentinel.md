@@ -99,3 +99,7 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+## 2024-05-20 - 민감한 설정 파일 노출 방지
+**Vulnerability:** 개발 환경 및 컨테이너 설정 파일(docker-compose.yml, .env.local 등)이 디렉토리 목록에 노출될 수 있음.
+**Learning:** 기본 보안 목록(Constants.defaultSensitiveFiles)이 제한적이라 확장 파일들이 보호받지 못함.
+**Prevention:** 널리 쓰이는 개발 및 운영 환경 설정 파일들을 기본 제외 목록에 명시적으로 추가함.
