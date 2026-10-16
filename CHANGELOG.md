@@ -40,3 +40,6 @@ All notable changes to this project are documented in this file.
   and current W3C Working Draft reference in `docs/doctoring`.
 - Record the generated-index readability decision, WCAG 2.2 engineering basis,
   contrast calculations, scope boundaries, and verification contract.
+### Security
+
+- 민감한 설정 파일(docker-compose.yml, .env.local 등)을 기본 제외 목록에 추가하여 정보 노출 방지
