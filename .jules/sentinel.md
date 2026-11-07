@@ -99,3 +99,8 @@
 **Root cause:** The protected implementation added canonical names to the exclusion set but did not compare each observed directory entry through a locale-stable normalized key.
 **Prevention:** Build one `Locale.ROOT` lowercase set from the canonical sensitive names, compare every observed name against it, and add the original spelling to the exclusion set so downstream exact membership remains correct.
 **Evidence:** `testProcessIgnoreFileTreatsSensitiveNamesCaseInsensitively` failed on test-only commit `472b916cd40f70693c4e1eb48956042a25353feb` (CI run `31469596932`) and passed with the source fix at `bb113d858ccfc42ddaecf6729749b238e5ade2d0` (CI run `31469921661`).
+
+## $(date +%Y-%m-%d) - 민감한 파일 및 확장자 차단 목록 확장
+**Vulnerability:** SSH 키, 인증 토큰, 환경 변수 등 고도로 민감한 파일과 확장자가 기본 차단 목록에 누락되어 있어, 정적 HTML 생성 시 정보 노출(Information Exposure)의 위험이 존재했습니다.
+**Learning:** 기본 보안 정책은 지속적으로 위협 모델을 재평가하여 최신 민감 파일(예: authorized_keys, secrets.json, .env 등)과 확장자를 포함해야 합니다. 사용자가 인지하지 못한 채 디렉토리를 노출할 수 있으므로, 광범위한 기본 차단 목록이 방어의 핵심입니다.
+**Prevention:** defaultSensitiveFiles에 authorized_keys, known_hosts, secrets.json, auth.json, id_ecdsa, id_dsa를 추가하고, defaultSensitiveExtensions에 .env, .keytab, .dump를 추가하여 민감 정보 노출을 근본적으로 방지하십시오.
