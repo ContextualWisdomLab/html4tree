@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- 정적 빈 디렉토리 HTML 상태에서 잘못 적용된 ARIA role="status" 속성을 제거하여 접근성을 개선했습니다.
 - Improve generated directory-index readability with adjacent-row separators,
   explicit light and dark empty-state text colors, and text-only hover/focus
   underlining while retaining the full interactive target's focus outline.
